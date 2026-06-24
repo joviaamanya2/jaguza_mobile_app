@@ -1,7 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:jaguza_app/screens/login_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:jaguza_app/screens/splash_screen.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Color(0xFF1E7B4E), // Green
+      statusBarIconBrightness: Brightness.light,
+      statusBarBrightness: Brightness.dark,
+      systemNavigationBarColor: Color(0xFF1E7B4E),
+    ),
+  );
+
   runApp(const MyApp());
 }
 
@@ -13,7 +25,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Ask Us',
-      home: const AskUsApp(),
+      home: const SplashScreen(),
     );
   }
 }

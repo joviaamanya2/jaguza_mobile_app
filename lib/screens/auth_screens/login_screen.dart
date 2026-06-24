@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import './Signup_screen.dart';
+import '../language_selection.dart'; 
+import '../auth_screens/forgot_password_screen.dart';
+import '../auth_screens/Signup_screen.dart' hide LanguageSelectionScreen;
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  SystemChrome.setSystemUIOverlayStyle(
+    SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color(0xFF1E7B4E)),
+  );
   runApp(const AskUsApp());
 }
 
@@ -24,8 +30,7 @@ class AskUsApp extends StatelessWidget {
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: const Color(0xFFF6F8FA),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -33,8 +38,7 @@ class AskUsApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide:
-                const BorderSide(color: Color(0xFF1E7B4E), width: 1.5),
+            borderSide: const BorderSide(color: Color(0xFF1E7B4E), width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -90,30 +94,25 @@ class _SignInScreenState extends State<SignInScreen>
 
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Signed in successfully!'),
-        behavior: SnackBarBehavior.floating,
-      ),
+    
+    // Navigate to language selection screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()),
     );
   }
 
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light
-            .copyWith(statusBarColor: Colors.transparent),
+        value: SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color(0xFF1E7B4E)),
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
             child: Column(
               children: [
                 _buildHeader(),
@@ -186,10 +185,17 @@ class _SignInScreenState extends State<SignInScreen>
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () {},
+                            // <-- UPDATED ONPRESSED HERE
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => const PasswordResetScreen(),
+                                ),
+                              );
+                            },
                             style: TextButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 4, vertical: 4),
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
@@ -268,26 +274,7 @@ class _SignInScreenState extends State<SignInScreen>
                     ),
                   ],
                 ),
-                TextButton(
-                  onPressed: () {},
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 16, vertical: 6),
-                    minimumSize: Size.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(color: Colors.white.withOpacity(0.45)),
-                    ),
-                  ),
-                  child: const Text(
-                    'SKIP',
-                    style: TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                        letterSpacing: 1.1),
-                  ),
-                ),
+                
               ],
             ),
             const SizedBox(height: 28),
@@ -300,7 +287,6 @@ class _SignInScreenState extends State<SignInScreen>
               ),
               child: FadeTransition(
                 opacity: _logoController,
-                // Using your custom asset logo here
                 child: const _AppLogo(),
               ),
             ),
@@ -389,8 +375,7 @@ class _SignInButton extends StatelessWidget {
           disabledBackgroundColor: const Color(0xFFFF7A1A),
           disabledForegroundColor: Colors.white,
           elevation: 0,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: isLoading
             ? const SizedBox(
@@ -455,8 +440,7 @@ class _SocialButtons extends StatelessWidget {
         ),
         const SizedBox(width: 18),
         _SocialTile(
-          icon: const Icon(Icons.apple_rounded,
-              color: Color(0xFF1A1F36), size: 30),
+          icon: const Icon(Icons.apple_rounded, color: Color(0xFF1A1F36), size: 30),
           semanticLabel: 'Sign in with Apple',
           onTap: () {},
         ),
@@ -469,8 +453,7 @@ class _SocialTile extends StatelessWidget {
   final Widget icon;
   final String semanticLabel;
   final VoidCallback onTap;
-  const _SocialTile(
-      {required this.icon, required this.semanticLabel, required this.onTap});
+  const _SocialTile({required this.icon, required this.semanticLabel, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -513,7 +496,7 @@ class _RegisterPrompt extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => const RegisterScreen(),
+              builder: (context) => RegisterScreen(),
             ),
           );
         },
@@ -526,7 +509,7 @@ class _RegisterPrompt extends StatelessWidget {
                 TextSpan(
                   text: "Don't have an Account? ",
                   style: TextStyle(
-                    color: Color(0xFF6B7280), 
+                    color: Color(0xFF6B7280),
                     fontSize: 14,
                   ),
                 ),
@@ -549,8 +532,6 @@ class _RegisterPrompt extends StatelessWidget {
   }
 }
 
-/* ---------------- Custom Asset Logo ---------------- */
-
 class _AppLogo extends StatelessWidget {
   const _AppLogo();
 
@@ -572,7 +553,6 @@ class _AppLogo extends StatelessWidget {
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
-      
         child: Image.asset(
           'lib/assets/images/logo.png',
           fit: BoxFit.contain,

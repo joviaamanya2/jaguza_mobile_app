@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import './login_screen.dart';
+import '../terms_and_conditions.dart';
 
 void main() {
   runApp(const JaguaLivestockApp());
@@ -72,6 +72,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _isLoading = false;
   bool _agreedToTerms = false;
 
+  // Selected Country Code State
+  String _selectedCountryCode = '+256';
+
+  // List of country options with flags
+  final List<Map<String, String>> _countryCodes = [
+    {'code': '+256', 'flag': '🇺🇬', 'name': 'UG'},
+    {'code': '+254', 'flag': '🇰🇪', 'name': 'KE'},
+    {'code': '+255', 'flag': '🇹🇿', 'name': 'TZ'},
+    {'code': '+1', 'flag': '🇺🇸', 'name': 'US'},
+    {'code': '+44', 'flag': '🇬🇧', 'name': 'UK'},
+  ];
+
   @override
   void dispose() {
     _surnameController.dispose();
@@ -119,6 +131,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Color(0xFF1E7B4E),
       ),
     );
+
+    // Navigate to language selection screen
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()),
+    );
   }
 
   @override
@@ -129,8 +147,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: Colors.white,
         elevation: 0,
         scrolledUnderElevation: 0,
-        systemOverlayStyle: SystemUiOverlayStyle.dark.copyWith(
-          statusBarColor: Colors.transparent,
+        systemOverlayStyle: const SystemUiOverlayStyle(
+          statusBarColor: Color(0xFF1E7B4E),
+          statusBarIconBrightness: Brightness.light,
+          statusBarBrightness: Brightness.dark,
         ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A1F36)),
@@ -165,30 +185,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Surname
-                const _FieldLabel('Surname'),
-                TextFormField(
-                  controller: _surnameController,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your surname';
-                    }
-                    return null;
-                  },
-                  decoration: const InputDecoration(
-                    hintText: 'Doe',
-                    prefixIcon: Icon(Icons.person_outline_rounded,
-                        color: Color(0xFF6B7280), size: 22),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
                 // First Name
                 const _FieldLabel('First Name'),
                 TextFormField(
-                  controller: _firstNameController,
+                  controller: _surnameController,
                   textInputAction: TextInputAction.next,
                   textCapitalization: TextCapitalization.words,
                   validator: (value) {
@@ -198,7 +198,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                   decoration: const InputDecoration(
-                    hintText: 'John',
+                    prefixIcon: Icon(Icons.person_outline_rounded,
+                        color: Color(0xFF6B7280), size: 22),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Last Name
+                const _FieldLabel('Last Name'),
+                TextFormField(
+                  controller: _firstNameController,
+                  textInputAction: TextInputAction.next,
+                  textCapitalization: TextCapitalization.words,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Please enter your last name';
+                    }
+                    return null;
+                  },
+                  decoration: const InputDecoration(
                     prefixIcon: Icon(Icons.person_outline_rounded,
                         color: Color(0xFF6B7280), size: 22),
                   ),
@@ -230,7 +248,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
 
-                // Phone Number
+                // Phone Number with Country Code Picker
                 const _FieldLabel('Phone Number'),
                 TextFormField(
                   controller: _phoneController,
@@ -248,12 +266,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                   decoration: InputDecoration(
                     hintText: '712 345 678',
-                    prefixIcon: const Icon(Icons.phone_iphone_rounded,
-                        color: Color(0xFF6B7280), size: 22),
-                    prefixText: '+256 ',
-                    prefixStyle: const TextStyle(
-                        color: Color(0xFF1A1F36),
-                        fontWeight: FontWeight.w600),
+                    prefixIcon: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: _selectedCountryCode,
+                        icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF6B7280)),
+                        elevation: 2,
+                        style: const TextStyle(
+                          color: Color(0xFF1A1F36), 
+                          fontWeight: FontWeight.w600,
+                          fontSize: 14,
+                        ),
+                        onChanged: (String? newValue) {
+                          setState(() {
+                            if (newValue != null) _selectedCountryCode = newValue;
+                          });
+                        },
+                        items: _countryCodes.map<DropdownMenuItem<String>>((Map<String, String> country) {
+                          return DropdownMenuItem<String>(
+                            value: country['code'],
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 12.0),
+                              child: Text('${country['flag']} ${country['code']}'),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -352,6 +390,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 }
 
+/* --- Placeholder Language Selection Screen --- */
+class LanguageSelectionScreen extends StatelessWidget {
+  const LanguageSelectionScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Select Language'),
+        backgroundColor: const Color(0xFF1E7B4E),
+        foregroundColor: Colors.white,
+      ),
+      body: const Center(
+        child: Text(
+          'Language Selection Screen Options Here',
+          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        ),
+      ),
+    );
+  }
+}
+
 /* ---------------- Reusable Widgets ---------------- */
 
 class _FieldLabel extends StatelessWidget {
@@ -420,7 +480,10 @@ class _TermsCheckbox extends StatelessWidget {
                   WidgetSpan(
                     child: GestureDetector(
                       onTap: () {
-                        // Navigate to Terms and Conditions screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const TermsAndConditionsScreen()),
+                        );
                       },
                       child: const Text(
                         'Terms and Conditions',
