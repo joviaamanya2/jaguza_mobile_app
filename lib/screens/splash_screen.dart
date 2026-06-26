@@ -151,24 +151,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: SizedBox(
                       width: double.infinity,
                       height: 54,
-                      child: ElevatedButton(
-                        onPressed: _navigateToOnboarding,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: const Color(0xFF1E7B4E),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: const Text(
-                          'Next',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
+                      
                     ),
                   ),
                 ),

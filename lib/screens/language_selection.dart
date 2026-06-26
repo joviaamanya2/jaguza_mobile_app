@@ -200,7 +200,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                             onPressed: () {
                               Navigator.pushAndRemoveUntil(
                                 context,
-                                MaterialPageRoute(builder: (context) => const HomeScreen()),
+                                MaterialPageRoute(builder: (context) => const MainShell()),
                                 (route) => false,
                               );
                             },
