@@ -10,51 +10,68 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
+    with TickerProviderStateMixin {
+  late AnimationController _fadeController;
+  late AnimationController _scaleController;
+  late Animation<double> _fadeAnim;
+  late Animation<double> _scaleAnim;
+  late Animation<double> _taglineFade;
   bool _hasNavigated = false;
 
   @override
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
+    // Logo fade + scale
+    _scaleController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1000),
-    )..forward();
+      duration: const Duration(milliseconds: 900),
+    );
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    );
 
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _scaleAnim = Tween<double>(begin: 0.72, end: 1.0).animate(
+      CurvedAnimation(parent: _scaleController, curve: Curves.easeOutBack),
+    );
+    _fadeAnim = CurvedAnimation(parent: _fadeController, curve: Curves.easeOut);
 
-    Future.delayed(const Duration(seconds: 5), _navigateToOnboarding);
+    // Tagline fades in slightly after logo
+    _taglineFade = CurvedAnimation(
+      parent: _fadeController,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeOut),
+    );
+
+    _scaleController.forward();
+    _fadeController.forward();
+
+    Future.delayed(const Duration(seconds: 3), _navigateToOnboarding);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _scaleController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
   void _navigateToOnboarding() {
     if (_hasNavigated || !mounted) return;
-
-    setState(() {
-      _hasNavigated = true;
-    });
+    setState(() => _hasNavigated = true);
 
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             const OnboardingScreen1(),
-        transitionDuration: const Duration(milliseconds: 600),
+        transitionDuration: const Duration(milliseconds: 500),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final tween = Tween(begin: 0.0, end: 1.0).chain(
-            CurveTween(curve: Curves.easeOutCubic),
-          );
           return FadeTransition(
-            opacity: tween.animate(animation),
+            opacity: CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeOut,
+            ),
             child: child,
           );
         },
@@ -66,122 +83,137 @@ class _SplashScreenState extends State<SplashScreen>
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Color(0xFF1E7B4E),
-        statusBarIconBrightness: Brightness.light,
-        systemNavigationBarColor: Color(0xFF155F3B),
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark, // Changed to dark for white background
+        systemNavigationBarColor: Colors.white, // Changed to white
+        systemNavigationBarIconBrightness: Brightness.dark, // Changed to dark
       ),
       child: Scaffold(
         body: Container(
           width: double.infinity,
+          height: double.infinity,
           decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Color(0xFF1E7B4E), Color(0xFF155F3B)],
-            ),
+            color: Colors.white, // Changed to white background
           ),
-          child: SafeArea(
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(top: 60.0),
-                  child: FadeTransition(
-                    opacity: _animation,
-                    child: Column(
-                      children: [
-                        Container(
+          child: Stack(
+            children: [
+              // Subtle decorative circles - adjusted for white background
+              Positioned(
+                top: -60,
+                right: -60,
+                child: Container(
+                  width: 220,
+                  height: 220,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.03), // Changed to subtle black
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: -80,
+                left: -50,
+                child: Container(
+                  width: 260,
+                  height: 260,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.02), // Changed to subtle black
+                  ),
+                ),
+              ),
+
+              // Main content
+              Center(
+                child: FadeTransition(
+                  opacity: _fadeAnim,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo with scale animation - kept as is (white bg with black text)
+                      ScaleTransition(
+                        scale: _scaleAnim,
+                        child: Container(
                           width: 120,
                           height: 120,
-                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(28),
+                            color: Colors.white, // Keeping logo background white
+                            borderRadius: BorderRadius.circular(30),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 20,
-                                offset: const Offset(0, 10),
+                                color: Colors.black.withValues(alpha: 0.1), // Lighter shadow for white bg
+                                blurRadius: 32,
+                                offset: const Offset(0, 14),
                               ),
                             ],
                           ),
-                          child: Image.asset(
-                            'lib/assets/images/logo.png',
-                            fit: BoxFit.contain,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(30),
+                            child: Image.asset(
+                              'lib/assets/images/logo.png',
+                              fit: BoxFit.contain,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 20),
-                        const Text(
-                          'HERDLOGIC',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 2.5,
-                          ),
-                        ),
-                        const SizedBox(height: 40),
-                        const Text(
-                          'Jaguzza Livestock App',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            height: 1.2,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        const Text(
-                          'Precision Farming for a Sustainable Future',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                FadeTransition(
-                  opacity: _animation,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 40.0),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 24.0),
-                  child: Column(
-                    children: [
-                      Text(
-                        'POWERED BY AGRI SMART ECOSYSTEM',
-                        style: TextStyle(
-                          color: Colors.white54,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 1.5,
                         ),
                       ),
-                      SizedBox(height: 6),
-                      Text(
-                        '© 2024 Jaguzza Livestock App. All rights reserved.',
-                        style: TextStyle(
-                          color: Colors.white38,
-                          fontSize: 10,
+
+                      const SizedBox(height: 32),
+
+                      // App name - changed to black
+                      FadeTransition(
+                        opacity: _taglineFade,
+                        child: const Text(
+                          'JAGUZA',
+                          style: TextStyle(
+                            color: Colors.black, // Changed to black
+                            fontSize: 28,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 4.0,
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // Tagline - changed to dark gray
+                      FadeTransition(
+                        opacity: _taglineFade,
+                        child: Text(
+                          'Know your herd, wherever they roam.',
+                          style: TextStyle(
+                            color: Colors.black.withValues(alpha: 0.7), // Changed to dark gray
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                            letterSpacing: 0.4,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+
+              // Version / brand note at bottom - changed to dark gray
+              Positioned(
+                bottom: 40,
+                left: 0,
+                right: 0,
+                child: FadeTransition(
+                  opacity: _taglineFade,
+                  child: Center(
+                    child: Text(
+                      'Jaguza Farm Tech',
+                      style: TextStyle(
+                        color: Colors.black.withValues(alpha: 0.4), // Changed to dark gray
+                        fontSize: 12,
+                        letterSpacing: 1.2,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),

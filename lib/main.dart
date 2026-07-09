@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
 import 'package:jaguza_app/screens/splash_screen.dart';
 
 void main() {

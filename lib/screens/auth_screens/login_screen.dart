@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../language_selection.dart'; 
 import '../auth_screens/forgot_password_screen.dart';
-import '../auth_screens/Signup_screen.dart' hide LanguageSelectionScreen;
+import '../auth_screens/Signup_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color(0xFF1E7B4E)),
+    SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color.fromARGB(255, 18, 112, 30)),
   );
   runApp(const AskUsApp());
 }
@@ -24,8 +24,8 @@ class AskUsApp extends StatelessWidget {
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E7B4E),
-          primary: const Color(0xFF1E7B4E),
+          seedColor: const Color.fromARGB(255, 33, 117, 11),
+          primary: const Color.fromARGB(255, 33, 117, 11),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
@@ -38,7 +38,7 @@ class AskUsApp extends StatelessWidget {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFF1E7B4E), width: 1.5),
+            borderSide: const BorderSide(color: Color.fromARGB(255, 49, 121, 28), width: 1.5),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
@@ -69,7 +69,7 @@ class _SignInScreenState extends State<SignInScreen>
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
-  bool _isLoading = false;
+  final bool _isLoading = false;
   late final AnimationController _logoController;
 
   @override
@@ -108,7 +108,7 @@ class _SignInScreenState extends State<SignInScreen>
     return Scaffold(
       backgroundColor: Colors.white,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
-        value: SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color(0xFF1E7B4E)),
+        value: SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color.fromARGB(255, 24, 117, 44)),
         child: SafeArea(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -185,7 +185,6 @@ class _SignInScreenState extends State<SignInScreen>
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            // <-- UPDATED ONPRESSED HERE
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -242,7 +241,7 @@ class _SignInScreenState extends State<SignInScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1E7B4E), Color(0xFF2FA468)],
+            colors: [Color.fromARGB(255, 33, 123, 30), Color.fromARGB(255, 37, 124, 29)],
           ),
         ),
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 70),
@@ -297,7 +296,7 @@ class _SignInScreenState extends State<SignInScreen>
   }
 }
 
-/* ---------------- Reusable Widgets ---------------- */
+/*  Reusable Widgets  */
 
 class _SectionHeading extends StatelessWidget {
   final String title;
@@ -562,7 +561,7 @@ class _AppLogo extends StatelessWidget {
   }
 }
 
-/* ---------------- Google Logo (vector) ---------------- */
+/*  Google Logo (vector)  */
 
 class _GoogleLogo extends StatelessWidget {
   const _GoogleLogo();
@@ -594,7 +593,7 @@ class _GoogleLogoPainter extends CustomPainter {
       ..strokeWidth = r * 0.42
       ..strokeCap = StrokeCap.round;
     final green = Paint()
-      ..color = const Color(0xFF34A853)
+      ..color = const Color.fromARGB(255, 25, 136, 55)
       ..style = PaintingStyle.stroke
       ..strokeWidth = r * 0.42
       ..strokeCap = StrokeCap.round;
@@ -644,7 +643,7 @@ class _GoogleLogoPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/* ---------------- Wave Clipper ---------------- */
+/*  Wave Clipper  */
 
 class _WaveClipper extends CustomClipper<Path> {
   @override

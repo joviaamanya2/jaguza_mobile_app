@@ -1,55 +1,75 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../terms_and_conditions.dart';
+import '../language_selection.dart';
+import '../../services/api_service.dart';
 
+// ─── App entry (only used when running this file directly) 
 void main() {
-  runApp(const JaguaLivestockApp());
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const _SignupApp());
 }
 
-class JaguaLivestockApp extends StatelessWidget {
-  const JaguaLivestockApp({super.key});
-
+class _SignupApp extends StatelessWidget {
+  const _SignupApp();
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Jagua Livestock',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF1E7B4E),
-          primary: const Color(0xFF1E7B4E),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFFF6F8FA),
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE3E8EE), width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFF1E7B4E), width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE5484D), width: 1),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE5484D), width: 1.5),
-          ),
-        ),
-      ),
-      home: const RegisterScreen(),
-    );
-  }
+  Widget build(BuildContext context) => const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: RegisterScreen(),
+      );
 }
 
+// ─── Theme constants ─
+const _kGreen = Color(0xFF2E7D32);
+const _kGreenLight = Color(0xFF2E7D32);
+const _kError = Color(0xFFE5484D);
+const _kText = Color(0xFF1A1F36);
+const _kSubtext = Color(0xFF6B7280);
+const _kBorder = Color(0xFFE3E8EE);
+const _kFill = Color(0xFFF6F8FA);
+
+// ─── Password strength helper ───────────
+enum _PasswordStrength { empty, weak, fair, strong, veryStrong }
+
+_PasswordStrength _evalStrength(String password) {
+  if (password.isEmpty) return _PasswordStrength.empty;
+  int score = 0;
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (RegExp(r'[A-Z]').hasMatch(password)) score++;
+  if (RegExp(r'[0-9]').hasMatch(password)) score++;
+  if (RegExp(r'[!@#\$%^&*(),.?":{}|<>]').hasMatch(password)) score++;
+  if (score <= 1) return _PasswordStrength.weak;
+  if (score == 2) return _PasswordStrength.fair;
+  if (score == 3) return _PasswordStrength.strong;
+  return _PasswordStrength.veryStrong;
+}
+
+Color _strengthColor(_PasswordStrength s) => switch (s) {
+      _PasswordStrength.weak => const Color(0xFFE5484D),
+      _PasswordStrength.fair => const Color(0xFFF59E0B),
+      _PasswordStrength.strong => const Color(0xFF10B981),
+      _PasswordStrength.veryStrong => _kGreen,
+      _ => _kBorder,
+    };
+
+String _strengthLabel(_PasswordStrength s) => switch (s) {
+      _PasswordStrength.weak => 'Weak',
+      _PasswordStrength.fair => 'Fair',
+      _PasswordStrength.strong => 'Strong',
+      _PasswordStrength.veryStrong => 'Very strong',
+      _ => '',
+    };
+
+int _strengthSegments(_PasswordStrength s) => switch (s) {
+      _PasswordStrength.weak => 1,
+      _PasswordStrength.fair => 2,
+      _PasswordStrength.strong => 3,
+      _PasswordStrength.veryStrong => 4,
+      _ => 0,
+    };
+
+// ─── RegisterScreen ──
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
 
@@ -57,455 +77,818 @@ class RegisterScreen extends StatefulWidget {
   State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
 
-  final _surnameController = TextEditingController();
-  final _firstNameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _confirmPasswordController = TextEditingController();
+  final _firstNameCtrl = TextEditingController();
+  final _lastNameCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _passwordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
+
+  final _firstNameFocus = FocusNode();
+  final _lastNameFocus = FocusNode();
+  final _emailFocus = FocusNode();
+  final _phoneFocus = FocusNode();
+  final _passwordFocus = FocusNode();
+  final _confirmFocus = FocusNode();
 
   bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
+  bool _obscureConfirm = true;
   bool _isLoading = false;
   bool _agreedToTerms = false;
+  _PasswordStrength _passwordStrength = _PasswordStrength.empty;
 
-  // Selected Country Code State
   String _selectedCountryCode = '+256';
-
-  // List of country options with flags
   final List<Map<String, String>> _countryCodes = [
-    {'code': '+256', 'flag': '🇺🇬', 'name': 'UG'},
-    {'code': '+254', 'flag': '🇰🇪', 'name': 'KE'},
-    {'code': '+255', 'flag': '🇹🇿', 'name': 'TZ'},
-    {'code': '+1', 'flag': '🇺🇸', 'name': 'US'},
-    {'code': '+44', 'flag': '🇬🇧', 'name': 'UK'},
+    {'code': '+256', 'flag': '🇺🇬', 'name': 'Uganda'},
+    {'code': '+254', 'flag': '🇰🇪', 'name': 'Kenya'},
+    {'code': '+255', 'flag': '🇹🇿', 'name': 'Tanzania'},
+    {'code': '+250', 'flag': '🇷🇼', 'name': 'Rwanda'},
+    {'code': '+251', 'flag': '🇪🇹', 'name': 'Ethiopia'},
+    {'code': '+234', 'flag': '🇳🇬', 'name': 'Nigeria'},
+    {'code': '+27', 'flag': '🇿🇦', 'name': 'South Africa'},
+    {'code': '+1', 'flag': '🇺🇸', 'name': 'United States'},
+    {'code': '+44', 'flag': '🇬🇧', 'name': 'United Kingdom'},
   ];
+
+  late final AnimationController _headerAnim;
+  late final Animation<double> _headerFade;
+
+  @override
+  void initState() {
+    super.initState();
+    _headerAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 700),
+    )..forward();
+    _headerFade =
+        CurvedAnimation(parent: _headerAnim, curve: Curves.easeOut);
+
+    _passwordCtrl.addListener(() {
+      setState(() {
+        _passwordStrength = _evalStrength(_passwordCtrl.text);
+      });
+    });
+  }
 
   @override
   void dispose() {
-    _surnameController.dispose();
-    _firstNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
+    _firstNameCtrl.dispose();
+    _lastNameCtrl.dispose();
+    _emailCtrl.dispose();
+    _phoneCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
+    _firstNameFocus.dispose();
+    _lastNameFocus.dispose();
+    _emailFocus.dispose();
+    _phoneFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmFocus.dispose();
+    _headerAnim.dispose();
     super.dispose();
   }
 
-  void _togglePasswordVisibility() =>
-      setState(() => _obscurePassword = !_obscurePassword);
-
-  void _toggleConfirmPasswordVisibility() =>
-      setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
-
   Future<void> _handleRegister() async {
-    // Validate form fields
-    if (!_formKey.currentState!.validate()) {
-      return;
-    }
-    // Validate terms acceptance
+    // Close keyboard
+    FocusScope.of(context).unfocus();
+
+    if (!_formKey.currentState!.validate()) return;
+
     if (!_agreedToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please accept the Terms and Conditions to proceed.'),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Color(0xFFE5484D),
-        ),
+      _showSnack(
+        'Please accept the Terms & Conditions to continue.',
+        isError: true,
       );
       return;
     }
 
-    // Simulate API Call
     setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 2));
+    
+    // Call the Django backend API
+    final username = _emailCtrl.text.trim().split('@').first; // Generate a username from email
+    final result = await ApiService.register(
+      username: username,
+      email: _emailCtrl.text.trim(),
+      password: _passwordCtrl.text,
+      firstName: _firstNameCtrl.text.trim(),
+      lastName: _lastNameCtrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+    );
+    
     if (!mounted) return;
     setState(() => _isLoading = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Account created successfully!'),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: Color(0xFF1E7B4E),
-      ),
-    );
+    if (result['success'] == true) {
+      _showSnack('Account created successfully! Welcome aboard');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+      );
+    } else {
+      _showSnack(
+        result['error'] ?? 'Registration failed. Please try again.',
+        isError: true,
+      );
+    }
+  }
 
-    // Navigate to language selection screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()),
+  void _showSnack(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.warning_rounded : Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? _kError : _kGreen,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+      child: Scaffold(
         backgroundColor: Colors.white,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        systemOverlayStyle: const SystemUiOverlayStyle(
-          statusBarColor: Color(0xFF1E7B4E),
-          statusBarIconBrightness: Brightness.light,
-          statusBarBrightness: Brightness.dark,
+        body: Column(
+          children: [
+            // ── Green header banner 
+            FadeTransition(
+              opacity: _headerFade,
+              child: _buildHeader(context),
+            ),
+
+            // ── Form body 
+            Expanded(
+              child: SingleChildScrollView(
+                keyboardDismissBehavior:
+                    ScrollViewKeyboardDismissBehavior.onDrag,
+                physics: const BouncingScrollPhysics(),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _FormGroup(
+                              label: 'First Name',
+                              child: _AppField(
+                                controller: _firstNameCtrl,
+                                focusNode: _firstNameFocus,
+                                nextFocus: _lastNameFocus,
+                                hint: 'John',
+                                icon: Icons.person_outline_rounded,
+                                capitalization: TextCapitalization.words,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Required';
+                                  }
+                                  if (v.trim().length < 2) {
+                                    return 'Too short';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 14),
+                          Expanded(
+                            child: _FormGroup(
+                              label: 'Last Name',
+                              child: _AppField(
+                                controller: _lastNameCtrl,
+                                focusNode: _lastNameFocus,
+                                nextFocus: _emailFocus,
+                                hint: 'Doe',
+                                icon: Icons.person_outline_rounded,
+                                capitalization: TextCapitalization.words,
+                                validator: (v) {
+                                  if (v == null || v.trim().isEmpty) {
+                                    return 'Required';
+                                  }
+                                  return null;
+                                },
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Email ───────
+                      _FormGroup(
+                        label: 'Email Address',
+                        child: _AppField(
+                          controller: _emailCtrl,
+                          focusNode: _emailFocus,
+                          nextFocus: _phoneFocus,
+                          hint: 'you@example.com',
+                          icon: Icons.alternate_email_rounded,
+                          keyboardType: TextInputType.emailAddress,
+                          autofillHints: const [AutofillHints.email],
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!RegExp(
+                                    r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,}$')
+                                .hasMatch(v.trim())) {
+                              return 'Enter a valid email address';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Phone ───────
+                      _FormGroup(
+                        label: 'Phone Number',
+                        child: _PhoneField(
+                          controller: _phoneCtrl,
+                          focusNode: _phoneFocus,
+                          nextFocus: _passwordFocus,
+                          selectedCode: _selectedCountryCode,
+                          countryCodes: _countryCodes,
+                          onCodeChanged: (code) =>
+                              setState(() => _selectedCountryCode = code),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // ── Password ────
+                      _FormGroup(
+                        label: 'Password',
+                        child: _AppField(
+                          controller: _passwordCtrl,
+                          focusNode: _passwordFocus,
+                          nextFocus: _confirmFocus,
+                          hint: '••••••••',
+                          icon: Icons.lock_outline_rounded,
+                          obscureText: _obscurePassword,
+                          autofillHints: const [AutofillHints.newPassword],
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: _kSubtext,
+                              size: 21,
+                            ),
+                            onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Please enter a password';
+                            }
+                            if (v.length < 8) {
+                              return 'Password must be at least 8 characters';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+
+                      // ── Strength meter 
+                      if (_passwordStrength != _PasswordStrength.empty) ...[
+                        const SizedBox(height: 10),
+                        _PasswordStrengthMeter(strength: _passwordStrength),
+                      ],
+                      const SizedBox(height: 16),
+
+                      // ── Confirm Password
+                      _FormGroup(
+                        label: 'Confirm Password',
+                        child: _AppField(
+                          controller: _confirmPasswordCtrl,
+                          focusNode: _confirmFocus,
+                          hint: '••••••••',
+                          icon: Icons.lock_outline_rounded,
+                          obscureText: _obscureConfirm,
+                          textInputAction: TextInputAction.done,
+                          autofillHints: const [AutofillHints.newPassword],
+                          onFieldSubmitted: (_) => _handleRegister(),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirm
+                                  ? Icons.visibility_off_outlined
+                                  : Icons.visibility_outlined,
+                              color: _kSubtext,
+                              size: 21,
+                            ),
+                            onPressed: () => setState(
+                                () => _obscureConfirm = !_obscureConfirm),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (v != _passwordCtrl.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // ── Terms checkbox
+                      _TermsRow(
+                        isChecked: _agreedToTerms,
+                        onChanged: (v) =>
+                            setState(() => _agreedToTerms = v ?? false),
+                        onTermsTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                const TermsAndConditionsScreen(fromSignup: true),
+                          ),
+                        ).then((accepted) {
+                          if (accepted == true) {
+                            setState(() => _agreedToTerms = true);
+                          }
+                        }),
+                      ),
+                      const SizedBox(height: 28),
+
+                      // ── Register button 
+                      _RegisterButton(
+                        isLoading: _isLoading,
+                        onPressed: _handleRegister,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Sign in link 
+                      Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.maybePop(context),
+                          child: Text.rich(
+                            TextSpan(
+                              children: [
+                                const TextSpan(
+                                  text: 'Already have an account? ',
+                                  style: TextStyle(
+                                    color: _kSubtext,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const TextSpan(
+                                  text: 'Sign In',
+                                  style: TextStyle(
+                                    color: _kGreen,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: _kGreen,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 28),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded, color: Color(0xFF1A1F36)),
-          onPressed: () => Navigator.maybePop(context),
-        ),
-        title: const Text(
-          'Create New',
-          style: TextStyle(
-            color: Color(0xFF1A1F36),
-            fontWeight: FontWeight.w800,
-            fontSize: 20,
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return ClipPath(
+      clipper: _WaveClipper(),
+      child: Container(
+        width: double.infinity,
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_kGreen, _kGreenLight],
           ),
         ),
-        centerTitle: false,
+        padding: const EdgeInsets.fromLTRB(22, 48, 22, 60),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Back button
+            GestureDetector(
+              onTap: () => Navigator.maybePop(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: const Icon(Icons.arrow_back_rounded,
+                    color: Colors.white, size: 20),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Create Account',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Join Jaguza and manage your herd smarter.',
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.80),
+                fontSize: 14,
+                fontWeight: FontWeight.w400,
+              ),
+            ),
+          ],
+        ),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Join Jagua Livestock App',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: Color(0xFF6B7280),
-                  ),
-                ),
-                const SizedBox(height: 24),
+    );
+  }
+}
 
-                // First Name
-                const _FieldLabel('First Name'),
-                TextFormField(
-                  controller: _surnameController,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your first name';
-                    }
-                    return null;
-                  },
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.person_outline_rounded,
-                        color: Color(0xFF6B7280), size: 22),
-                  ),
-                ),
-                const SizedBox(height: 16),
+// ─── Wave clipper ────
+class _WaveClipper extends CustomClipper<Path> {
+  @override
+  Path getClip(Size size) {
+    final path = Path();
+    path.lineTo(0, size.height - 32);
+    path.quadraticBezierTo(
+        size.width / 2, size.height, size.width, size.height - 32);
+    path.lineTo(size.width, 0);
+    path.close();
+    return path;
+  }
 
-                // Last Name
-                const _FieldLabel('Last Name'),
-                TextFormField(
-                  controller: _firstNameController,
-                  textInputAction: TextInputAction.next,
-                  textCapitalization: TextCapitalization.words,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your last name';
-                    }
-                    return null;
-                  },
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.person_outline_rounded,
-                        color: Color(0xFF6B7280), size: 22),
-                  ),
-                ),
-                const SizedBox(height: 16),
+  @override
+  bool shouldReclip(covariant CustomClipper<Path> oldClipper) => false;
+}
 
-                // Email Address
-                const _FieldLabel('Email Address'),
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.email],
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$')
-                        .hasMatch(value)) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
-                  decoration: const InputDecoration(
-                    hintText: 'you@example.com',
-                    prefixIcon: Icon(Icons.alternate_email_rounded,
-                        color: Color(0xFF6B7280), size: 22),
-                  ),
-                ),
-                const SizedBox(height: 16),
+// ─── Form group label wrapper ───────────
+class _FormGroup extends StatelessWidget {
+  final String label;
+  final Widget child;
+  const _FormGroup({required this.label, required this.child});
 
-                // Phone Number with Country Code Picker
-                const _FieldLabel('Phone Number'),
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.telephoneNumber],
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your phone number';
-                    }
-                    if (value.length < 9) {
-                      return 'Please enter a valid phone number';
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    hintText: '712 345 678',
-                    prefixIcon: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        value: _selectedCountryCode,
-                        icon: const Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF6B7280)),
-                        elevation: 2,
-                        style: const TextStyle(
-                          color: Color(0xFF1A1F36), 
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
-                        ),
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            if (newValue != null) _selectedCountryCode = newValue;
-                          });
-                        },
-                        items: _countryCodes.map<DropdownMenuItem<String>>((Map<String, String> country) {
-                          return DropdownMenuItem<String>(
-                            value: country['code'],
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 12.0),
-                              child: Text('${country['flag']} ${country['code']}'),
-                            ),
-                          );
-                        }).toList(),
-                      ),
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: _kText,
+          ),
+        ),
+        const SizedBox(height: 8),
+        child,
+      ],
+    );
+  }
+}
+
+// ─── Shared text field ──────────────────
+class _AppField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode? focusNode;
+  final FocusNode? nextFocus;
+  final String hint;
+  final IconData icon;
+  final bool obscureText;
+  final TextInputType keyboardType;
+  final TextCapitalization capitalization;
+  final TextInputAction textInputAction;
+  final Iterable<String>? autofillHints;
+  final String? Function(String?)? validator;
+  final Widget? suffixIcon;
+  final void Function(String)? onFieldSubmitted;
+
+  const _AppField({
+    required this.controller,
+    this.focusNode,
+    this.nextFocus,
+    required this.hint,
+    required this.icon,
+    this.obscureText = false,
+    this.keyboardType = TextInputType.text,
+    this.capitalization = TextCapitalization.none,
+    this.textInputAction = TextInputAction.next,
+    this.autofillHints,
+    this.validator,
+    this.suffixIcon,
+    this.onFieldSubmitted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      textCapitalization: capitalization,
+      textInputAction:
+          nextFocus != null ? TextInputAction.next : textInputAction,
+      autofillHints: autofillHints,
+      onFieldSubmitted: (v) {
+        if (nextFocus != null) {
+          FocusScope.of(context).requestFocus(nextFocus);
+        } else if (onFieldSubmitted != null) {
+          onFieldSubmitted!(v);
+        }
+      },
+      validator: validator,
+      style: const TextStyle(fontSize: 14, color: _kText),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+        filled: true,
+        fillColor: _kFill,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        prefixIcon: Icon(icon, color: _kSubtext, size: 21),
+        suffixIcon: suffixIcon,
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kBorder, width: 1),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kGreen, width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kError, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kError, width: 1.5),
+        ),
+        errorStyle: const TextStyle(fontSize: 11.5, color: _kError),
+      ),
+    );
+  }
+}
+
+// ─── Phone field with country code ─────
+class _PhoneField extends StatelessWidget {
+  final TextEditingController controller;
+  final FocusNode? focusNode;
+  final FocusNode? nextFocus;
+  final String selectedCode;
+  final List<Map<String, String>> countryCodes;
+  final ValueChanged<String> onCodeChanged;
+
+  const _PhoneField({
+    required this.controller,
+    this.focusNode,
+    this.nextFocus,
+    required this.selectedCode,
+    required this.countryCodes,
+    required this.onCodeChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: TextInputType.phone,
+      textInputAction: TextInputAction.next,
+      autofillHints: const [AutofillHints.telephoneNumber],
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      onFieldSubmitted: (_) {
+        if (nextFocus != null) FocusScope.of(context).requestFocus(nextFocus);
+      },
+      validator: (v) {
+        if (v == null || v.trim().isEmpty) return 'Please enter your phone number';
+        if (v.length < 7) return 'Enter a valid phone number';
+        return null;
+      },
+      style: const TextStyle(fontSize: 14, color: _kText),
+      decoration: InputDecoration(
+        hintText: '712 345 678',
+        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+        filled: true,
+        fillColor: _kFill,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        prefixIcon: Padding(
+          padding: const EdgeInsets.only(left: 4),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: selectedCode,
+              icon: const Icon(Icons.arrow_drop_down_rounded,
+                  color: _kSubtext, size: 20),
+              isDense: true,
+              style: const TextStyle(
+                color: _kText,
+                fontWeight: FontWeight.w600,
+                fontSize: 13,
+              ),
+              onChanged: (v) {
+                if (v != null) onCodeChanged(v);
+              },
+              items: [
+                for (final c in countryCodes)
+                  DropdownMenuItem(
+                    value: c['code'],
+                    child: Padding(
+                      padding: const EdgeInsets.only(left: 10),
+                      child: Text('${c['flag']} ${c['code']}'),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Password
-                const _FieldLabel('Password'),
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  autofillHints: const [AutofillHints.newPassword],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded,
-                        color: Color(0xFF6B7280), size: 22),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: const Color(0xFF6B7280),
-                        size: 22,
-                      ),
-                      onPressed: _togglePasswordVisibility,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Confirm Password
-                const _FieldLabel('Confirm Password'),
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
-                  textInputAction: TextInputAction.done,
-                  autofillHints: const [AutofillHints.newPassword],
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
-                  decoration: InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: const Icon(Icons.lock_outline_rounded,
-                        color: Color(0xFF6B7280), size: 22),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscureConfirmPassword
-                            ? Icons.visibility_off_outlined
-                            : Icons.visibility_outlined,
-                        color: const Color(0xFF6B7280),
-                        size: 22,
-                      ),
-                      onPressed: _toggleConfirmPasswordVisibility,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Terms and Conditions
-                _TermsCheckbox(
-                  isChecked: _agreedToTerms,
-                  onChanged: (bool? value) {
-                    setState(() {
-                      _agreedToTerms = value ?? false;
-                    });
-                  },
-                ),
-                const SizedBox(height: 28),
-
-                // Register Button
-                _RegisterButton(
-                  isLoading: _isLoading,
-                  onPressed: _handleRegister,
-                ),
-                const SizedBox(height: 24),
+                  )
               ],
             ),
           ),
         ),
-      ),
-    );
-  }
-}
-
-/* --- Placeholder Language Selection Screen --- */
-class LanguageSelectionScreen extends StatelessWidget {
-  const LanguageSelectionScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Select Language'),
-        backgroundColor: const Color(0xFF1E7B4E),
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Text(
-          'Language Selection Screen Options Here',
-          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kBorder, width: 1),
         ),
-      ),
-    );
-  }
-}
-
-/* ---------------- Reusable Widgets ---------------- */
-
-class _FieldLabel extends StatelessWidget {
-  final String text;
-  const _FieldLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(
-        text,
-        style: const TextStyle(
-          fontSize: 13,
-          fontWeight: FontWeight.w600,
-          color: Color(0xFF374151),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kGreen, width: 1.5),
         ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kError, width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: const BorderSide(color: _kError, width: 1.5),
+        ),
+        errorStyle: const TextStyle(fontSize: 11.5, color: _kError),
       ),
     );
   }
 }
 
-class _TermsCheckbox extends StatelessWidget {
-  final bool isChecked;
-  final ValueChanged<bool?> onChanged;
-  const _TermsCheckbox({required this.isChecked, required this.onChanged});
+// ─── Password Strength Meter ────────────
+class _PasswordStrengthMeter extends StatelessWidget {
+  final _PasswordStrength strength;
+  const _PasswordStrengthMeter({required this.strength});
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.center,
+    final color = _strengthColor(strength);
+    final filled = _strengthSegments(strength);
+    final label = _strengthLabel(strength);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(
-          width: 24,
-          height: 24,
-          child: Checkbox(
-            value: isChecked,
-            onChanged: onChanged,
-            checkColor: Colors.white,
-            fillColor: WidgetStateProperty.resolveWith<Color>(
-              (Set<WidgetState> states) {
-                if (states.contains(WidgetState.selected)) {
-                  return const Color(0xFF1E7B4E);
-                }
-                return Colors.transparent;
-              },
-            ),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(6),
-            ),
-            side: const BorderSide(color: Color(0xFF9CA3AF), width: 1.5),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => onChanged(!isChecked),
-            child: Text.rich(
-              TextSpan(
-                text: 'I have Read and understood jagua Livestock App ',
-                style: const TextStyle(
-                  fontSize: 12.5,
-                  color: Color(0xFF6B7280),
+        Row(
+          children: List.generate(4, (i) {
+            return Expanded(
+              child: Container(
+                margin:
+                    EdgeInsets.only(left: i == 0 ? 0 : 4),
+                height: 5,
+                decoration: BoxDecoration(
+                  color: i < filled ? color : _kBorder,
+                  borderRadius: BorderRadius.circular(3),
                 ),
-                children: [
-                  WidgetSpan(
-                    child: GestureDetector(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => const TermsAndConditionsScreen()),
-                        );
-                      },
-                      child: const Text(
-                        'Terms and Conditions',
-                        style: TextStyle(
-                          fontSize: 12.5,
-                          color: Color(0xFF1E7B4E),
-                          fontWeight: FontWeight.w700,
-                          decoration: TextDecoration.underline,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+              ),
+            );
+          }),
+        ),
+        const SizedBox(height: 5),
+        Row(
+          children: [
+            Icon(Icons.shield_rounded, size: 13, color: color),
+            const SizedBox(width: 5),
+            Text(
+              'Password strength: $label',
+              style: TextStyle(
+                fontSize: 11.5,
+                color: color,
+                fontWeight: FontWeight.w600,
               ),
             ),
-          ),
+          ],
         ),
       ],
     );
   }
 }
 
+// ─── Terms row ───────
+class _TermsRow extends StatelessWidget {
+  final bool isChecked;
+  final ValueChanged<bool?> onChanged;
+  final VoidCallback onTermsTap;
+
+  const _TermsRow({
+    required this.isChecked,
+    required this.onChanged,
+    required this.onTermsTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onChanged(!isChecked),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 24,
+            height: 24,
+            child: Checkbox(
+              value: isChecked,
+              onChanged: onChanged,
+              checkColor: Colors.white,
+              activeColor: _kGreen,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+              side: const BorderSide(color: Color(0xFF9CA3AF), width: 1.5),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(
+                    text: 'I have read and agree to the Jaguza Livestock ',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _kSubtext,
+                      height: 1.5,
+                    ),
+                  ),
+                  WidgetSpan(
+                    alignment: PlaceholderAlignment.baseline,
+                    baseline: TextBaseline.alphabetic,
+                    child: GestureDetector(
+                      onTap: onTermsTap,
+                      child: const Text(
+                        'Terms & Conditions',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: _kGreen,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
+                          decorationColor: _kGreen,
+                          height: 1.5,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const TextSpan(
+                    text: ' and Privacy Policy.',
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: _kSubtext,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Register button ─
 class _RegisterButton extends StatelessWidget {
   final bool isLoading;
   final VoidCallback onPressed;
@@ -513,46 +896,59 @@ class _RegisterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 54,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF7A1A).withOpacity(0.32),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFF7A1A),
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: const Color(0xFFFF7A1A),
-          disabledForegroundColor: Colors.white,
-          elevation: 0,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    return GestureDetector(
+      onTap: isLoading ? null : onPressed,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        height: 54,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: isLoading
+              ? const LinearGradient(
+                  colors: [Color(0xFF7DB89A), Color(0xFF7DB89A)])
+              : const LinearGradient(
+                  colors: [_kGreen, _kGreenLight],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
+                ),
+          boxShadow: isLoading
+              ? []
+              : [
+                  BoxShadow(
+                    color: _kGreen.withValues(alpha: 0.38),
+                    blurRadius: 18,
+                    offset: const Offset(0, 8),
+                  ),
+                ],
         ),
-        child: isLoading
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        child: Center(
+          child: isLoading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'CREATE ACCOUNT',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Icon(Icons.arrow_forward_rounded,
+                        color: Colors.white, size: 18),
+                  ],
                 ),
-              )
-            : const Text(
-                'REGISTER',
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 1.3,
-                ),
-              ),
+        ),
       ),
     );
   }

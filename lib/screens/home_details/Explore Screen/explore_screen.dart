@@ -2,6 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+// Import your disease and marketplace screens
+import '../../home_details/Disease Information/disease_info.dart';
+import '../../home_details/Market place/market_place.dart';
+
+
+
+
+
+
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
@@ -18,11 +27,13 @@ class ExploreApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Jaguza - Explore',
       theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF4F6F8),
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
-          primary: const Color(0xFF2E7D32),
+        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
+        primaryColor: const Color(0xFF2E7D32),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF2E7D32),
+          secondary: Color(0xFF2E7D32),
         ),
+        fontFamily: 'Inter',
       ),
       home: const ExploreScreen(),
     );
@@ -36,9 +47,7 @@ class ExploreScreen extends StatefulWidget {
   State<ExploreScreen> createState() => _ExploreScreenState();
 }
 
-class _ExploreScreenState extends State<ExploreScreen>
-    with TickerProviderStateMixin {
-  late AnimationController _feedController;
+class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   int _selectedCategory = 0;
@@ -48,24 +57,11 @@ class _ExploreScreenState extends State<ExploreScreen>
     CategoryItem(icon: Icons.pets_rounded, label: 'Cattle'),
     CategoryItem(icon: Icons.egg_rounded, label: 'Poultry'),
     CategoryItem(icon: Icons.set_meal_rounded, label: 'Pigs'),
-    CategoryItem(icon: Icons.agriculture_rounded, label: 'Crops'),
-    CategoryItem(icon: Icons.water_drop_rounded, label: 'Fish'),
     CategoryItem(icon: Icons.grass_rounded, label: 'Goats'),
   ];
 
   @override
-  void initState() {
-    super.initState();
-    _feedController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 700),
-    );
-    _feedController.forward();
-  }
-
-  @override
   void dispose() {
-    _feedController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -79,7 +75,7 @@ class _ExploreScreenState extends State<ExploreScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
           _buildHeader(),
@@ -89,27 +85,16 @@ class _ExploreScreenState extends State<ExploreScreen>
           Expanded(child: _buildFeed()),
         ],
       ),
-      
     );
   }
 
-  
-  //  HEADER
-  
+  // ═══════════════════════════════════════
+  //  HEADER - Clean, solid color
+  // ═══════════════════════════════════════
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF1B5E20), Color(0xFF2E7D32), Color(0xFF43A047)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(28)),
-        boxShadow: [
-          BoxShadow(color: Color(0xFF1B5E20), blurRadius: 20, offset: Offset(0, 6)),
-        ],
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 22),
+      color: const Color(0xFF2E7D32),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
         children: [
           Row(
@@ -126,7 +111,6 @@ class _ExploreScreenState extends State<ExploreScreen>
                         fontSize: 12,
                         color: Colors.white.withOpacity(0.7),
                         fontWeight: FontWeight.w500,
-                        letterSpacing: 0.5,
                       ),
                     ),
                     const SizedBox(height: 2),
@@ -135,8 +119,7 @@ class _ExploreScreenState extends State<ExploreScreen>
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ],
@@ -147,15 +130,14 @@ class _ExploreScreenState extends State<ExploreScreen>
               _headerBtn(Icons.chat_bubble_outline_rounded, () {}),
             ],
           ),
-          const SizedBox(height: 16),
-          // Trending topics
+          const SizedBox(height: 12),
           Row(
             children: [
               _trendTag('# PoultryFarming'),
               const SizedBox(width: 8),
               _trendTag('# DairyTips'),
               const SizedBox(width: 8),
-              _trendTag('# CropHealth'),
+              _trendTag('# AnimalHealth'),
             ],
           ),
         ],
@@ -167,14 +149,13 @@ class _ExploreScreenState extends State<ExploreScreen>
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 42,
-        height: 42,
+        width: 40,
+        height: 40,
         decoration: BoxDecoration(
           color: Colors.white.withOpacity(0.15),
-          borderRadius: BorderRadius.circular(13),
-          border: Border.all(color: Colors.white.withOpacity(0.1)),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: Colors.white, size: 21),
+        child: Icon(icon, color: Colors.white, size: 20),
       ),
     );
   }
@@ -183,26 +164,36 @@ class _ExploreScreenState extends State<ExploreScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        color: Colors.white.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Text(text, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600)),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 
-  
+  // ═══════════════════════════════════════
   //  SEARCH BAR
-  
+  // ═══════════════════════════════════════
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
           ],
         ),
         child: TextField(
@@ -210,45 +201,31 @@ class _ExploreScreenState extends State<ExploreScreen>
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search posts, topics, or authors...',
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13.5),
-            prefixIcon: Container(
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: const Icon(Icons.search_rounded, color: Color(0xFF2E7D32), size: 20),
-            ),
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
+            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF2E7D32), size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
-                    child: Container(
-                      margin: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Colors.red.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(Icons.close_rounded, color: Colors.red[400], size: 18),
-                    ),
+                    child: Icon(Icons.close_rounded, color: Colors.grey[400], size: 18),
                   )
                 : null,
             border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
           ),
         ),
       ),
     );
   }
 
-  
-  //  QUICK BANNERS
-  
+  // ═══════════════════════════════════════
+  //  QUICK BANNERS - Flat, clean with navigation
+  // ═══════════════════════════════════════
   Widget _buildQuickBanners() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           Expanded(
@@ -256,7 +233,13 @@ class _ExploreScreenState extends State<ExploreScreen>
               icon: Icons.storefront_rounded,
               title: 'Sell your agricultural products',
               subtitle: 'in Market Place',
-              gradient: const [Color(0xFFF57C00), Color(0xFFFF9800)],
+              color: const Color(0xFFF57C00),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const MarketplaceScreen()),
+                );
+              },
             ),
           ),
           const SizedBox(width: 12),
@@ -265,7 +248,13 @@ class _ExploreScreenState extends State<ExploreScreen>
               icon: Icons.biotech_rounded,
               title: 'Know more about',
               subtitle: 'animal Diseases',
-              gradient: const [Color(0xFF2E7D32), Color(0xFF66BB6A)],
+              color: const Color(0xFF2E7D32),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AnimalDiseasesScreen()),
+                );
+              },
             ),
           ),
         ],
@@ -277,52 +266,72 @@ class _ExploreScreenState extends State<ExploreScreen>
     required IconData icon,
     required String title,
     required String subtitle,
-    required List<Color> gradient,
+    required Color color,
+    required VoidCallback onTap,
   }) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: gradient[0].withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.15)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 18),
             ),
-            child: Icon(icon, color: Colors.white, size: 20),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(color: Colors.white, fontSize: 12.5, fontWeight: FontWeight.w700, height: 1.25)),
-                Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11.5)),
-              ],
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Icon(Icons.chevron_right_rounded, color: Colors.white.withOpacity(0.6), size: 20),
-        ],
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey[400],
+              size: 20,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  
+  // ═══════════════════════════════════════
   //  CATEGORY CHIPS
-  
+  // ═══════════════════════════════════════
   Widget _buildCategoryChips() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SizedBox(
-        height: 42,
+        height: 38,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: _categories.length,
@@ -333,32 +342,30 @@ class _ExploreScreenState extends State<ExploreScreen>
             return GestureDetector(
               onTap: () => setState(() => _selectedCategory = index),
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 250),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: isActive ? const Color(0xFF2E7D32) : Colors.white,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(
                     color: isActive ? const Color(0xFF2E7D32) : Colors.grey[300]!,
                   ),
-                  boxShadow: [
-                    if (isActive)
-                      BoxShadow(color: const Color(0xFF2E7D32).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 3)),
-                    if (!isActive)
-                      BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 6, offset: const Offset(0, 2)),
-                  ],
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(cat.icon, size: 15, color: isActive ? Colors.white : Colors.grey[500]),
-                    const SizedBox(width: 6),
+                    Icon(
+                      cat.icon,
+                      size: 14,
+                      color: isActive ? Colors.white : Colors.grey[500],
+                    ),
+                    const SizedBox(width: 4),
                     Text(
                       cat.label,
                       style: TextStyle(
                         color: isActive ? Colors.white : Colors.grey[600],
                         fontSize: 12,
-                        fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -371,9 +378,9 @@ class _ExploreScreenState extends State<ExploreScreen>
     );
   }
 
-  
+  // ═══════════════════════════════════════
   //  FEED
-  
+  // ═══════════════════════════════════════
   Widget _buildFeed() {
     final posts = _filteredPosts;
     if (posts.isEmpty) {
@@ -381,71 +388,43 @@ class _ExploreScreenState extends State<ExploreScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.08), shape: BoxShape.circle),
-              child: const Icon(Icons.article_outlined, size: 36, color: Color(0xFF2E7D32)),
-            ),
+            Icon(Icons.article_outlined, size: 48, color: Colors.grey[400]),
             const SizedBox(height: 16),
-            Text('No posts yet', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
-            const SizedBox(height: 6),
-            Text('Check back later for new content', style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+            Text(
+              'No posts yet',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1F36),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Check back later for new content',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[500],
+              ),
+            ),
           ],
         ),
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 100),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
       physics: const BouncingScrollPhysics(),
       itemCount: posts.length,
-      itemBuilder: (context, index) {
-        return _FeedPostCard(
-          post: posts[index],
-          index: index,
-          controller: _feedController,
-        );
-      },
-    );
-  }
-
-  
-  
-  Widget _navItem(IconData icon, String label, bool active) {
-    final color = active ? const Color(0xFF2E7D32) : const Color(0xFFBDBDBD);
-    return GestureDetector(
-      onTap: () {},
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: active
-                ? BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), borderRadius: BorderRadius.circular(12))
-                : null,
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(height: 4),
-          Text(label, style: TextStyle(fontSize: 10.5, fontWeight: active ? FontWeight.w700 : FontWeight.w500, color: color)),
-        ],
-      ),
+      itemBuilder: (context, index) => _FeedPostCard(post: posts[index]),
     );
   }
 }
 
-
-//  FEED POST CARD
-
+// ═══════════════════════════════════════
+//  FEED POST CARD - Clean, flat design
+// ═══════════════════════════════════════
 class _FeedPostCard extends StatefulWidget {
   final FeedPost post;
-  final int index;
-  final AnimationController controller;
-
-  const _FeedPostCard({
-    required this.post,
-    required this.index,
-    required this.controller,
-  });
+  const _FeedPostCard({required this.post});
 
   @override
   State<_FeedPostCard> createState() => _FeedPostCardState();
@@ -465,267 +444,253 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   @override
   Widget build(BuildContext context) {
     final post = widget.post;
-    final startDelay = (widget.index * 0.07).clamp(0.0, 0.7);
-    final slideAnim = Tween<Offset>(begin: const Offset(0, 0.06), end: Offset.zero).animate(
-      CurvedAnimation(parent: widget.controller, curve: Interval(startDelay, (startDelay + 0.4).clamp(0.0, 1.0), curve: Curves.easeOutCubic)),
-    );
-    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: widget.controller, curve: Interval(startDelay, (startDelay + 0.4).clamp(0.0, 1.0), curve: Curves.easeOut)),
-    );
-
-    return SlideTransition(
-      position: slideAnim,
-      child: FadeTransition(
-        opacity: fadeAnim,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 18),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(20),
-            boxShadow: [
-              BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 14, offset: const Offset(0, 5)),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Author header
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                child: Row(
-                  children: [
-                    // Avatar
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(colors: [post.authorColor, post.authorColor.withOpacity(0.7)]),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [BoxShadow(color: post.authorColor.withOpacity(0.25), blurRadius: 8, offset: const Offset(0, 3))],
-                      ),
-                      child: Center(
-                        child: Text(
-                          post.authorInitials,
-                          style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w800),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    // Author info
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(post.author, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
-                              if (post.isVerified) ...[
-                                const SizedBox(width: 5),
-                                const Icon(Icons.verified_rounded, color: Color(0xFF2E7D32), size: 15),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              Icon(Icons.location_on_rounded, color: Colors.grey[400], size: 12),
-                              const SizedBox(width: 3),
-                              Text(post.location, style: TextStyle(fontSize: 11.5, color: Colors.grey[500])),
-                              const SizedBox(width: 8),
-                              Text('•', style: TextStyle(color: Colors.grey[300], fontSize: 11)),
-                              const SizedBox(width: 8),
-                              Text(post.timeAgo, style: TextStyle(fontSize: 11.5, color: Colors.grey[400])),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Category tag
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: post.categoryColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(post.categoryIcon, size: 13, color: post.categoryColor),
-                          const SizedBox(width: 4),
-                          Text(post.category, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: post.categoryColor)),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Post image
-              ClipRRect(
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(0)),
-                child: _buildPostImage(post),
-              ),
-
-              // Title & excerpt
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                child: Text(
-                  post.title,
-                  style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36), height: 1.35),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                child: Text(
-                  post.excerpt,
-                  style: TextStyle(fontSize: 13, color: Colors.grey[600], height: 1.5),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-
-              // Read more
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                child: GestureDetector(
-                  onTap: () {},
-                  child: Text(
-                    'Read more',
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: const Color(0xFF2E7D32), decoration: TextDecoration.underline, decorationColor: const Color(0xFF2E7D32).withOpacity(0.4)),
-                  ),
-                ),
-              ),
-
-              // Divider
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Divider(color: Colors.grey[200], height: 1),
-              ),
-
-              // Action bar
-              Padding(
-                padding: const EdgeInsets.fromLTRB(8, 0, 12, 12),
-                child: Row(
-                  children: [
-                    _actionBtn(
-                      icon: _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                      label: '$_likeCount',
-                      color: _isLiked ? const Color(0xFFE53935) : Colors.grey.shade500,
-                      onTap: () {
-                        setState(() {
-                          _isLiked = !_isLiked;
-                          _likeCount += _isLiked ? 1 : -1;
-                        });
-                      },
-                    ),
-                    _actionBtn(
-                      icon: Icons.chat_bubble_outline_rounded,
-                      label: '${post.comments}',
-                      color: Colors.grey.shade500,
-                      onTap: () => _showCommentsSheet(context, post),
-                    ),
-                    const Spacer(),
-                    _actionBtn(
-                      icon: Icons.share_rounded,
-                      label: 'Share',
-                      color: Colors.grey.shade100,
-                      onTap: () {},
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      onTap: () => setState(() => _isBookmarked = !_isBookmarked),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        child: Icon(
-                          _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                          color: _isBookmarked ? const Color(0xFFFFA000) : Colors.grey[400],
-                          size: 20,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPostImage(FeedPost post) {
     return Container(
-      width: double.infinity,
-      height: 200,
+      margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [post.imageGradientStart, post.imageGradientEnd],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFFE8E8E8)),
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Decorative circles
-          Positioned(
-            right: -30,
-            top: -30,
-            child: Container(
-              width: 140,
-              height: 140,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            bottom: -20,
-            child: Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.06),
-                shape: BoxShape.circle,
-              ),
-            ),
-          ),
-          // Central icon illustration
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+          // Author header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 10),
+            child: Row(
               children: [
+                // Avatar
                 Container(
-                  width: 70,
-                  height: 70,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(22),
+                    color: post.authorColor,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    post.categoryIcon,
-                    color: Colors.white,
-                    size: 34,
+                  child: Center(
+                    child: Text(
+                      post.authorInitials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(width: 10),
+                // Author info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Text(
+                            post.author,
+                            style: const TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF1A1F36),
+                            ),
+                          ),
+                          if (post.isVerified) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.verified_rounded, color: Color(0xFF2E7D32), size: 14),
+                          ],
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_rounded, color: Colors.grey[400], size: 11),
+                          const SizedBox(width: 2),
+                          Text(
+                            post.location,
+                            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            '•',
+                            style: TextStyle(color: Colors.grey[300], fontSize: 11),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            post.timeAgo,
+                            style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                // Category tag
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.black.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
+                    color: post.categoryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.camera_alt_rounded, color: Colors.white.withOpacity(0.8), size: 13),
-                      const SizedBox(width: 5),
+                      Icon(post.categoryIcon, size: 12, color: post.categoryColor),
+                      const SizedBox(width: 3),
                       Text(
-                        '${post.location}, ${post.dateTime}',
-                        style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 11, fontWeight: FontWeight.w500),
+                        post.category,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: post.categoryColor,
+                        ),
                       ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Post image
+          Container(
+            width: double.infinity,
+            height: 180,
+            color: post.imageGradientStart,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Icon(
+                      post.categoryIcon,
+                      color: Colors.white,
+                      size: 30,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.camera_alt_rounded, color: Colors.white.withOpacity(0.8), size: 12),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${post.location}, ${post.dateTime}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // Title & excerpt
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
+            child: Text(
+              post.title,
+              style: const TextStyle(
+                fontSize: 14.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1F36),
+                height: 1.3,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+            child: Text(
+              post.excerpt,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: Colors.grey[600],
+                height: 1.5,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+          // Read more
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 4, 14, 0),
+            child: GestureDetector(
+              onTap: () {},
+              child: Text(
+                'Read more',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: const Color(0xFF2E7D32),
+                  decoration: TextDecoration.underline,
+                  decorationColor: const Color(0xFF2E7D32).withOpacity(0.3),
+                ),
+              ),
+            ),
+          ),
+
+          // Divider
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            child: Divider(color: Colors.grey[200], height: 1),
+          ),
+
+          // Action bar
+          Padding(
+            padding: const EdgeInsets.fromLTRB(6, 0, 10, 10),
+            child: Row(
+              children: [
+                _actionBtn(
+                  icon: _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                  label: '$_likeCount',
+                  color: _isLiked ? const Color(0xFFE53935) : Colors.grey[500]!,
+                  onTap: () {
+                    setState(() {
+                      _isLiked = !_isLiked;
+                      _likeCount += _isLiked ? 1 : -1;
+                    });
+                  },
+                ),
+                _actionBtn(
+                  icon: Icons.chat_bubble_outline_rounded,
+                  label: '${post.comments}',
+                  color: Colors.grey[500]!,
+                  onTap: () => _showCommentsSheet(context, post),
+                ),
+                const Spacer(),
+                _actionBtn(
+                  icon: Icons.share_rounded,
+                  label: 'Share',
+                  color: Colors.grey[500]!,
+                  onTap: () {},
+                ),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  onTap: () => setState(() => _isBookmarked = !_isBookmarked),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    child: Icon(
+                      _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                      color: _isBookmarked ? const Color(0xFFFFA000) : Colors.grey[400],
+                      size: 18,
+                    ),
                   ),
                 ),
               ],
@@ -745,13 +710,20 @@ class _FeedPostCardState extends State<_FeedPostCard> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: color, size: 20),
-            const SizedBox(width: 6),
-            Text(label, style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: color)),
+            Icon(icon, color: color, size: 18),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
           ],
         ),
       ),
@@ -768,26 +740,46 @@ class _FeedPostCardState extends State<_FeedPostCard> {
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
           children: [
             Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
+              margin: const EdgeInsets.symmetric(vertical: 10),
+              width: 36,
               height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  Text('Comments', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
-                  const SizedBox(width: 8),
+                  const Text(
+                    'Comments',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A1F36),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                    child: Text('${post.comments}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: Color(0xFF2E7D32))),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${post.comments}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF2E7D32),
+                      ),
+                    ),
                   ),
                   const Spacer(),
                   GestureDetector(
@@ -797,18 +789,24 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                 ],
               ),
             ),
-            const Divider(height: 24),
+            const Divider(height: 20),
             if (post.comments == 0)
               Expanded(
                 child: Center(
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.chat_bubble_outline_rounded, size: 48, color: Colors.grey[300]),
-                      const SizedBox(height: 12),
-                      Text('No comments yet', style: TextStyle(fontSize: 14, color: Colors.grey[500])),
+                      Icon(Icons.chat_bubble_outline_rounded, size: 44, color: Colors.grey[300]),
+                      const SizedBox(height: 10),
+                      Text(
+                        'No comments yet',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
                       const SizedBox(height: 4),
-                      Text('Be the first to share your thoughts', style: TextStyle(fontSize: 12, color: Colors.grey[400])),
+                      Text(
+                        'Be the first to share your thoughts',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                      ),
                     ],
                   ),
                 ),
@@ -817,44 +815,58 @@ class _FeedPostCardState extends State<_FeedPostCard> {
               const Expanded(child: SizedBox()),
             // Comment input
             Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+              padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
               decoration: BoxDecoration(
                 color: const Color(0xFFF8FAFB),
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
+                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
                 border: Border(top: BorderSide(color: Colors.grey[200]!)),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 36,
-                    height: 36,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
-                      gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)]),
-                      borderRadius: BorderRadius.circular(10),
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Center(child: Text('Y', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700))),
+                    child: const Center(
+                      child: Text(
+                        'Y',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 8),
                   Expanded(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius: BorderRadius.circular(12),
                         border: Border.all(color: Colors.grey[200]!),
                       ),
-                      child: Text('Add a comment...', style: TextStyle(color: Colors.grey[400], fontSize: 13)),
+                      child: Text(
+                        'Add a comment...',
+                        style: TextStyle(color: Colors.grey[400], fontSize: 12.5),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    width: 40,
-                    height: 40,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: const Color(0xFF2E7D32),
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Center(child: Icon(Icons.send_rounded, color: Colors.white, size: 18)),
+                    child: const Center(
+                      child: Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                    ),
                   ),
                 ],
               ),
@@ -866,9 +878,9 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   }
 }
 
-
+// ═══════════════════════════════════════
 //  DATA MODELS
-
+// ═══════════════════════════════════════
 class CategoryItem {
   final IconData icon;
   final String label;
@@ -913,9 +925,9 @@ class FeedPost {
   });
 }
 
-
+// ═══════════════════════════════════════
 //  SAMPLE DATA
-
+// ═══════════════════════════════════════
 const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Jaguza Official',

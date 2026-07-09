@@ -1,12 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:jaguza_app/screens/home_details/Decision%20support/decison_support.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
+import 'package:jaguza_app/screens/home_details/Gestation%20tracker/gestation_tracker.dart';
+import 'package:jaguza_app/screens/home_details/My%20farm/my_farm.dart';
 import 'package:jaguza_app/screens/home_details/Veterinary%20Doctors/veterinary_doctors.dart';
-import 'dart:ui';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:jaguza_app/screens/home_details/Videos%20screen/videos_screen.dart';
+import 'package:jaguza_app/screens/home_details/weather%20updates/weather_updates.dart';
 import '../screens/home_details/Explore Screen/explore_screen.dart';
 import '../screens/home_details/AI chart/ai_chart_screen.dart';
 import '../screens/home_details/Profile/profile_screen.dart';
+import '../screens/home_details/Report Sickness/report_sickness.dart';
+import '../screens/home_details/Disease Information/disease_diagnosis.dart';
+import '../screens/home_details/Market place/market_place.dart';
+import '../screens/home_details/Settings/settings_screen.dart';
+import './home_details/advertisement.dart';
+
 void main() {
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
@@ -24,12 +35,17 @@ class JaguzaApp extends StatelessWidget {
       title: 'Jaguza',
       theme: ThemeData(
         primarySwatch: Colors.green,
-        scaffoldBackgroundColor: const Color(0xFFF4F6F8),
+        brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF133B24),
+        canvasColor: const Color(0xFF133B24),
+        cardColor: const Color(0xFF1E4E31),
         colorScheme: ColorScheme.fromSeed(
+          brightness: Brightness.dark,
           seedColor: const Color(0xFF2E7D32),
           primary: const Color(0xFF2E7D32),
-          secondary: const Color(0xFFF57C00),
-          surface: Colors.white,
+          secondary: const Color(0xFF81C784),
+          surface: const Color(0xFF1E4E31),
+          background: const Color(0xFF133B24),
         ),
       ),
       home: const MainShell(),
@@ -37,8 +53,7 @@ class JaguzaApp extends StatelessWidget {
   }
 }
 
-
-//  NAVIGATION SHELL — owns the bottom nav, hosts all 4 tabs
+// NAVIGATION SHELL
 
 class MainShell extends StatefulWidget {
   const MainShell({super.key});
@@ -49,12 +64,13 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _currentIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _screens = const [
     HomeTab(),
     ExploreScreen(),
     AIChatTab(),
-    ProfileTab(),
+    SettingsScreen(),
   ];
 
   void _switchTab(int index) {
@@ -66,33 +82,422 @@ class _MainShellState extends State<MainShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       body: IndexedStack(
         index: _currentIndex,
         children: _screens,
       ),
       bottomNavigationBar: _buildBottomNav(),
+      drawer: _buildDrawer(),
     );
   }
+
+  // Website launcher method for the drawer
+  void _launchWebsite(String url) async {
+    try {
+      // Ensure the URL has a scheme
+      String fullUrl = url;
+      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+        fullUrl = 'https://$fullUrl';
+      }
+      
+      final Uri uri = Uri.parse(fullUrl);
+      
+      // Check if the URL can be launched
+      final bool canLaunch = await canLaunchUrl(uri);
+      
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open website. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Widget _buildDrawer() {
+  return Drawer(
+    backgroundColor: Colors.white,
+    child: Column(
+      children: [
+        // Drawer Header - Green section with Jaguza
+        Container(
+          padding: const EdgeInsets.fromLTRB(24, 48, 24, 20),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF2E7D32),
+                Color(0xFF1B5E20),
+              ],
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.white.withOpacity(0.3)),
+                ),
+                child: const Icon(
+                  Icons.agriculture_rounded,
+                  color: Colors.white,
+                  size: 28,
+                ),
+              ),
+              const SizedBox(width: 14),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Jaguza',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    'Livestock Management',
+                    style: TextStyle(
+                      color: Color(0xFF81C784),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Scrollable content - White background with black text
+        Expanded(
+          child: SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Farm Expenses Section
+                _buildDrawerSection(
+                  title: 'Farm Expenses',
+                  icon: Icons.payments_outlined,
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Farm Expenses screen
+                  },
+                ),
+                const Divider(color: Colors.grey, height: 1),
+                // Main Features
+                _buildDrawerItem(
+                  icon: Icons.add_rounded,
+                  title: 'Feed',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Add Milk screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.help_outline_rounded,
+                  title: '? Vetenary Help',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Help/Expert screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.medical_services_rounded,
+                  title: 'Labour',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Doctor Chat screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.people_outline_rounded,
+                  title: 'Equipment and Housing',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Extension Workers screen
+                  },
+                ),
+                const Divider(color: Colors.grey, height: 16),
+                // Account Section
+                _buildDrawerSection(
+                  title: 'Account',
+                  icon: Icons.account_circle_outlined,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileTab()),
+                    );
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.person_outline_rounded,
+                  title: 'Manage Profile',
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const ProfileTab()),
+                    );
+                  },
+                ),
+                const Divider(color: Colors.grey, height: 16),
+                // Communicate Section
+                _buildDrawerSection(
+                  title: 'Communicate',
+                  icon: Icons.chat_outlined,
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Communicate screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.lightbulb_outline_rounded,
+                  title: 'Tips and Suggestions',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Tips screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.share_outlined,
+                  title: 'Share JAGUZA',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showShareDialog(context);
+                  },
+                ),
+                
+                const Divider(color: Colors.grey, height: 16),
+                // Others Section
+                _buildDrawerSection(
+                  title: 'Others',
+                  icon: Icons.more_horiz_rounded,
+                  onTap: () {
+                    // Collapsible section
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.handshake_outlined,
+                  title: 'Our Partners/About',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Partners/About screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.public_outlined,
+                  title: 'Visit our Website',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _launchWebsite('https://jaguzalivestock.com');
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.privacy_tip_outlined,
+                  title: 'Privacy Policy',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to Privacy Policy screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.info_outline_rounded,
+                  title: 'About App',
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to About App screen
+                  },
+                ),
+                _buildDrawerItem(
+                  icon: Icons.logout_outlined,
+                  title: 'Logout',
+                  onTap: () {
+                    Navigator.pop(context);
+                    _showLogoutDialog(context);
+                  },
+                ),
+                const SizedBox(height: 16),
+                Center(
+                  child: Text(
+                    'Version 2.0.0',
+                    style: TextStyle(
+                      color: Colors.grey[400],
+                      fontSize: 11,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildDrawerSection({required String title, required IconData icon, required VoidCallback onTap}) {
+  return Container(
+    color: const Color(0xFFF5F5F5),
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+    child: Row(
+      children: [
+        Icon(icon, color: const Color(0xFF2E7D32), size: 18),
+        const SizedBox(width: 12),
+        Text(
+          title,
+          style: const TextStyle(
+            color: Color(0xFF1A1F36),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _buildDrawerItem({
+  required IconData icon,
+  required String title,
+  required VoidCallback onTap,
+}) {
+  return ListTile(
+    leading: Icon(
+      icon,
+      color: Colors.grey[700],
+      size: 20,
+    ),
+    title: Text(
+      title,
+      style: const TextStyle(
+        color: Color(0xFF1A1F36),
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+    trailing: const Icon(
+      Icons.chevron_right_rounded,
+      color: Color(0xFF2E7D32),
+      size: 18,
+    ),
+    onTap: onTap,
+    dense: true,
+    hoverColor: const Color(0xFF2E7D32).withOpacity(0.05),
+    splashColor: const Color(0xFF2E7D32).withOpacity(0.1),
+  );
+}
+
+void _showLogoutDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.white,
+      title: const Text(
+        'Logout',
+        style: TextStyle(color: Color(0xFF1A1F36), fontWeight: FontWeight.bold),
+      ),
+      content: const Text(
+        'Are you sure you want to logout?',
+        style: TextStyle(color: Colors.grey),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            // Perform logout action
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red[700],
+          ),
+          child: const Text('Logout'),
+        ),
+      ],
+    ),
+  );
+}
+
+void _showShareDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      backgroundColor: Colors.white,
+      title: const Text(
+        'Share JAGUZA',
+        style: TextStyle(color: Color(0xFF1A1F36), fontWeight: FontWeight.bold),
+      ),
+      content: const Text(
+        'Share the Jaguza app with your fellow farmers!',
+        style: TextStyle(color: Colors.grey),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            // Implement share functionality
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2E7D32),
+          ),
+          child: const Text('Share'),
+        ),
+      ],
+    ),
+  );
+}
 
   Widget _buildBottomNav() {
     final items = [
       _NavData(Icons.home_outlined, Icons.home_rounded, 'Home'),
       _NavData(Icons.explore_outlined, Icons.explore_rounded, 'Explore'),
       _NavData(Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, 'AI Chat'),
-      _NavData(Icons.person_outline_rounded, Icons.person_rounded, 'Profile'),
+      _NavData(Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
     ];
 
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
-          ),
-        ],
-      ),
+      color: Colors.white,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -109,7 +514,7 @@ class _MainShellState extends State<MainShell> {
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                   decoration: BoxDecoration(
                     color: active
-                        ? const Color(0xFF2E7D32).withOpacity(0.1)
+                        ? const Color(0xFF1A1F36).withOpacity(0.08)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -119,8 +524,8 @@ class _MainShellState extends State<MainShell> {
                       Icon(
                         active ? item.activeIcon : item.icon,
                         color: active
-                            ? const Color(0xFF2E7D32)
-                            : const Color(0xFFBDBDBD),
+                            ? const Color(0xFF1A1F36)
+                            : const Color(0xFF9E9E9E),
                         size: 24,
                       ),
                       const SizedBox(height: 4),
@@ -132,8 +537,8 @@ class _MainShellState extends State<MainShell> {
                               ? FontWeight.w700
                               : FontWeight.w500,
                           color: active
-                              ? const Color(0xFF2E7D32)
-                              : const Color(0xFFBDBDBD),
+                              ? const Color(0xFF1A1F36)
+                              : const Color(0xFF9E9E9E),
                         ),
                       ),
                     ],
@@ -155,7 +560,7 @@ class _NavData {
   const _NavData(this.icon, this.activeIcon, this.label);
 }
 
-
+// HomeTab - Reinstated with all your original content
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
@@ -209,7 +614,6 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
 
   void _dismissAd() => setState(() => _showAd = false);
 
-  /// Switch to the AI Chat tab from the "Ask Jaguza AI" button
   void _goToAIChat() {
     final shell = context.findAncestorStateOfType<_MainShellState>();
     shell?.setState(() => shell._currentIndex = 2);
@@ -247,100 +651,59 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
 
   Widget _buildAppBar() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2E7D32), Color(0xFF43A047)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF2E7D32),
-            blurRadius: 16,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
+      color: const Color.fromARGB(255, 3, 112, 51),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
-          _iconCircle(
-            icon: Icons.menu_rounded,
-            onTap: () {},
-            color: Colors.white24,
-          ),
-          const SizedBox(width: 8),
-          _iconCircle(
-            icon: Icons.arrow_back_rounded,
-            onTap: _showFeatureOverlay,
-            color: Colors.white24,
+          GestureDetector(
+            onTap: () {
+              final shell = context.findAncestorStateOfType<_MainShellState>();
+              shell?._scaffoldKey.currentState?.openDrawer();
+            },
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Icon(
+                Icons.menu_rounded,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
           ),
           const SizedBox(width: 12),
-          Container(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              color: Colors.white24,
-              borderRadius: BorderRadius.circular(30),
-            ),
-            child: const Text(
+          const Expanded(
+            child: Text(
               'Jaguza',
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
-                letterSpacing: 1.2,
+                letterSpacing: 1.1,
               ),
             ),
           ),
-          const Spacer(),
-          GestureDetector(
-            onTap: () {},
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                _iconCircle(
-                  icon: Icons.notifications_none_rounded,
-                  onTap: () {},
-                  color: Colors.white24,
-                ),
-                Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    width: 18,
-                    height: 18,
-                    decoration: BoxDecoration(
-                      color: Color(0xFFFF5252),
-                      shape: BoxShape.circle,
-                      boxShadow: [
-                        BoxShadow(
-                            color: Color(0xFFFF5252), blurRadius: 6),
-                      ],
-                    ),
-                    alignment: Alignment.center,
-                    child: Text(
-                      '0',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 10,
-                          fontWeight: FontWeight.bold),
-                    ),
-                  ),
-                ),
-              ],
+          _iconCircle(
+            icon: Icons.person_outline_rounded,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ProfileTab()),
             ),
+            color: const Color(0xFF2E7D32),
           ),
         ],
       ),
     );
   }
 
-  Widget _iconCircle(
-      {required IconData icon,
-      required VoidCallback onTap,
-      Color color = Colors.white24}) {
+  Widget _iconCircle({
+    required IconData icon,
+    required VoidCallback onTap,
+    Color color = Colors.white24,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -359,17 +722,23 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Hello, Farmer! 👋',
-              style: GoogleFonts.inter(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500)),
+          Text(
+            'Hello, Farmer',
+            style: GoogleFonts.inter(
+              fontSize: 14,
+              color: Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
           const SizedBox(height: 4),
-          const Text('What would you like to do today?',
-              style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF1B5E20)))
+          const Text(
+            'Manage your livestock with confidence.',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: Colors.black,
+            ),
+          ),
         ],
       ),
     );
@@ -380,17 +749,9 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-              colors: [Color(0xFFFF8F00), Color(0xFFF57C00)],
-              begin: Alignment.centerLeft,
-              end: Alignment.centerRight),
+          color: const Color(0xFFF57C00),
           borderRadius: BorderRadius.circular(18),
-          boxShadow: [
-            BoxShadow(
-                color: const Color(0xFFF57C00).withOpacity(0.35),
-                blurRadius: 14,
-                offset: const Offset(0, 6))
-          ],
+          border: Border.all(color: const Color(0xFFBF360C).withOpacity(0.25)),
         ),
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -399,43 +760,53 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
             Row(
               children: [
                 Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                        color: Colors.white24,
-                        borderRadius: BorderRadius.circular(10)),
-                    child: const Icon(Icons.auto_awesome_rounded,
-                        color: Colors.white, size: 20)),
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFBF360C),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.question_answer_rounded,
+                      color: Colors.white, size: 20),
+                ),
                 const SizedBox(width: 10),
-                const Text('Ask Jaguza AI',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700)),
+                const Text(
+                  'Ask Jaguza AI',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 10),
             Text(
-                'Ask any agricultural question and get instant AI-powered answers.',
-                style: TextStyle(
-                    color: Colors.white.withOpacity(0.85),
-                    fontSize: 13,
-                    height: 1.4)),
+              'Get livestock guidance, health insight, and farm decisions powered by AI.',
+              style: TextStyle(
+                color: Colors.grey[100],
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
             const SizedBox(height: 14),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _goToAIChat,
                 style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: const Color(0xFFF57C00),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
-                    elevation: 0),
-                child: const Text('Ask Jaguza AI ?',
-                    style:
-                        TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFFF57C00),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text(
+                  'Ask Jaguza AI',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                ),
               ),
             ),
           ],
@@ -447,84 +818,86 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   Widget _buildFeatureGrid() {
     final gridFeatures = [
       FeatureItem(
-          icon: Icons.coronavirus_rounded,
-          title: 'Report\nSickness',
-          color: const Color(0xFFE53935),
-          bgLight: const Color(0xFFFFEBEE),
-          screen: const _PlaceholderScreen(
-              title: 'Report Sickness', icon: Icons.coronavirus_rounded)),
+        icon: Icons.report_problem_rounded,
+        title: 'Report\nSickness',
+        color: const Color(0xFF2E7D32),
+        bgLight: const Color(0xFFB8E986),
+        screen: const ReportSicknessScreen(),
+      ),
       FeatureItem(
-          icon: Icons.tab_unselected_sharp,
-          title: 'Diagnosis',
-          color: const Color(0xFF1E88E5),
-          bgLight: const Color(0xFFE3F2FD),
-          screen: const _PlaceholderScreen(
-              title: 'Diagnosis', icon: Icons.tab_unselected_sharp)),
+        icon: Icons.medical_information_rounded,
+        title: 'Diagnosis',
+        color: const Color(0xFF4FC3F7),
+        bgLight: const Color(0xFFD0E9FF),
+        screen: const DiagnosisScreen(),
+      ),
       FeatureItem(
-          icon: Icons.medical_services_rounded,
-          title: 'Veterinary\nDoctors',
-          color: const Color(0xFF43A047),
-          bgLight: const Color(0xFFE8F5E9),
-          screen: const VeterinaryDoctorsScreen()),
+        icon: Icons.local_hospital_rounded,
+        title: 'Veterinary\nDoctors',
+        color: const Color(0xFF2E7D32),
+        bgLight: const Color(0xFFB8E986),
+        screen: const VeterinaryDoctorsScreen(),
+      ),
       FeatureItem(
-          icon: Icons.biotech_rounded,
-          title: 'Disease\nInformation',
-          color: const Color(0xFF8E24AA),
-          bgLight: const Color(0xFFF3E5F5),
-          screen: const AnimalDiseasesScreen()),
+        icon: Icons.article_rounded,
+        title: 'Disease\nInformation',
+        color: const Color(0xFF90A4AE),
+        bgLight: const Color(0xFFCFD8DC),
+        screen: const AnimalDiseasesScreen(),
+      ),
       FeatureItem(
-          icon: Icons.pets_rounded,
-          title: 'My\nFarm',
-          color: const Color(0xFF6D4C41),
-          bgLight: const Color(0xFFEFEBE9),
-          screen: const _PlaceholderScreen(
-              title: 'My Farm', icon: Icons.pets_rounded)),
+        icon: Icons.agriculture_rounded,
+        title: 'My\nFarm',
+        color: const Color(0xFF2E7D32),
+        bgLight: const Color(0xFFB8E986),
+        screen: const MyFarmScreen(),
+      ),
       FeatureItem(
-          icon: Icons.shopping_cart_rounded,
-          title: 'Market\nPlace',
-          color: const Color(0xFFFB8C00),
-          bgLight: const Color(0xFFFFF3E0),
-          screen: const _PlaceholderScreen(
-              title: 'Market Place', icon: Icons.shopping_cart_rounded)),
+        icon: Icons.storefront_rounded,
+        title: 'Market\nPlace',
+        color: const Color(0xFF4FC3F7),
+        bgLight: const Color(0xFFD0E9FF),
+        screen: const MarketplaceScreen(),
+      ),
       FeatureItem(
-          icon: Icons.pregnant_woman_rounded,
-          title: 'Gestation\nTracker',
-          color: const Color(0xFFEC407A),
-          bgLight: const Color(0xFFFCE4EC),
-          screen: const _PlaceholderScreen(
-              title: 'Gestation Tracker',
-              icon: Icons.pregnant_woman_rounded)),
+        icon: Icons.calendar_today_rounded,
+        title: 'Gestation\nTracker',
+        color: const Color(0xFF2E7D32),
+        bgLight: const Color(0xFFB8E986),
+        screen: const GestationTrackerScreen(),
+      ),
       FeatureItem(
-          icon: Icons.cloud_rounded,
-          title: 'Weather\nUpdates',
-          color: const Color(0xFF039BE5),
-          bgLight: const Color(0xFFE1F5FE),
-          screen: const _PlaceholderScreen(
-              title: 'Weather Updates', icon: Icons.cloud_rounded)),
+        icon: Icons.cloud_queue_rounded,
+        title: 'Weather\nUpdates',
+        color: const Color(0xFF4FC3F7),
+        bgLight: const Color(0xFFD0E9FF),
+        screen: const WeatherUpdatesScreen(),
+      ),
       FeatureItem(
-          icon: Icons.lightbulb_rounded,
-          title: 'Decision\nSupport',
-          color: const Color(0xFFFFA000),
-          bgLight: const Color(0xFFFFF8E1),
-          screen: const _PlaceholderScreen(
-              title: 'Decision Support', icon: Icons.lightbulb_rounded)),
+        icon: Icons.analytics_rounded,
+        title: 'Decision\nSupport',
+        color: const Color(0xFF2E7D32),
+        bgLight: const Color(0xFFB8E986),
+        screen: const DecisionSupportScreen(),
+      ),
     ];
 
     final rowFeatures = [
       FeatureItem(
-          icon: Icons.language_rounded,
-          title: 'Visit our\nWebsite',
-          color: const Color(0xFF5E35B1),
-          bgLight: const Color(0xFFEDE7F6),
-          screen: const _PlaceholderScreen(
-              title: 'Visit Website', icon: Icons.language_rounded)),
+        icon: Icons.public_rounded,
+        title: 'Visit our\nWebsite',
+        color: const Color(0xFF4FC3F7),
+        bgLight: const Color(0xFFD0E9FF),
+        isWebsite: true,
+        url: 'https://jaguzafarm.com/',
+      ),
       FeatureItem(
-          icon: Icons.videocam_rounded,
-          title: 'Video',
-          color: const Color(0xFFD81B60),
-          bgLight: const Color(0xFFFCE4EC),
-          screen: const _PlaceholderScreen(
-              title: 'Videos', icon: Icons.videocam_rounded)),
+        icon: Icons.play_circle_fill_rounded,
+        title: 'Video',
+        color: const Color(0xFF90A4AE),
+        bgLight: const Color(0xFFCFD8DC),
+        screen: const VideoScreen(),
+      ),
     ];
 
     return Padding(
@@ -534,8 +907,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate:
-                const SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -558,6 +930,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       ),
     );
   }
+  
 
   Widget _buildAdvertiseBanner() {
     return Padding(
@@ -568,37 +941,58 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
         onDismissed: (_) => _dismissAd(),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.only(
-              left: 20, top: 14, bottom: 14, right: 8),
+          padding: const EdgeInsets.only(left: 20, top: 14, bottom: 14, right: 8),
           decoration: BoxDecoration(
             color: const Color(0xFF1B5E20).withOpacity(0.08),
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(
-                color: const Color(0xFF2E7D32).withOpacity(0.15)),
+            border: Border.all(color: const Color(0xFF2E7D32).withOpacity(0.15)),
           ),
           child: Row(
             children: [
-              const Icon(Icons.campaign_rounded,
-                  color: Color(0xFF2E7D32), size: 22),
+              const Icon(Icons.campaign_rounded, color: Color(0xFF2E7D32), size: 22),
               const SizedBox(width: 10),
               const Expanded(
-                child: Text('Advertise with Jaguza',
-                    style: TextStyle(
-                        color: Color(0xFF1B5E20),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600)),
+                child: Text(
+                  'Advertise with Jaguza',
+                  style: TextStyle(
+                    color: Color(0xFF1B5E20),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                 decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32),
-                    borderRadius: BorderRadius.circular(10)),
-                child: const Text('Learn More',
-                    style: TextStyle(
+                  color: const Color(0xFF2E7D32),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: GestureDetector(
+                  onTap: () {
+                    // Navigate to the Advert screen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CreateAdvertScreen(),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Text(
+                      'Learn More',
+                      style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight: FontWeight.w600)),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: 8),
               GestureDetector(
@@ -610,8 +1004,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
                     color: const Color(0xFF2E7D32).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.close_rounded,
-                      color: Color(0xFF2E7D32), size: 16),
+                  child: const Icon(Icons.close_rounded, color: Color(0xFF2E7D32), size: 16),
                 ),
               ),
             ],
@@ -623,11 +1016,11 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
 
   Widget _buildDropdownOverlay() {
     final overlayItems = [
-      _OverlayItem(icon: Icons.search_rounded, title: 'Diagnose Diseases', subtitle: 'AI-powered disease detection'),
-      _OverlayItem(icon: Icons.storefront_rounded, title: 'Sell Farm Products', subtitle: 'Reach buyers easily'),
-      _OverlayItem(icon: Icons.pets_rounded, title: 'Learn Animal Diseases', subtitle: 'Comprehensive knowledge base'),
-      _OverlayItem(icon: Icons.vaccines_rounded, title: 'Vaccination Schedule', subtitle: 'Never miss a vaccination'),
-      _OverlayItem(icon: Icons.chat_rounded, title: 'Ask Jaguza AI', subtitle: 'Instant agricultural answers'),
+      const _OverlayItem(icon: Icons.search_rounded, title: 'Diagnose Diseases', subtitle: 'AI-powered disease detection'),
+      const _OverlayItem(icon: Icons.storefront_rounded, title: 'Sell Farm Products', subtitle: 'Reach buyers easily'),
+      const _OverlayItem(icon: Icons.pets_rounded, title: 'Learn Animal Diseases', subtitle: 'Comprehensive knowledge base'),
+      const _OverlayItem(icon: Icons.vaccines_rounded, title: 'Vaccination Schedule', subtitle: 'Never miss a vaccination'),
+      const _OverlayItem(icon: Icons.chat_rounded, title: 'Ask Jaguza AI', subtitle: 'Instant agricultural answers'),
     ];
 
     return Stack(
@@ -651,8 +1044,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
               scale: _overlayScale,
               alignment: Alignment.topCenter,
               child: Material(
-                elevation: 16,
-                shadowColor: Colors.black.withOpacity(0.15),
+                elevation: 0,
                 borderRadius: BorderRadius.circular(20),
                 color: Colors.white,
                 child: Column(
@@ -661,82 +1053,72 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
                     Container(
                       padding: const EdgeInsets.fromLTRB(20, 20, 12, 14),
                       decoration: const BoxDecoration(
-                          border: Border(
-                              bottom:
-                                  BorderSide(color: Color(0xFFEEEEEE)))),
+                        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
+                      ),
                       child: Row(
                         children: [
                           Container(
-                              width: 42,
-                              height: 42,
-                              decoration: BoxDecoration(
-                                  gradient: const LinearGradient(colors: [
-                                    Color(0xFF2E7D32),
-                                    Color(0xFF66BB6A)
-                                  ]),
-                                  borderRadius: BorderRadius.circular(12)),
-                              child: const Icon(
-                                  Icons.agriculture_rounded,
-                                  color: Colors.white,
-                                  size: 22)),
+                            width: 42,
+                            height: 42,
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(Icons.agriculture_rounded, color: Colors.white, size: 22),
+                          ),
                           const SizedBox(width: 12),
                           const Expanded(
-                              child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('What can Jaguza do?',
-                                  style: TextStyle(
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1B1B1B))),
-                              SizedBox(height: 2),
-                              Text('Explore our core features',
-                                  style: TextStyle(
-                                      fontSize: 12,
-                                      color: Color(0xFF9E9E9E)))
-                            ],
-                          )),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('What can Jaguza do?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1B1B1B))),
+                                SizedBox(height: 2),
+                                Text('Explore our core features', style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
+                              ],
+                            ),
+                          ),
                           GestureDetector(
                             onTap: _closeOverlay,
                             child: Container(
-                                width: 34,
-                                height: 34,
-                                decoration: BoxDecoration(
-                                    color: const Color(0xFFF5F5F5),
-                                    borderRadius:
-                                        BorderRadius.circular(10)),
-                                child: const Icon(Icons.close_rounded,
-                                    color: Color(0xFF757575),
-                                    size: 18)),
+                              width: 34,
+                              height: 34,
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFF5F5F5),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: const Icon(Icons.close_rounded, color: Color(0xFF757575), size: 18),
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    ...overlayItems
-                        .map((item) => _buildOverlayItem(item)),
+                    ...overlayItems.map((item) => _buildOverlayItem(item)),
                     const SizedBox(height: 8),
                     Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(20, 4, 20, 18),
+                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
                       child: SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                              onPressed: _closeOverlay,
-                              style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      const Color(0xFF2E7D32),
-                                  foregroundColor: Colors.white,
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: 14),
-                                  shape: RoundedRectangleBorder(
-                                      borderRadius:
-                                          BorderRadius.circular(14)),
-                                  elevation: 0),
-                              child: const Text('Get Started',
-                                  style: TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.w700,
-                                      letterSpacing: 0.3)))),
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _closeOverlay,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: const Text(
+                            'Get Started',
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -758,31 +1140,26 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
           child: Row(
             children: [
               Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                      color: const Color(0xFFF1F8E9),
-                      borderRadius: BorderRadius.circular(12)),
-                  child: Icon(item.icon,
-                      color: const Color(0xFF2E7D32), size: 22)),
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF1F8E9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(item.icon, color: const Color(0xFF2E7D32), size: 22),
+              ),
               const SizedBox(width: 14),
               Expanded(
-                  child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(item.title,
-                      style: const TextStyle(
-                          fontSize: 14.5,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF212121))),
-                  const SizedBox(height: 2),
-                  Text(item.subtitle,
-                      style: const TextStyle(
-                          fontSize: 12, color: Color(0xFF9E9E9E)))
-                ],
-              )),
-              const Icon(Icons.chevron_right_rounded,
-                  color: Color(0xFFBDBDBD), size: 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(item.title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: Color(0xFF212121))),
+                    const SizedBox(height: 2),
+                    Text(item.subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right_rounded, color: Color(0xFFBDBDBD), size: 22),
             ],
           ),
         ),
@@ -791,493 +1168,7 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
   }
 }
 
-
-
-
-//  SHARED WIDGETS
-
-
-class _ChatBubble extends StatelessWidget {
-  final ChatMessage message;
-  const _ChatBubble({required this.message});
-
-  @override
-  Widget build(BuildContext context) {
-    final isUser = message.isUser;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isUser) ...[
-            Container(
-                width: 32, height: 32,
-                margin: const EdgeInsets.only(right: 8, top: 4),
-                decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [
-                      Color(0xFFFF8F00),
-                      Color(0xFFF57C00)
-                    ]),
-                    borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.auto_awesome_rounded,
-                    color: Colors.white, size: 16)),
-          ],
-          Flexible(
-            child: Column(
-              crossAxisAlignment: isUser
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  constraints: BoxConstraints(
-                      maxWidth:
-                          MediaQuery.of(context).size.width * 0.78),
-                  decoration: BoxDecoration(
-                    color: isUser
-                        ? const Color(0xFF2E7D32)
-                        : Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(18),
-                      topRight: const Radius.circular(18),
-                      bottomLeft: Radius.circular(isUser ? 18 : 4),
-                      bottomRight: Radius.circular(isUser ? 4 : 18),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                          color: Colors.black
-                              .withOpacity(isUser ? 0.1 : 0.04),
-                          blurRadius: isUser ? 10 : 6,
-                          offset: const Offset(0, 3))
-                    ],
-                  ),
-                  child: Text(message.text,
-                      style: TextStyle(
-                          color: isUser
-                              ? Colors.white
-                              : const Color(0xFF333333),
-                          fontSize: 14,
-                          height: 1.5,
-                          fontWeight: isUser
-                              ? FontWeight.w500
-                              : FontWeight.w400)),
-                ),
-                const SizedBox(height: 4),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Text(message.time,
-                      style: TextStyle(
-                          fontSize: 10, color: Colors.grey[400])),
-                ),
-              ],
-            ),
-          ),
-          if (isUser) ...[
-            Container(
-                width: 32, height: 32,
-                margin: const EdgeInsets.only(left: 8, top: 4),
-                decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [
-                      Color(0xFF2E7D32),
-                      Color(0xFF43A047)
-                    ]),
-                    borderRadius: BorderRadius.circular(10)),
-                child: const Icon(Icons.person_rounded,
-                    color: Colors.white, size: 16)),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _FeedPostCard extends StatefulWidget {
-  final FeedPost post;
-  final int index;
-  final AnimationController controller;
-  const _FeedPostCard(
-      {required this.post, required this.index, required this.controller});
-
-  @override
-  State<_FeedPostCard> createState() => _FeedPostCardState();
-}
-
-class _FeedPostCardState extends State<_FeedPostCard> {
-  bool _isLiked = false;
-  int _likeCount = 0;
-  bool _isBookmarked = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _likeCount = widget.post.likes;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final post = widget.post;
-    final startDelay = (widget.index * 0.07).clamp(0.0, 0.7);
-    final slideAnim = Tween<Offset>(
-            begin: const Offset(0, 0.06), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: widget.controller,
-            curve: Interval(startDelay,
-                (startDelay + 0.4).clamp(0.0, 1.0),
-                curve: Curves.easeOutCubic)));
-    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-            parent: widget.controller,
-            curve: Interval(startDelay,
-                (startDelay + 0.4).clamp(0.0, 1.0),
-                curve: Curves.easeOut)));
-
-    return SlideTransition(
-      position: slideAnim,
-      child: FadeTransition(
-        opacity: fadeAnim,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 18),
-          decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 14,
-                    offset: const Offset(0, 5))
-              ]),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 14, 16, 10),
-                child: Row(
-                  children: [
-                    Container(
-                        width: 44, height: 44,
-                        decoration: BoxDecoration(
-                            gradient: LinearGradient(colors: [
-                              post.authorColor,
-                              post.authorColor.withOpacity(0.7)
-                            ]),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                  color: post.authorColor
-                                      .withOpacity(0.25),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3))
-                            ]),
-                        child: Center(
-                            child: Text(post.authorInitials,
-                                style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 15,
-                                    fontWeight:
-                                        FontWeight.w800)))),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment:
-                            CrossAxisAlignment.start,
-                        children: [
-                          Row(children: [
-                            Text(post.author,
-                                style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    color: Color(0xFF1A1F36))),
-                            if (post.isVerified) ...[
-                              const SizedBox(width: 5),
-                              const Icon(
-                                  Icons.verified_rounded,
-                                  color: Color(0xFF2E7D32),
-                                  size: 15),
-                            ],
-                          ]),
-                          const SizedBox(height: 2),
-                          Row(children: [
-                            Icon(Icons.location_on_rounded,
-                                color: Colors.grey[400],
-                                size: 12),
-                            const SizedBox(width: 3),
-                            Text(post.location,
-                                style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: Colors.grey[500])),
-                            const SizedBox(width: 8),
-                            Text('•',
-                                style: TextStyle(
-                                    color: Colors.grey[300],
-                                    fontSize: 11)),
-                            const SizedBox(width: 8),
-                            Text(post.timeAgo,
-                                style: TextStyle(
-                                    fontSize: 11.5,
-                                    color: Colors.grey[400])),
-                          ]),
-                        ],
-                      ),
-                    ),
-                    Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 10, vertical: 5),
-                        decoration: BoxDecoration(
-                            color: post.categoryColor
-                                .withOpacity(0.1),
-                            borderRadius:
-                                BorderRadius.circular(20)),
-                        child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(post.categoryIcon,
-                                  size: 13,
-                                  color: post.categoryColor),
-                              const SizedBox(width: 4),
-                              Text(post.category,
-                                  style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w600,
-                                      color: post.categoryColor)),
-                            ])),
-                  ],
-                ),
-              ),
-              _buildPostImage(post),
-              Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
-                  child: Text(post.title,
-                      style: const TextStyle(
-                          fontSize: 15.5,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1F36),
-                          height: 1.35))),
-              Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
-                  child: Text(post.excerpt,
-                      style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.grey[600],
-                          height: 1.5),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis)),
-              Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: GestureDetector(
-                      onTap: () {},
-                      child: Text('Read more',
-                          style: TextStyle(
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w700,
-                              color: const Color(0xFF2E7D32),
-                              decoration:
-                                  TextDecoration.underline,
-                              decorationColor: const Color(
-                                      0xFF2E7D32)
-                                  .withOpacity(0.4))))),
-              Padding(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 12),
-                  child: Divider(
-                      color: Colors.grey[200], height: 1)),
-              Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(8, 0, 12, 12),
-                child: Row(
-                  children: [
-                    _actionBtn(
-                        icon: _isLiked
-                            ? Icons.favorite_rounded
-                            : Icons
-                                .favorite_border_rounded,
-                        label: '$_likeCount',
-                        color: _isLiked
-                            ? const Color(0xFFE53935)
-                            : Colors.grey.shade100,
-                        onTap: () {
-                          setState(() {
-                            _isLiked = !_isLiked;
-                            _likeCount +=
-                                _isLiked ? 1 : -1;
-                          });
-                        }),
-                    _actionBtn(
-                        icon: Icons
-                            .chat_bubble_outline_rounded,
-                        label: '${post.comments}',
-                        color: Colors.grey.shade100,
-                        onTap: () {}),
-                    const Spacer(),
-                    _actionBtn(
-                        icon: Icons.share_rounded,
-                        label: 'Share',
-                        color: Colors.grey.shade100,
-                        onTap: () {}),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                        onTap: () => setState(
-                            () => _isBookmarked =
-                                !_isBookmarked),
-                        child: Container(
-                            padding: const EdgeInsets.all(8),
-                            child: Icon(
-                                _isBookmarked
-                                    ? Icons.bookmark_rounded
-                                    : Icons
-                                        .bookmark_border_rounded,
-                                color: _isBookmarked
-                                    ? const Color(0xFFFFA000)
-                                    : Colors.grey[400],
-                                size: 20))),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPostImage(FeedPost post) {
-    return Container(
-        width: double.infinity,
-        height: 200,
-        decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [
-              post.imageGradientStart,
-              post.imageGradientEnd
-            ], begin: Alignment.topLeft, end: Alignment.bottomRight)),
-        child: Stack(
-          children: [
-            Positioned(
-                right: -30, top: -30,
-                child: Container(
-                    width: 140, height: 140,
-                    decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.08),
-                        shape: BoxShape.circle))),
-            Positioned(
-                left: 20, bottom: -20,
-                child: Container(
-                    width: 80, height: 80,
-                    decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.06),
-                        shape: BoxShape.circle))),
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                      width: 70, height: 70,
-                      decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(22)),
-                      child: Icon(post.categoryIcon,
-                          color: Colors.white, size: 34)),
-                  const SizedBox(height: 12),
-                  Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 5),
-                      decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20)),
-                      child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.camera_alt_rounded,
-                                color: Colors.white
-                                    .withOpacity(0.8),
-                                size: 13),
-                            const SizedBox(width: 5),
-                            Text(
-                                '${post.location}, ${post.dateTime}',
-                                style: TextStyle(
-                                    color: Colors.white
-                                        .withOpacity(0.9),
-                                    fontSize: 11,
-                                    fontWeight:
-                                        FontWeight.w500)),
-                          ])),
-                ],
-              ),
-            ),
-          ],
-        ));
-  }
-
-  Widget _actionBtn(
-      {required IconData icon,
-      required String label,
-      required Color color,
-      required VoidCallback onTap}) {
-    return GestureDetector(
-        onTap: onTap,
-        child: Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 8),
-            child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Icon(icon, color: color, size: 20),
-              const SizedBox(width: 6),
-              Text(label,
-                  style: TextStyle(
-                      fontSize: 12.5,
-                      fontWeight: FontWeight.w600,
-                      color: color)),
-            ])));
-  }
-}
-
-class _TypingDot extends StatelessWidget {
-  final int index;
-  final AnimationController controller;
-  const _TypingDot({required this.index, required this.controller});
-
-  @override
-  Widget build(BuildContext context) {
-    final delay = (index * 0.2).clamp(0.0, 0.4);
-    return AnimatedBuilder(
-        index: index,
-        controller: controller,
-        child: Container(
-            width: 8, height: 8,
-            decoration: BoxDecoration(
-                color: Colors.grey[400], shape: BoxShape.circle)));
-  }
-}
-
-class AnimatedBuilder extends StatelessWidget {
-  final int index;
-  final AnimationController controller;
-  final Widget child;
-  const AnimatedBuilder(
-      {required this.index, required this.controller, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    final startDelay = (index * 0.06).clamp(0.0, 0.6);
-    final slideAnim = Tween<Offset>(
-            begin: const Offset(0, 0.08), end: Offset.zero)
-        .animate(CurvedAnimation(
-            parent: controller,
-            curve: Interval(startDelay,
-                (startDelay + 0.4).clamp(0.0, 1.0),
-                curve: Curves.easeOutCubic)));
-    final fadeAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
-        CurvedAnimation(
-            parent: controller,
-            curve: Interval(startDelay,
-                (startDelay + 0.4).clamp(0.0, 1.0),
-                curve: Curves.easeOut)));
-    return SlideTransition(
-        position: slideAnim,
-        child: FadeTransition(opacity: fadeAnim, child: child));
-  }
-}
+// SHARED WIDGETS
 
 class _FeatureCard extends StatefulWidget {
   final FeatureItem item;
@@ -1296,148 +1187,168 @@ class _FeatureCardState extends State<_FeatureCard> {
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
-      onTap: () => Navigator.push(context,
-          MaterialPageRoute(builder: (context) => widget.item.screen)),
+      onTap: () {
+        // Check if it's a website link
+        if (widget.item.isWebsite && widget.item.url != null) {
+          _launchWebsite(context, widget.item.url!);
+        } 
+        // Otherwise navigate to the screen
+        else if (widget.item.screen != null) {
+          Navigator.push(
+            context, 
+            MaterialPageRoute(builder: (context) => widget.item.screen!)
+          );
+        }
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        transform: _pressed
-            ? (Matrix4.identity()..scale(0.94))
-            : Matrix4.identity(),
+        transform: _pressed ? (Matrix4.identity()..scale(0.94)) : Matrix4.identity(),
         decoration: BoxDecoration(
-            color: widget.item.bgLight.withOpacity(0.6),
-            borderRadius: BorderRadius.circular(14),
-            boxShadow: [
-              BoxShadow(
-                  color: Colors.black
-                      .withOpacity(_pressed ? 0.04 : 0.06),
-                  blurRadius: _pressed ? 4 : 10,
-                  offset: Offset(0, _pressed ? 1 : 4))
-            ]),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+          color: widget.item.bgLight.withOpacity(0.35),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: Colors.white12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-                width: 48, height: 48,
-                decoration: BoxDecoration(
-                    color: widget.item.bgLight,
-                    borderRadius: BorderRadius.circular(14)),
-                child: Icon(widget.item.icon,
-                    color: widget.item.color, size: 24)),
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: widget.item.bgLight.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(widget.item.icon, color: widget.item.color, size: 24),
+            ),
             const SizedBox(height: 10),
-            Text(widget.item.title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF333333),
-                    height: 1.35)),
+            Text(
+              widget.item.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+                color: Colors.black,
+                height: 1.3,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+
+  void _launchWebsite(BuildContext context, String url) async {
+    try {
+      // Ensure the URL has a scheme
+      String fullUrl = url;
+      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
+        fullUrl = 'https://$fullUrl';
+      }
+      
+      final Uri uri = Uri.parse(fullUrl);
+      
+      // Check if the URL can be launched
+      final bool canLaunch = await canLaunchUrl(uri);
+      
+      if (canLaunch) {
+        await launchUrl(
+          uri,
+          mode: LaunchMode.externalApplication,
+        );
+      } else {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not open website. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 }
 
-
-//  DATA MODELS
-
-
-class _OverlayItem {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  const _OverlayItem(
-      {required this.icon, required this.title, required this.subtitle});
-}
+// DATA MODELS
 
 class FeatureItem {
   final IconData icon;
   final String title;
   final Color color;
   final Color bgLight;
-  final Widget screen;
-  const FeatureItem(
-      {required this.icon,
-      required this.title,
-      required this.color,
-      required this.bgLight,
-      required this.screen});
+  final Widget? screen;
+  final bool isWebsite;
+  final String? url;
+
+  const FeatureItem({
+    required this.icon,
+    required this.title,
+    required this.color,
+    required this.bgLight,
+    this.screen,
+    this.isWebsite = false,
+    this.url,
+  });
 }
 
-class CategoryItem {
+class _OverlayItem {
   final IconData icon;
-  final String label;
-  const CategoryItem({required this.icon, required this.label});
-}
-
-class FeedPost {
-  final String author, location, dateTime, timeAgo, title, excerpt, category;
-  final int likes, comments;
-  final bool isVerified;
-  final Color authorColor, categoryColor, imageGradientStart, imageGradientEnd;
-  final IconData categoryIcon;
-  String get authorInitials => author.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase();
-  const FeedPost({required this.author, required this.location, required this.dateTime, required this.timeAgo, required this.title, required this.excerpt, required this.category, required this.likes, required this.comments, this.isVerified = false, required this.authorColor, required this.categoryColor, required this.categoryIcon, required this.imageGradientStart, required this.imageGradientEnd});
+  final String title;
+  final String subtitle;
+  const _OverlayItem({required this.icon, required this.title, required this.subtitle});
 }
 
 class ChatMessage {
-  final String text, time;
+  final String text;
+  final String time;
   final bool isUser;
   const ChatMessage({required this.text, required this.time, required this.isUser});
 }
 
-class _MenuItem {
-  final IconData icon;
-  final String title, subtitle;
-  final Color color;
-  final String? count;
-  const _MenuItem({required this.icon, required this.title, required this.subtitle, required this.color, this.count});
-}
-
-class _PlaceholderScreen extends StatelessWidget {
+class FeedPost {
+  final String author;
+  final String authorInitials;
+  final Color authorColor;
+  final bool isVerified;
+  final String location;
+  final String timeAgo;
+  final String dateTime;
+  final String category;
+  final IconData categoryIcon;
+  final Color categoryColor;
+  final Color imageGradientStart;
+  final Color imageGradientEnd;
   final String title;
-  final IconData icon;
-  const _PlaceholderScreen({required this.title, required this.icon});
+  final String excerpt;
+  final int likes;
+  final int comments;
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-          backgroundColor: const Color(0xFF2E7D32),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          title: Text(title),
-          centerTitle: true),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-                width: 80, height: 80,
-                decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), shape: BoxShape.circle),
-                child: Icon(icon, size: 40, color: const Color(0xFF2E7D32))),
-            const SizedBox(height: 24),
-            Text(title, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: Color(0xFF1A1F36)), textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            const Text('Build your specific UI for this screen here.', style: TextStyle(fontSize: 14, color: Color(0xFF9CA3AF)), textAlign: TextAlign.center),
-          ],
-        ),
-      ),
-    );
-  }
+  const FeedPost({
+    required this.author,
+    required this.authorInitials,
+    required this.authorColor,
+    required this.isVerified,
+    required this.location,
+    required this.timeAgo,
+    required this.dateTime,
+    required this.category,
+    required this.categoryIcon,
+    required this.categoryColor,
+    required this.imageGradientStart,
+    required this.imageGradientEnd,
+    required this.title,
+    required this.excerpt,
+    required this.likes,
+    required this.comments,
+  });
 }
-
-
-//  SAMPLE DATA
-
-
-const List<FeedPost> feedPosts = [
-  FeedPost(author: 'Jaguza Official', location: 'Kampala', dateTime: 'Sep 8, 2023 · 1:19 PM', timeAgo: '2h ago', title: 'Benefits of Small Scale Poultry ~ Poultry Farming Guide', excerpt: 'Ever wondered whether small scale poultry farming is worth it? Here is a detailed breakdown of benefits, challenges, and tips to get started.', category: 'Poultry', likes: 24, comments: 5, isVerified: true, authorColor: Color(0xFF2E7D32), categoryColor: Color(0xFFE65100), categoryIcon: Icons.egg_rounded, imageGradientStart: Color(0xFFFF8F00), imageGradientEnd: Color(0xFFF57C00)),
-  FeedPost(author: 'Dr. Atim Nancy', location: 'Jinja', dateTime: 'Sep 7, 2023 · 10:30 AM', timeAgo: '1d ago', title: 'Understanding Cattle Nutrition: A Complete Feeding Guide', excerpt: 'Proper nutrition is the backbone of a healthy herd. Learn about balanced feed rations, mineral supplements, and seasonal feeding strategies.', category: 'Cattle', likes: 38, comments: 12, isVerified: true, authorColor: Color(0xFF8E24AA), categoryColor: Color(0xFF1E88E5), categoryIcon: Icons.pets_rounded, imageGradientStart: Color(0xFF1565C0), imageGradientEnd: Color(0xFF42A5F5)),
-  FeedPost(author: 'Mugisha David', location: 'Kabale', dateTime: 'Sep 6, 2023 · 4:45 PM', timeAgo: '2d ago', title: 'Modern Pig Farming Techniques for Ugandan Farmers', excerpt: 'Discover modern techniques in pig housing, feeding, disease prevention, and breeding that can significantly increase your farm output.', category: 'Pigs', likes: 15, comments: 3, authorColor: Color(0xFFFB8C00), categoryColor: Color(0xFFD84315), categoryIcon: Icons.set_meal_rounded, imageGradientStart: Color(0xFFD84315), imageGradientEnd: Color(0xFFFF7043)),
-  FeedPost(author: 'Nabukenya Sarah', location: 'Wakiso', dateTime: 'Sep 5, 2023 · 9:00 AM', timeAgo: '3d ago', title: 'Dairy Farming Best Practices: From Milking to Market', excerpt: 'Learn the essential best practices for dairy farming including proper milking hygiene, milk storage, quality testing, and market strategies.', category: 'Cattle', likes: 42, comments: 8, isVerified: true, authorColor: Color(0xFF1E88E5), categoryColor: Color(0xFF1E88E5), categoryIcon: Icons.pets_rounded, imageGradientStart: Color(0xFF0D47A1), imageGradientEnd: Color(0xFF1976D2)),
-  FeedPost(author: 'Okello James', location: 'Lira', dateTime: 'Sep 4, 2023 · 2:15 PM', timeAgo: '4d ago', title: 'Crop-Livestock Integration: Maximizing Your Farm Output', excerpt: 'How integrating crops and livestock can reduce costs, improve soil fertility, and create multiple income streams for smallholder farmers.', category: 'Crops', likes: 19, comments: 6, authorColor: Color(0xFF2E7D32), categoryColor: Color(0xFF2E7D32), categoryIcon: Icons.agriculture_rounded, imageGradientStart: Color(0xFF2E7D32), imageGradientEnd: Color(0xFF66BB6A)),
-];

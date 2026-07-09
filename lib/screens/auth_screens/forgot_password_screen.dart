@@ -121,7 +121,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF1E7B4E), Color(0xFF2FA468)],
+            colors: [Color.fromARGB(255, 30, 123, 35), Color.fromARGB(255, 61, 138, 65)],
           ),
         ),
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 70),
@@ -174,8 +174,8 @@ class VerificationScreen extends StatefulWidget {
 }
 
 class _VerificationScreenState extends State<VerificationScreen> {
-  List<TextEditingController> _controllers = [];
-  List<FocusNode> _focusNodes = [];
+  final List<TextEditingController> _controllers = [];
+  final List<FocusNode> _focusNodes = [];
 
   @override
   void initState() {
@@ -188,8 +188,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   @override
   void dispose() {
-    for (var c in _controllers) c.dispose();
-    for (var f in _focusNodes) f.dispose();
+    for (var c in _controllers) {
+      c.dispose();
+    }
+    for (var f in _focusNodes) {
+      f.dispose();
+    }
     super.dispose();
   }
 

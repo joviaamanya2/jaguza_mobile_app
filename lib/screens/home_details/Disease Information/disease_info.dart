@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
-
-// TODO: Replace these placeholder imports with your real files as you create them
-// import 'disease_details/foot_mouth_detail_screen.dart';
-// import 'disease_details/abomasum_detail_screen.dart';
-
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/Nagana.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/Peste%20des%20Petits%20Ruminants.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/brucellosis.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/coccidiosis.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/displaced_abomusam.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/foot_and_mouth.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/mastitis.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/new_castle.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/swine_fever.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/vibrosis.dart';
+import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/white_muscle_disease.dart';
 class AnimalDiseasesScreen extends StatefulWidget {
   const AnimalDiseasesScreen({super.key});
 
@@ -29,7 +35,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.pets_rounded,
       category: 'Cattle',
       description: 'Highly contagious viral disease affecting cloven-hoofed animals.',
-      screen: const _PlaceholderDetailScreen(title: 'Foot-and-Mouth Disease'), // Replace with: const FootMouthDetailScreen()
+      screen: const FootAndMouthDetail(),
     ),
     DiseaseItem(
       title: 'Displaced Abomasum in Cattle',
@@ -39,7 +45,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.tab_unselected_sharp,
       category: 'Cattle',
       description: 'Abomasum displaces from its normal position, common post-calving.',
-      screen: const _PlaceholderDetailScreen(title: 'Displaced Abomasum'),
+      screen: const DisplacedAbomasumDetail(),
     ),
     DiseaseItem(
       title: 'White Muscle Disease',
@@ -49,7 +55,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.fitness_center_rounded,
       category: 'Small Ruminants',
       description: 'Nutritional muscular dystrophy caused by selenium/vitamin E deficiency.',
-      screen: const _PlaceholderDetailScreen(title: 'White Muscle Disease'),
+      screen: const WhiteMuscleDiseaseDetail(),
     ),
     DiseaseItem(
       title: 'Newcastle Disease',
@@ -59,7 +65,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.coronavirus_rounded,
       category: 'Poultry',
       description: 'Contagious viral disease causing respiratory and nervous symptoms in birds.',
-      screen: const _PlaceholderDetailScreen(title: 'Newcastle Disease'),
+      screen: const NewcastleDiseaseDetail(),
     ),
     DiseaseItem(
       title: 'Mastitis',
@@ -69,7 +75,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.water_drop_rounded,
       category: 'Cattle',
       description: 'Inflammation of the mammary gland, impacting milk production.',
-      screen: const _PlaceholderDetailScreen(title: 'Mastitis'),
+      screen: const MastitisDetail(),
     ),
     DiseaseItem(
       title: 'African Swine Fever',
@@ -79,7 +85,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.warning_rounded,
       category: 'Swine',
       description: 'Highly contagious viral hemorrhagic fever with high mortality rates.',
-      screen: const _PlaceholderDetailScreen(title: 'African Swine Fever'),
+      screen: const AfricanSwineFeverDetail(),
     ),
     DiseaseItem(
       title: 'Coccidiosis',
@@ -89,7 +95,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.bug_report_rounded,
       category: 'Poultry',
       description: 'Parasitic disease affecting the intestinal tract of animals.',
-      screen: const _PlaceholderDetailScreen(title: 'Coccidiosis'),
+      screen: const CoccidiosisDetail(),
     ),
     DiseaseItem(
       title: 'Brucellosis',
@@ -99,27 +105,87 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
       icon: Icons.coronavirus_rounded,
       category: 'Cattle',
       description: 'Zoonotic bacterial disease causing reproductive failure in livestock.',
-      screen: const _PlaceholderDetailScreen(title: 'Brucellosis'),
+      screen: const BrucellosisDetail(),
     ),
     DiseaseItem(
       title: 'Peste des Petits Ruminants',
-      animal: 'Sheep, Goats',
+      animal: 'Sheep, Goats,Rabbits',
       severity: 'High',
       severityColor: const Color(0xFFE53935),
       icon: Icons.coronavirus_rounded,
       category: 'Small Ruminants',
       description: 'Viral disease causing fever, sores, and high mortality in small ruminants.',
-      screen: const _PlaceholderDetailScreen(title: 'Peste des Petits Ruminants'),
+      screen: const PPRDetail(),
     ),
-    DiseaseItem(
-      title: 'Avian Influenza',
-      animal: 'Poultry',
+      DiseaseItem(
+    title: 'Vibriosis (Campylobacter)',
+    animal: 'Cattle',
+    severity: 'High',
+    severityColor: const Color(0xFFE53935),
+    icon: Icons.bug_report_rounded,
+    category: 'Reproductive',
+    description: 'A bacterial venereal disease causing infertility, early embryonic death, and prolonged calving intervals in cows.',
+    screen: const VibriosisDetail(),
+  ),
+  DiseaseItem(
+    title: 'Acetonaemia (Ketosis)',
+    animal: 'Cattle',
+    severity: 'Medium',
+    severityColor: const Color(0xFFFFA000),
+    icon: Icons.bloodtype_rounded,
+    category: 'Metabolic',
+    description: 'A metabolic disorder in high-producing dairy cows occurring after calving due to a negative energy balance and high ketone levels.',
+    screen: const _PlaceholderDetailScreen(title: 'Acetonaemia'),
+  ),
+  DiseaseItem(
+    title: 'Acon Poisoning',
+    animal: 'Cattle',
+    severity: 'High',
+    severityColor: const Color(0xFFE53935),
+    icon: Icons.local_florist_rounded,
+    category: 'Toxicology',
+    description: 'Toxicosis caused by ingesting poisonous plants containing alkaloids, leading to severe gastrointestinal and neurological distress.',
+    screen: const _PlaceholderDetailScreen(title: 'Acon Poisoning'),
+  ),
+  DiseaseItem(
+    title: 'Anaplasmosis',
+    animal: 'Cattle',
+    severity: 'High',
+    severityColor: const Color(0xFFE53935),
+    icon: Icons.bug_report_rounded,
+    category: 'Blood',
+    description: 'An infectious blood disease transmitted by ticks that destroys red blood cells, causing severe anemia, fever, and jaundice.',
+    screen: const _PlaceholderDetailScreen(title: 'Anaplasmosis'),
+  ),
+  DiseaseItem(
+    title: 'Anthrax',
+    animal: 'Cattle',
+    severity: 'High',
+    severityColor: const Color(0xFFE53935),
+    icon: Icons.warning_amber_rounded,
+    category: 'Bacterial',
+    description: 'A highly fatal zoonotic bacterial disease that often causes sudden death without prior symptoms, characterized by bleeding from body orifices.',
+    screen: const _PlaceholderDetailScreen(title: 'Anthrax'),
+  ),
+  DiseaseItem(
+    title: 'Bloat in Cattle',
+    animal: 'Cattle',
+    severity: 'High',
+    severityColor: const Color(0xFFE53935),
+    icon: Icons.circle_outlined,
+    category: 'Digestive',
+    description: 'A deadly digestive disorder where excess gas builds up in the rumen, causing severe left-sided abdominal distension and breathing difficulty.',
+    screen: const _PlaceholderDetailScreen(title: 'Bloat in Cattle'),
+  ),
+      DiseaseItem(
+      title: 'Nagana (Sleeping Sickness)',
+      animal: 'Cattle',
       severity: 'High',
       severityColor: const Color(0xFFE53935),
-      icon: Icons.air_rounded,
-      category: 'Poultry',
-      description: 'Highly contagious viral respiratory disease in birds, zoonotic potential.',
-      screen: const _PlaceholderDetailScreen(title: 'Avian Influenza'),
+      icon: Icons.pest_control_rounded,
+      category: 'Parasitic',
+      description: 'A parasitic disease transmitted by tsetse flies causing severe anemia, fever, weight loss, and extreme lethargy in livestock.',
+      screen: const NaganaDetail(),
     ),
   ];
 
@@ -141,7 +207,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           children: [
@@ -162,17 +228,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
 
   Widget _buildHeader() {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Color(0xFF2E7D32), Color(0xFF43A047)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(color: Color(0xFF2E7D32), blurRadius: 16, offset: Offset(0, 4)),
-        ],
-      ),
+      color: const Color(0xFF2E7D32),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
@@ -182,9 +238,22 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Animal Diseases', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800)),
+                Text(
+                  'Animal Diseases',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
                 SizedBox(height: 2),
-                Text('Comprehensive disease database', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                Text(
+                  'Comprehensive disease database',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 12,
+                  ),
+                ),
               ],
             ),
           ),
@@ -198,8 +267,12 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 40, height: 40,
-        decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)),
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.15),
+          borderRadius: BorderRadius.circular(10),
+        ),
         child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
@@ -207,34 +280,78 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
 
   Widget _buildPromoBanners() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          const SizedBox(width: 24),
-          Expanded(child: _promoCard(icon: Icons.biotech_rounded, title: 'Know Diseases', subtitle: 'Learn & prevent', gradient: const LinearGradient(colors: [Color(0xFF2E7D32), Color(0xFF66BB6A)]), onTap: () {})),
+          Expanded(
+            child: _promoCard(
+              icon: Icons.biotech_rounded,
+              title: 'Know Diseases',
+              subtitle: 'Learn & prevent',
+              color: const Color(0xFF2E7D32),
+              onTap: () {},
+            ),
+          ),
         ],
       ),
     );
   }
 
-  Widget _promoCard({required IconData icon, required String title, required String subtitle, required Gradient gradient, required VoidCallback onTap}) {
+  Widget _promoCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: gradient.colors.first.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+          color: color.withOpacity(0.08),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: color.withOpacity(0.15)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Container(width: 36, height: 36, decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(10)), child: Icon(icon, color: Colors.white, size: 20)),
-            const SizedBox(height: 10),
-            Text(title, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-            const SizedBox(height: 2),
-            Text(subtitle, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10.5)),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 20),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.chevron_right_rounded,
+              color: Colors.grey[400],
+              size: 20,
+            ),
           ],
         ),
       ),
@@ -243,22 +360,37 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
 
   Widget _buildSearchBar() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black, blurRadius: 10, offset: const Offset(0, 2))]),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
         child: TextField(
           controller: _searchController,
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search diseases, symptoms, animals...',
-            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13.5),
-            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 22),
-            suffixIcon: _searchQuery.isNotEmpty ? GestureDetector(onTap: () { _searchController.clear(); setState(() => _searchQuery = ''); }, child: const Icon(Icons.close_rounded, color: Color(0xFF9CA3AF), size: 20)) : null,
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE5E7EB), width: 1)),
-            focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 1.5)),
+            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
+            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 20),
+            suffixIcon: _searchQuery.isNotEmpty
+                ? GestureDetector(
+                    onTap: () {
+                      _searchController.clear();
+                      setState(() => _searchQuery = '');
+                    },
+                    child: Icon(Icons.close_rounded, color: Colors.grey[400], size: 18),
+                  )
+                : null,
+            border: InputBorder.none,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
           ),
         ),
       ),
@@ -267,12 +399,12 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
 
   Widget _buildCategoryFilters() {
     return SizedBox(
-      height: 38,
+      height: 36,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final cat = _categories[index];
           final isActive = cat == _selectedCategory;
@@ -280,14 +412,22 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
             onTap: () => setState(() => _selectedCategory = cat),
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
                 color: isActive ? const Color(0xFF2E7D32) : Colors.white,
-                borderRadius: BorderRadius.circular(10),
-                border: isActive ? null : Border.all(color: const Color(0xFFE5E7EB)),
-                boxShadow: isActive ? [BoxShadow(color: const Color(0xFF2E7D32), blurRadius: 8, offset: const Offset(0, 3))] : null,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isActive ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                ),
               ),
-              child: Text(cat, style: TextStyle(color: isActive ? Colors.white : const Color(0xFF6B7280), fontSize: 12.5, fontWeight: isActive ? FontWeight.w700 : FontWeight.w500)),
+              child: Text(
+                cat,
+                style: TextStyle(
+                  color: isActive ? Colors.white : const Color(0xFF6B7280),
+                  fontSize: 12,
+                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                ),
+              ),
             ),
           );
         },
@@ -298,16 +438,34 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   Widget _buildDiseaseList() {
     final diseases = _filteredDiseases;
     if (diseases.isEmpty) {
-      return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.search_off_rounded, size: 60, color: Colors.grey[300]),
-        const SizedBox(height: 16),
-        Text('No diseases found', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.grey[500])),
-        const SizedBox(height: 4),
-        Text('Try a different search or category', style: TextStyle(fontSize: 13, color: Colors.grey[400])),
-      ]));
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'No diseases found',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey[600],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Try a different search or category',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.grey[400],
+              ),
+            ),
+          ],
+        ),
+      );
     }
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       itemCount: diseases.length,
       separatorBuilder: (_, __) => const SizedBox(height: 10),
       itemBuilder: (context, index) => DiseaseCard(item: diseases[index]),
@@ -316,50 +474,112 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
 }
 
 // ═══════════════════════════════════════
-//  DISEASE CARD
+//  DISEASE CARD - Clean, flat, professional
 // ═══════════════════════════════════════
-class DiseaseCard extends StatefulWidget {
+class DiseaseCard extends StatelessWidget {
   final DiseaseItem item;
   const DiseaseCard({super.key, required this.item});
 
   @override
-  State<DiseaseCard> createState() => _DiseaseCardState();
-}
-
-class _DiseaseCardState extends State<DiseaseCard> {
-  bool _pressed = false;
-
-  @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTapDown: (_) => setState(() => _pressed = true),
-      onTapUp: (_) => setState(() => _pressed = false),
-      onTapCancel: () => setState(() => _pressed = false),
       onTap: () {
-        // NAVIGATES TO THE SPECIFIC SCREEN ASSIGNED IN THE LIST
-        Navigator.push(context, MaterialPageRoute(builder: (context) => widget.item.screen));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => item.screen),
+        );
       },
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        transform: _pressed ? (Matrix4.identity()) : Matrix4.identity(),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black, blurRadius: _pressed ? 4 : 10, offset: Offset(0, _pressed ? 1 : 4))]),
-        padding: const EdgeInsets.all(16),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE8E8E8)),
+        ),
+        padding: const EdgeInsets.all(14),
         child: Row(
           children: [
-            Container(width: 50, height: 50, decoration: BoxDecoration(color: widget.item.severityColor.withOpacity(0.1), borderRadius: BorderRadius.circular(14)), child: Icon(widget.item.icon, color: widget.item.severityColor, size: 24)),
-            const SizedBox(width: 14),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(widget.item.title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36), height: 1.3)),
-              const SizedBox(height: 4),
-              Text(widget.item.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: Color(0xFF9CA3AF), height: 1.4)),
-              const SizedBox(height: 8),
-              Row(children: [Icon(Icons.pets_rounded, size: 13, color: Colors.grey[400]), const SizedBox(width: 4), Text(widget.item.animal, style: TextStyle(fontSize: 11, color: Colors.grey[500], fontWeight: FontWeight.w500))]),
-            ])),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: item.severityColor.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(
+                item.icon,
+                color: item.severityColor,
+                size: 22,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF1A1F36),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    item.description,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Color(0xFF6B7280),
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(Icons.pets_rounded, size: 12, color: Colors.grey[500]),
+                      const SizedBox(width: 4),
+                      Text(
+                        item.animal,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
             const SizedBox(width: 10),
-            Column(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-              Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: widget.item.severityColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)), child: Text(widget.item.severity, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: widget.item.severityColor))),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFD1D5DB), size: 22),
-            ]),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: item.severityColor.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    item.severity,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w600,
+                      color: item.severityColor,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: Colors.grey[400],
+                  size: 20,
+                ),
+              ],
+            ),
           ],
         ),
       ),
@@ -378,7 +598,7 @@ class DiseaseItem {
   final IconData icon;
   final String category;
   final String description;
-  final Widget screen; // NEW PROPERTY
+  final Widget screen;
 
   const DiseaseItem({
     required this.title,
@@ -388,12 +608,12 @@ class DiseaseItem {
     required this.icon,
     required this.category,
     required this.description,
-    required this.screen, // NEW PROPERTY
+    required this.screen,
   });
 }
 
 // ═══════════════════════════════════════
-//  PLACEHOLDER SCREEN (Delete this class once you create all real files)
+//  PLACEHOLDER SCREEN
 // ═══════════════════════════════════════
 class _PlaceholderDetailScreen extends StatelessWidget {
   final String title;
@@ -402,16 +622,37 @@ class _PlaceholderDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
         backgroundColor: const Color(0xFF2E7D32),
         foregroundColor: Colors.white,
         elevation: 0,
         title: Text(title),
-        centerTitle: true,
       ),
       body: Center(
-        child: Text('Design your $title screen here', style: const TextStyle(fontSize: 16, color: Colors.grey)),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.medical_information_rounded, size: 64, color: Colors.grey[300]),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1F36),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Disease details coming soon',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[400],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

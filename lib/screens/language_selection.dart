@@ -191,7 +191,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                           height: 52,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1E7B4E),
+                              backgroundColor: const Color.fromARGB(255, 26, 124, 47),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
