@@ -164,7 +164,7 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
 
                 const Spacer(flex: 3),
 
-                // Next button
+                // Next button - SHADOW REMOVED
                 GestureDetector(
                   onTapDown: (_) => _btnController.reverse(),
                   onTapUp: (_) {
@@ -180,14 +180,7 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
                       decoration: BoxDecoration(
                         color: const Color(0xFF2E7D32),
                         borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color:
-                                const Color(0xFF2E7D32).withValues(alpha: 0.35),
-                            blurRadius: 18,
-                            offset: const Offset(0, 8),
-                          ),
-                        ],
+                        // boxShadow property removed
                       ),
                       child: const Center(
                         child: Text(

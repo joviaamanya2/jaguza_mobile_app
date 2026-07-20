@@ -1,25 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../language_selection.dart'; 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import '../language_selection.dart';
 import '../auth_screens/forgot_password_screen.dart';
 import '../auth_screens/Signup_screen.dart';
+import '../../services/api_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setSystemUIOverlayStyle(
     SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color.fromARGB(255, 18, 112, 30)),
   );
-  runApp(const AskUsApp());
+  runApp(const SignInApp());
 }
 
-class AskUsApp extends StatelessWidget {
-  const AskUsApp({super.key});
+class SignInApp extends StatelessWidget {
+  const SignInApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'ASK US',
+      title: 'Sign In',
       debugShowCheckedModeBanner: false,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('fr'),
+        Locale('es'),
+        Locale('sw'),
+        Locale('lg'),
+      ],
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: Colors.white,
@@ -55,6 +69,7 @@ class AskUsApp extends StatelessWidget {
   }
 }
 
+
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 
@@ -69,7 +84,7 @@ class _SignInScreenState extends State<SignInScreen>
   final _passwordController = TextEditingController();
 
   bool _obscurePassword = true;
-  final bool _isLoading = false;
+  bool _isLoading = false;
   late final AnimationController _logoController;
 
   @override
@@ -94,15 +109,77 @@ class _SignInScreenState extends State<SignInScreen>
 
   Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) return;
-    
-    // Navigate to language selection screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const LanguageSelectionScreen()),
+
+    setState(() => _isLoading = true);
+
+    try {
+      final apiService = ApiService();
+      final result = await apiService.login(
+        _emailController.text.trim(),
+        _passwordController.text,
+      );
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      if (result['success'] == true) {
+        _showSnack('Login successful! Welcome back');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+        );
+      } else {
+        _showSnack(result['error'] ?? 'Invalid login credentials', isError: true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnack('Network error: ${e.toString()}', isError: true);
+    }
+  }
+
+  void _showSnack(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError ? Icons.warning_rounded : Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: isError ? const Color(0xFFE5484D) : const Color(0xFF2E7D32),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      ),
     );
   }
 
-  
+  void _handleGoogleSignIn() {
+    // Implement Google Sign-In
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Google Sign-In initiated'),
+        backgroundColor: Color(0xFF1E7B4E),
+      ),
+    );
+  }
+
+  void _handleAppleSignIn() {
+    // Implement Apple Sign-In
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Apple Sign-In initiated'),
+        backgroundColor: Color(0xFF1E7B4E),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -216,7 +293,10 @@ class _SignInScreenState extends State<SignInScreen>
                         const SizedBox(height: 26),
                         const _OrDivider(),
                         const SizedBox(height: 22),
-                        const _SocialButtons(),
+                        _SocialButtons(
+                          onGoogleTap: _handleGoogleSignIn,
+                          onAppleTap: _handleAppleSignIn,
+                        ),
                         const SizedBox(height: 28),
                         const _RegisterPrompt(),
                         const SizedBox(height: 24),
@@ -237,46 +317,11 @@ class _SignInScreenState extends State<SignInScreen>
       clipper: _WaveClipper(),
       child: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color.fromARGB(255, 33, 123, 30), Color.fromARGB(255, 37, 124, 29)],
-          ),
-        ),
+        color: const Color.fromARGB(255, 33, 123, 30),
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 70),
         child: Column(
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.question_answer_rounded,
-                          color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'ASK US',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16,
-                        letterSpacing: 1.6,
-                      ),
-                    ),
-                  ],
-                ),
-                
-              ],
-            ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 8),
             ScaleTransition(
               scale: Tween<double>(begin: 0.6, end: 1.0).animate(
                 CurvedAnimation(
@@ -296,7 +341,7 @@ class _SignInScreenState extends State<SignInScreen>
   }
 }
 
-/*  Reusable Widgets  */
+// Reusable Widgets
 
 class _SectionHeading extends StatelessWidget {
   final String title;
@@ -354,18 +399,8 @@ class _SignInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 54,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFFFF7A1A).withOpacity(0.32),
-            blurRadius: 14,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
@@ -374,6 +409,7 @@ class _SignInButton extends StatelessWidget {
           disabledBackgroundColor: const Color(0xFFFF7A1A),
           disabledForegroundColor: Colors.white,
           elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: isLoading
@@ -425,7 +461,13 @@ class _OrDivider extends StatelessWidget {
 }
 
 class _SocialButtons extends StatelessWidget {
-  const _SocialButtons();
+  final VoidCallback onGoogleTap;
+  final VoidCallback onAppleTap;
+
+  const _SocialButtons({
+    required this.onGoogleTap,
+    required this.onAppleTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -435,13 +477,13 @@ class _SocialButtons extends StatelessWidget {
         _SocialTile(
           icon: const _GoogleLogo(),
           semanticLabel: 'Sign in with Google',
-          onTap: () {},
+          onTap: onGoogleTap,
         ),
         const SizedBox(width: 18),
         _SocialTile(
           icon: const Icon(Icons.apple_rounded, color: Color(0xFF1A1F36), size: 30),
           semanticLabel: 'Sign in with Apple',
-          onTap: () {},
+          onTap: onAppleTap,
         ),
       ],
     );
@@ -469,13 +511,6 @@ class _SocialTile extends StatelessWidget {
             color: Colors.white,
             shape: BoxShape.circle,
             border: Border.all(color: const Color(0xFFE3E8EE), width: 1.5),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 4),
-              ),
-            ],
           ),
           child: Center(child: icon),
         ),
@@ -542,13 +577,6 @@ class _AppLogo extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
@@ -561,7 +589,7 @@ class _AppLogo extends StatelessWidget {
   }
 }
 
-/*  Google Logo (vector)  */
+// Google Logo (vector)
 
 class _GoogleLogo extends StatelessWidget {
   const _GoogleLogo();
@@ -643,7 +671,7 @@ class _GoogleLogoPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-/*  Wave Clipper  */
+// Wave Clipper
 
 class _WaveClipper extends CustomClipper<Path> {
   @override

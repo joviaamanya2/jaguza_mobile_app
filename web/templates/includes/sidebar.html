@@ -1,0 +1,91 @@
+<div class="nav-section-label">Overview</div>
+<a class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard','Dashboard Overview')">
+    <div class="nav-icon"><i class="fas fa-th-large"></i></div>
+    <span class="nav-label">Dashboard</span>
+</a>
+<a class="nav-item" id="nav-analytics" onclick="navigate('analytics','Analytics')">
+    <div class="nav-icon"><i class="fas fa-chart-line"></i></div>
+    <span class="nav-label">Analytics</span>
+</a>
+
+<div class="nav-section-label">People</div>
+<a class="nav-item" id="nav-users" onclick="navigate('users','Users')">
+    <div class="nav-icon"><i class="fas fa-users"></i></div>
+    <span class="nav-label">Users</span>
+    <span class="nav-badge">{{ total_users|default:0 }}</span>
+</a>
+<a class="nav-item" id="nav-doctors" onclick="navigate('doctors','Veterinary Doctors')">
+    <div class="nav-icon"><i class="fas fa-stethoscope"></i></div>
+    <span class="nav-label">Doctors</span>
+</a>
+<a class="nav-item" id="nav-messages" onclick="navigate('messages','Messages')">
+    <div class="nav-icon"><i class="fas fa-comments"></i></div>
+    <span class="nav-label">Messages</span>
+    <span class="nav-badge">{{ unread_messages_count|default:0 }}</span>
+</a>
+<a class="nav-item" id="nav-notifications" onclick="navigate('notifications','Notifications')">
+    <div class="nav-icon"><i class="fas fa-bell"></i></div>
+    <span class="nav-label">Notifications</span>
+    <span class="nav-badge">{{ unread_notifications_count|default:0 }}</span>
+</a>
+
+<div class="nav-section-label">Farm &amp; Animals</div>
+<a class="nav-item" id="nav-farms" onclick="navigate('farms','Farms')">
+    <div class="nav-icon"><i class="fas fa-warehouse"></i></div>
+    <span class="nav-label">Farms</span>
+</a>
+<a class="nav-item" id="nav-livestock" onclick="navigate('livestock','Livestock Animals')">
+    <div class="nav-icon"><i class="fas fa-horse"></i></div>
+    <span class="nav-label">Livestock Animals</span>
+</a>
+<a class="nav-item" id="nav-gestation" onclick="navigate('gestation','Gestation Info')">
+    <div class="nav-icon"><i class="fas fa-baby"></i></div>
+    <span class="nav-label">Gestation Info</span>
+</a>
+<a class="nav-item" id="nav-vaccinations" onclick="navigate('vaccinations','Vaccinations')">
+    <div class="nav-icon"><i class="fas fa-syringe"></i></div>
+    <span class="nav-label">Vaccinations</span>
+</a>
+
+<div class="nav-section-label">Health &amp; Disease</div>
+<a class="nav-item" id="nav-sickness" onclick="navigate('sickness','Sickness Reports')">
+    <div class="nav-icon"><i class="fas fa-file-medical"></i></div>
+    <span class="nav-label">Sickness Reports</span>
+    <span class="nav-badge">{{ open_sickness_count|default:0 }}</span>
+</a>
+<a class="nav-item" id="nav-disease" onclick="navigate('disease','Disease Information')">
+    <div class="nav-icon"><i class="fas fa-virus"></i></div>
+    <span class="nav-label">Disease Info</span>
+</a>
+<a class="nav-item" id="nav-decision" onclick="navigate('decision','Decision Support')">
+    <div class="nav-icon"><i class="fas fa-brain"></i></div>
+    <span class="nav-label">Decision Support</span>
+</a>
+
+<div class="nav-section-label">Market &amp; Media</div>
+<a class="nav-item" id="nav-marketplace" onclick="navigate('marketplace','Market Place')">
+    <div class="nav-icon"><i class="fas fa-store"></i></div>
+    <span class="nav-label">Market Place</span>
+</a>
+<a class="nav-item" id="nav-videos" onclick="navigate('videos','Videos')">
+    <div class="nav-icon"><i class="fas fa-play-circle"></i></div>
+    <span class="nav-label">Videos</span>
+</a>
+<a class="nav-item" id="nav-ads" onclick="navigate('ads','Advertisements')">
+    <div class="nav-icon"><i class="fas fa-bullhorn"></i></div>
+    <span class="nav-label">Advertisements</span>
+</a>
+
+<div class="nav-section-label">Other</div>
+<a class="nav-item" id="nav-weather" onclick="navigate('weather','Weather Updates')">
+    <div class="nav-icon"><i class="fas fa-cloud-sun"></i></div>
+    <span class="nav-label">Weather Updates</span>
+</a>
+<a class="nav-item" id="nav-aichat" onclick="navigate('aichat','AI Chat (Vet Bot)')">
+    <div class="nav-icon"><i class="fas fa-robot"></i></div>
+    <span class="nav-label">AI Chat (Vet Bot)</span>
+</a>
+<a class="nav-item" id="nav-settings" onclick="navigate('settings','Settings')">
+    <div class="nav-icon"><i class="fas fa-cog"></i></div>
+    <span class="nav-label">Settings</span>
+</a>

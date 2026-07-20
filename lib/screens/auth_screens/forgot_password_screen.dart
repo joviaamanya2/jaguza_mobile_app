@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-// Import your login screen here
-import './login_screen.dart'; 
+import 'package:flutter_localizations/flutter_localizations.dart';
+import './login_screen.dart';
 
 // =========================================================
 // SCREEN 1: Enter Email/Phone to Request Code
@@ -117,37 +117,28 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
       clipper: _WaveClipper(),
       child: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color.fromARGB(255, 30, 123, 35), Color.fromARGB(255, 61, 138, 65)],
-          ),
-        ),
+        color: const Color.fromARGB(255, 30, 123, 35),
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 70),
         child: Column(
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text('ASK US', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 1.6)),
-                  ],
+                IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
+                  onPressed: () => Navigator.pop(context),
                 ),
-            IconButton(
-              icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-              onPressed: () => Navigator.pop(context),
-            ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.18),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 10),
               ],
             ),
             const SizedBox(height: 28),
@@ -161,6 +152,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
     );
   }
 }
+
+
 
 // =========================================================
 // SCREEN 2: Enter 6-Digit Verification Code
@@ -299,32 +292,28 @@ class _VerificationScreenState extends State<VerificationScreen> {
       clipper: _WaveClipper(),
       child: Container(
         width: double.infinity,
-        height: 160, // Shorter header for this screen
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF1E7B4E), Color(0xFF2FA468)]),
-        ),
+        height: 160,
+        color: const Color(0xFF1E7B4E),
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text('ASK US', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 1.6)),
-                  ],
-                ),
                 IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                )
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 10),
+                // Removed "ASK US" text
               ],
             ),
             const SizedBox(height: 20),
@@ -364,7 +353,6 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
   void _resetPassword() {
     if (!_formKey.currentState!.validate()) return;
-    // Simulate API call then go to success
     Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuccessScreen()));
   }
 
@@ -449,31 +437,27 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
       child: Container(
         width: double.infinity,
         height: 160,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [Color(0xFF1E7B4E), Color(0xFF2FA468)]),
-        ),
+        color: const Color(0xFF1E7B4E),
         padding: const EdgeInsets.fromLTRB(22, 14, 22, 0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
-                      child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text('ASK US', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16, letterSpacing: 1.6)),
-                  ],
-                ),
                 IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 28),
                   onPressed: () => Navigator.pop(context),
-                  icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                )
+                ),
+                const Spacer(),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
+                  child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
+                ),
+                const SizedBox(width: 10),
+                // Removed "ASK US" text
               ],
             ),
             const Spacer(),
@@ -496,7 +480,6 @@ class SuccessScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Automatically navigate back to login after a short delay (optional but good UX)
     Future.delayed(const Duration(seconds: 3), () {
       if (context.mounted) {
         Navigator.pushAndRemoveUntil(
@@ -560,9 +543,8 @@ class SuccessScreen extends StatelessWidget {
   }
 }
 
-
 // =========================================================
-// SHARED REUSABLE WIDGETS (Matches your Login Screen)
+// SHARED REUSABLE WIDGETS
 // =========================================================
 
 class _FieldLabel extends StatelessWidget {
@@ -585,20 +567,15 @@ class _ActionBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       height: 54,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(color: const Color(0xFFFF7A1A).withOpacity(0.32), blurRadius: 14, offset: const Offset(0, 8)),
-        ],
-      ),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFF7A1A),
           foregroundColor: Colors.white,
           elevation: 0,
+          shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
         child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 1.3)),

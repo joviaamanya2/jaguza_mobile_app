@@ -95,20 +95,14 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
 
                 const Spacer(flex: 2),
 
-                // Illustration icon card - Animal being treated
+                // Illustration icon card - Animal being treated (SHADOW REMOVED)
                 Container(
                   width: 200,
                   height: 200,
                   decoration: BoxDecoration(
                     color: const Color(0xFFF1F8E9),
                     borderRadius: BorderRadius.circular(40),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF2E7D32).withOpacity(0.12),
-                        blurRadius: 28,
-                        offset: const Offset(0, 12),
-                      ),
-                    ],
+                    // boxShadow removed
                   ),
                   child: Stack(
                     alignment: Alignment.center,
@@ -119,7 +113,7 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
                         size: 70,
                         color: Color(0xFF2E7D32),
                       ),
-                      // Stethoscope or treatment icon overlay
+                      // Stethoscope or treatment icon overlay (SHADOW REMOVED)
                       Positioned(
                         bottom: 35,
                         right: 35,
@@ -128,13 +122,7 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
                           decoration: BoxDecoration(
                             color: const Color(0xFF2E7D32),
                             shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF2E7D32).withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                            // boxShadow removed
                           ),
                           child: const Icon(
                             Icons.medical_services_rounded,
@@ -168,7 +156,7 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
 
                 // Title
                 const Text(
-                  'Monitor Health',
+                  'Monitor Animal Health',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 27,
@@ -221,7 +209,7 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
 
                     const Spacer(),
 
-                    // Get Started button
+                    // Get Started button (SHADOW REMOVED)
                     GestureDetector(
                       onTapDown: (_) => _btnController.reverse(),
                       onTapUp: (_) {
@@ -237,13 +225,7 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
                             color: const Color(0xFF2E7D32),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF2E7D32).withOpacity(0.35),
-                                blurRadius: 18,
-                                offset: const Offset(0, 8),
-                              ),
-                            ],
+                            // boxShadow removed
                           ),
                           child: const Center(
                             child: Text(

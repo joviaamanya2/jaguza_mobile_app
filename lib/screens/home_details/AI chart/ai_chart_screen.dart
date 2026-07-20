@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
+import 'package:file_picker/file_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class AIChatTab extends StatefulWidget {
   const AIChatTab({super.key});
@@ -11,17 +15,26 @@ class AIChatTab extends StatefulWidget {
 class _AIChatTabState extends State<AIChatTab> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [];
+  final List<FileAttachment> _attachments = [];
   bool _isLoading = false;
+  bool _isRecording = false;
   String _selectedLanguage = 'English';
   final String _userName = 'Shammah';
+  
+  late stt.SpeechToText _speech;
+  String _lastWords = '';
 
   final List<String> _languages = [
     'English',
     'Swahili',
     'Luganda',
     'French',
-    'Spanish'
+    'Spanish',
+    'Arabic',
+    'German',
+    'Portuguese',
   ];
+  
   final List<String> _quickQuestions = [
     'Treat cattle diseases',
     'Best feeding practices',
@@ -33,7 +46,158 @@ class _AIChatTabState extends State<AIChatTab> {
   @override
   void initState() {
     super.initState();
-    // No welcome message added - chat starts empty
+    _speech = stt.SpeechToText();
+    _initSpeech();
+  }
+
+  Future<void> _initSpeech() async {
+    try {
+      var status = await Permission.microphone.request();
+      if (status.isGranted) {
+        await _speech.initialize(
+          onStatus: (status) {
+            if (status == 'notListening' && _isRecording) {
+              setState(() {
+                _isRecording = false;
+                if (_lastWords.isNotEmpty) {
+                  _messageController.text = _lastWords;
+                }
+              });
+            }
+          },
+          onError: (error) {
+            setState(() {
+              _isRecording = false;
+            });
+            _showSnackBar('Speech recognition error: ${error.errorMsg}');
+          },
+        );
+      } else {
+        _showSnackBar('Microphone permission is required for voice input');
+      }
+    } catch (e) {
+      _showSnackBar('Failed to initialize speech recognition');
+    }
+  }
+
+  Future<void> _startListening() async {
+    try {
+      var status = await Permission.microphone.request();
+      if (!status.isGranted) {
+        _showSnackBar('Microphone permission is required');
+        return;
+      }
+
+      if (!_speech.isAvailable) {
+        _showSnackBar('Speech recognition is not available');
+        return;
+      }
+
+      setState(() {
+        _isRecording = true;
+      });
+
+      await _speech.listen(
+        onResult: (result) {
+          setState(() {
+            _lastWords = result.recognizedWords;
+            _messageController.text = _lastWords;
+          });
+        },
+        listenFor: const Duration(seconds: 30),
+        pauseFor: const Duration(seconds: 5),
+        partialResults: true,
+        localeId: _getSpeechLocale(),
+        onSoundLevelChange: (level) {
+          // You can use this to show voice level animation
+        },
+      );
+    } catch (e) {
+      setState(() {
+        _isRecording = false;
+      });
+      _showSnackBar('Error starting voice recognition');
+    }
+  }
+
+  void _stopListening() {
+    if (_isRecording) {
+      _speech.stop();
+      setState(() {
+        _isRecording = false;
+      });
+    }
+  }
+
+  String _getSpeechLocale() {
+    switch (_selectedLanguage) {
+      case 'English':
+        return 'en_US';
+      case 'Swahili':
+        return 'sw';
+      case 'French':
+        return 'fr_FR';
+      case 'Spanish':
+        return 'es_ES';
+      case 'German':
+        return 'de_DE';
+      case 'Portuguese':
+        return 'pt_PT';
+      case 'Arabic':
+        return 'ar';
+      default:
+        return 'en_US';
+    }
+  }
+
+  Future<void> _pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        allowMultiple: false,
+        type: FileType.custom,
+        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'txt'],
+      );
+
+      if (result != null) {
+        PlatformFile file = result.files.first;
+        setState(() {
+          _attachments.add(FileAttachment(
+            name: file.name,
+            size: file.size,
+            bytes: file.bytes,
+            extension: file.extension ?? '',
+          ));
+        });
+        _showSnackBar('File "${file.name}" attached successfully');
+      }
+    } catch (e) {
+      _showSnackBar('Error picking file');
+    }
+  }
+
+  void _removeAttachment(int index) {
+    setState(() {
+      _attachments.removeAt(index);
+    });
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.grey[800],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _speech.stop();
+    super.dispose();
   }
 
   @override
@@ -43,27 +207,104 @@ class _AIChatTabState extends State<AIChatTab> {
       appBar: _buildAppBar(),
       body: Column(
         children: [
-          // No header section
+          // Attachments bar
+          if (_attachments.isNotEmpty) _buildAttachmentsBar(),
           Expanded(
-            child: Container(
-              constraints: const BoxConstraints.expand(),
-              child: _messages.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: _messages.length,
-                      itemBuilder: (context, index) {
-                        return _buildMessageBubble(_messages[index]);
-                      },
-                    ),
-            ),
+            child: _messages.isEmpty
+                ? _buildEmptyState()
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _messages.length,
+                    itemBuilder: (context, index) {
+                      return _buildMessageBubble(_messages[index]);
+                    },
+                  ),
           ),
-          _buildQuickQuestions(),
+          if (_messages.isNotEmpty) _buildQuickQuestions(),
           _buildInputArea(),
         ],
       ),
     );
+  }
+
+  Widget _buildAttachmentsBar() {
+    return Container(
+      height: 50,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        border: Border(
+          bottom: BorderSide(color: Colors.grey[200]!),
+        ),
+      ),
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _attachments.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final attachment = _attachments[index];
+          return Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey[300]!),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  _getFileIcon(attachment.extension),
+                  color: const Color(0xFFF57C00),
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
+                Flexible(
+                  child: Text(
+                    attachment.name,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: () => _removeAttachment(index),
+                  child: Icon(
+                    Icons.close_rounded,
+                    color: Colors.grey[400],
+                    size: 16,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  IconData _getFileIcon(String extension) {
+    switch (extension.toLowerCase()) {
+      case 'jpg':
+      case 'jpeg':
+      case 'png':
+      case 'gif':
+        return Icons.image_rounded;
+      case 'pdf':
+        return Icons.picture_as_pdf_rounded;
+      case 'doc':
+      case 'docx':
+        return Icons.description_rounded;
+      case 'txt':
+        return Icons.text_snippet_rounded;
+      default:
+        return Icons.attach_file_rounded;
+    }
   }
 
   Widget _buildEmptyState() {
@@ -72,7 +313,7 @@ class _AIChatTabState extends State<AIChatTab> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(28),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF3E0),
               shape: BoxShape.circle,
@@ -80,55 +321,80 @@ class _AIChatTabState extends State<AIChatTab> {
             child: const Icon(
               Icons.auto_awesome_rounded,
               color: Color(0xFFF57C00),
-              size: 48,
+              size: 60,
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 32),
           Text(
             'Welcome to Jaguza AI',
             style: GoogleFonts.inter(
-              fontSize: 20,
+              fontSize: 24,
               fontWeight: FontWeight.w700,
               color: const Color(0xFF1A1F36),
+              letterSpacing: -0.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Your intelligent farming assistant',
+            style: TextStyle(
+              fontSize: 16,
+              color: Colors.grey[600],
+              height: 1.5,
+              fontWeight: FontWeight.w400,
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            'Ask me about Livestock, Aquaculture or Crops',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF3E0),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              'Livestock • Aquaculture • Crops',
+              style: TextStyle(
+                fontSize: 12,
+                color: const Color(0xFFF57C00),
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: _quickQuestions.map((question) {
-              return GestureDetector(
-                onTap: () {
-                  _messageController.text = question;
-                  _sendMessage();
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0xFFF57C00).withOpacity(0.3)),
-                  ),
-                  child: Text(
-                    question,
-                    style: TextStyle(
-                      color: const Color(0xFFF57C00),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+          const SizedBox(height: 48),
+          Row(
+            children: [
+              Expanded(
+                child: Divider(
+                  color: Colors.grey[200],
+                  thickness: 1,
+                  indent: 40,
+                  endIndent: 16,
                 ),
-              );
-            }).toList(),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down_rounded,
+                color: Colors.grey[400],
+                size: 20,
+              ),
+              Expanded(
+                child: Divider(
+                  color: Colors.grey[200],
+                  thickness: 1,
+                  indent: 16,
+                  endIndent: 40,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Start typing your question below',
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.grey[500],
+              fontWeight: FontWeight.w400,
+            ),
           ),
         ],
       ),
@@ -178,7 +444,6 @@ class _AIChatTabState extends State<AIChatTab> {
         ],
       ),
       actions: [
-        // Language selector
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
@@ -219,7 +484,6 @@ class _AIChatTabState extends State<AIChatTab> {
           ),
         ),
         const SizedBox(width: 8),
-        // Clear chat button
         TextButton.icon(
           onPressed: _messages.isEmpty ? null : _clearChat,
           icon: Icon(Icons.delete_outline_rounded,
@@ -246,16 +510,15 @@ class _AIChatTabState extends State<AIChatTab> {
     if (_messages.isEmpty) return const SizedBox.shrink();
     
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.grey[50],
         border: Border(
           top: BorderSide(color: Colors.grey[200]!),
-          bottom: BorderSide(color: Colors.grey[200]!),
         ),
       ),
       child: SizedBox(
-        height: 32,
+        height: 36,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           itemCount: _quickQuestions.length,
@@ -267,19 +530,20 @@ class _AIChatTabState extends State<AIChatTab> {
                 _sendMessage();
               },
               child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: const Color(0xFFFFF3E0),
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.grey[300]!),
+                  border: Border.all(
+                    color: const Color(0xFFF57C00).withOpacity(0.15),
+                  ),
                 ),
                 child: Text(
                   _quickQuestions[index],
-                  style: TextStyle(
-                    color: Colors.grey[700],
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                  style: const TextStyle(
+                    color: Color(0xFFF57C00),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
               ),
@@ -299,76 +563,128 @@ class _AIChatTabState extends State<AIChatTab> {
           top: BorderSide(color: Colors.grey[200]!),
         ),
       ),
-      child: Row(
+      child: Column(
         children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: Icon(Icons.attach_file_rounded,
-                  color: Colors.grey[600], size: 20),
-              onPressed: () {},
-            ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(24),
-                border: Border.all(color: Colors.grey[300]!),
+          Row(
+            children: [
+              // Attachment button
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: _attachments.isNotEmpty ? const Color(0xFFFFF3E0) : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(12),
+                  border: _attachments.isNotEmpty 
+                      ? Border.all(color: const Color(0xFFF57C00).withOpacity(0.3))
+                      : null,
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    Icons.attach_file_rounded,
+                    color: _attachments.isNotEmpty ? const Color(0xFFF57C00) : Colors.grey[600],
+                    size: 20,
+                  ),
+                  onPressed: _pickFile,
+                ),
               ),
-              child: TextField(
-                controller: _messageController,
-                style:
-                    const TextStyle(color: Color(0xFF1A1F36), fontSize: 13),
-                decoration: InputDecoration(
-                  hintText: 'Type your question...',
-                  hintStyle:
-                      TextStyle(fontSize: 13, color: Colors.grey[500]),
-                  contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 10),
-                  border: InputBorder.none,
-                  suffixIcon: IconButton(
-                    icon: Icon(Icons.mic_rounded,
-                        color: Colors.grey[500], size: 20),
-                    onPressed: () {},
+              const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: TextField(
+                    controller: _messageController,
+                    style: const TextStyle(color: Color(0xFF1A1F36), fontSize: 14),
+                    decoration: InputDecoration(
+                      hintText: _isRecording ? 'Listening...' : 'Type your question...',
+                      hintStyle: TextStyle(
+                        fontSize: 14, 
+                        color: _isRecording ? Colors.grey[700] : Colors.grey[500],
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 10),
+                      border: InputBorder.none,
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                          color: _isRecording ? Colors.red : Colors.grey[500],
+                          size: 20,
+                        ),
+                        onPressed: _isRecording ? _stopListening : _startListening,
+                      ),
+                    ),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
-                onSubmitted: (_) => _sendMessage(),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _messageController.text.isNotEmpty || _attachments.isNotEmpty
+                      ? const Color(0xFFF57C00)
+                      : Colors.grey[300],
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.send_rounded,
+                          color: Colors.white, size: 22),
+                  onPressed: (_messageController.text.isNotEmpty || _attachments.isNotEmpty) && !_isLoading
+                      ? _sendMessage
+                      : null,
+                ),
+              ),
+            ],
+          ),
+          if (_isRecording)
+            Container(
+              margin: const EdgeInsets.only(top: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.red,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Recording... Tap the mic button again to stop',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.red.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            width: 44,
-            height: 44,
-            decoration: BoxDecoration(
-              color: const Color(0xFFF57C00),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        valueColor:
-                            AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Icon(Icons.send_rounded,
-                      color: Colors.white, size: 22),
-              onPressed: _isLoading ? null : _sendMessage,
-            ),
-          ),
         ],
       ),
     );
@@ -420,11 +736,46 @@ class _AIChatTabState extends State<AIChatTab> {
                   Text(
                     message.text,
                     style: TextStyle(
-                      fontSize: 13.5,
+                      fontSize: 14,
                       color: isUser ? Colors.white : const Color(0xFF1A1F36),
                       height: 1.6,
                     ),
                   ),
+                  if (message.attachments != null && message.attachments!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: message.attachments!.map((attachment) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: isUser ? Colors.white.withOpacity(0.2) : Colors.grey[200],
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                _getFileIcon(attachment.extension),
+                                color: isUser ? Colors.white : Colors.grey[700],
+                                size: 14,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                attachment.name,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: isUser ? Colors.white : Colors.grey[700],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
                   const SizedBox(height: 6),
                   Text(
                     _formatTime(message.timestamp),
@@ -468,23 +819,41 @@ class _AIChatTabState extends State<AIChatTab> {
 
   void _sendMessage() {
     final text = _messageController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty && _attachments.isEmpty) return;
+
+    // Stop recording if active
+    if (_isRecording) {
+      _stopListening();
+    }
+
+    final attachments = List<FileAttachment>.from(_attachments);
 
     setState(() {
       _messages.add(ChatMessage(
-        text: text,
+        text: text.isEmpty ? '📎 Sent ${attachments.length} file(s)' : text,
         isUser: true,
         timestamp: DateTime.now(),
+        attachments: attachments,
       ));
       _messageController.clear();
+      _attachments.clear();
       _isLoading = true;
     });
 
+    // Simulate AI response
     Future.delayed(const Duration(seconds: 1), () {
       if (!mounted) return;
+      
+      String response = _getAIResponse(text);
+      
+      // If there are attachments, acknowledge them
+      if (attachments.isNotEmpty) {
+        response = 'I received your file(s). ${attachments.length > 1 ? 'They have been' : 'It has been'} uploaded successfully. $response';
+      }
+      
       setState(() {
         _messages.add(ChatMessage(
-          text: _getAIResponse(text),
+          text: response,
           isUser: false,
           timestamp: DateTime.now(),
         ));
@@ -546,7 +915,7 @@ class _AIChatTabState extends State<AIChatTab> {
               Navigator.pop(context);
               setState(() {
                 _messages.clear();
-                // No welcome message added - chat stays empty
+                _attachments.clear();
               });
             },
             style: ElevatedButton.styleFrom(
@@ -570,22 +939,32 @@ class _AIChatTabState extends State<AIChatTab> {
     if (difference.inHours < 24) return '${difference.inHours}h ago';
     return '${difference.inDays}d ago';
   }
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
 }
 
 class ChatMessage {
   final String text;
   final bool isUser;
   final DateTime timestamp;
+  final List<FileAttachment>? attachments;
 
   ChatMessage({
     required this.text,
     required this.isUser,
     required this.timestamp,
+    this.attachments,
+  });
+}
+
+class FileAttachment {
+  final String name;
+  final int size;
+  final Uint8List? bytes;
+  final String extension;
+
+  FileAttachment({
+    required this.name,
+    required this.size,
+    this.bytes,
+    required this.extension,
   });
 }

@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Jaguza Admin Dashboard – {% block title %}Livestock Management{% endblock %}</title>
+    <meta name="description" content="Jaguza Livestock Management Admin Dashboard" />
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon"><i class="fas fa-seedling"></i></div>
+        <div class="logo-text">
+            <h1>Jaguza</h1>
+            <span>Admin Dashboard</span>
+        </div>
+    </div>
+    <div class="sidebar-scroll">
+        <!-- Navigation will be rendered here -->
+        {% include 'includes/sidebar.html' %}
+    </div>
+    <div class="sidebar-footer">
+        <div class="sidebar-user">
+            <div class="user-avatar">{{ user.username|make_list|first|upper }}</div>
+            <div class="user-info">
+                <p>{{ user.get_full_name|default:user.username }}</p>
+                <span>{{ user.role|default:"Super Admin" }}</span>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- TOPBAR -->
+<header id="topbar">
+    <div class="topbar-left">
+        <button id="toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+        <span id="page-title">{% block page_title %}Dashboard Overview{% endblock %}</span>
+    </div>
+    <div class="topbar-search">
+        <i class="fas fa-search"></i>
+        <input type="text" placeholder="Search anything..." id="global-search" />
+    </div>
+    <div class="topbar-right">
+        <button class="topbar-action-btn" onclick="navigate('notifications','Notifications')">
+            <i class="fas fa-bell"></i>
+            <span class="topbar-badge">{{ unread_notifications_count|default:0 }}</span>
+        </button>
+        <button class="topbar-action-btn" onclick="navigate('messages','Messages')">
+            <i class="fas fa-envelope"></i>
+            <span class="topbar-badge">{{ unread_messages_count|default:0 }}</span>
+        </button>
+        <button class="topbar-action-btn" onclick="navigate('profile','Profile')">
+            <i class="fas fa-user-circle"></i>
+        </button>
+    </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<div id="main-wrap">
+    {% block content %}
+    <!-- Content will be injected here -->
+    {% endblock %}
+</div>
+
+<!-- JavaScript -->
+<script>
+// Global variables
+const STATIC_URL = "{% static '' %}";
+const MEDIA_URL = "{{ MEDIA_URL }}";
+const CSRF_TOKEN = "{{ csrf_token }}";
+
+// Navigation function
+function navigate(pageId, title) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    
+    const page = document.getElementById('page-' + pageId);
+    if (page) page.classList.add('active');
+    
+    const nav = document.getElementById('nav-' + pageId);
+    if (nav) nav.classList.add('active');
+    
+    document.getElementById('page-title').textContent = title;
+    
+    // Update URL without reload
+    if (window.history && window.history.pushState) {
+        window.history.pushState({ page: pageId }, '', '?page=' + pageId);
+    }
+    
+    // Trigger page-specific load functions
+    if (window['load' + pageId.charAt(0).toUpperCase() + pageId.slice(1)]) {
+        window['load' + pageId.charAt(0).toUpperCase() + pageId.slice(1)]();
+    }
+}
+
+function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('collapsed');
+    document.getElementById('topbar').classList.toggle('shifted');
+    document.getElementById('main-wrap').classList.toggle('shifted');
+}
+
+// Global search functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const searchInput = document.getElementById('global-search');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', function(e) {
+            if (e.key === 'Enter') {
+                performGlobalSearch(this.value);
+            }
+        });
+    }
+});
+
+function performGlobalSearch(query) {
+    if (query.length < 3) return;
+    // AJAX call to search endpoint
+    fetch(`/api/v1/search/?q=${encodeURIComponent(query)}`)
+        .then(response => response.json())
+        .then(data => {
+            // Handle search results
+            console.log('Search results:', data);
+        })
+        .catch(error => console.error('Search error:', error));
+}
+
+// Initialize dashboard
+window.addEventListener('DOMContentLoaded', function() {
+    // Check URL parameters for page navigation
+    const urlParams = new URLSearchParams(window.location.search);
+    const page = urlParams.get('page');
+    if (page) {
+        const navItem = document.getElementById('nav-' + page);
+        if (navItem) navItem.click();
+    }
+});
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

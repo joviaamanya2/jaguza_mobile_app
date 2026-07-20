@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
@@ -9,21 +11,174 @@ class LanguageSelectionScreen extends StatefulWidget {
 }
 
 class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
-  String _selectedLanguage = 'English';
+  String? _selectedLanguage;
+  bool _isLoading = true;
 
-  final List<String> _languages = [
-    'Acholi', 'Alur', 'Amharic', 'Arabic', 'Berber', 'Chichewa', 'Chinese',
-    'English', 'French', 'Fula', 'German', 'Hausa', 'Igbo', 'Italian',
-    'Japanese', 'Kinyarwanda', 'Kirundi', 'Lingala', 'Luo', 'Luganda',
-    'Lugbara', 'Lugisu', 'Lugwere', 'Lumasaba', 'Oromo', 'Portuguese',
-    'Rukiga', 'Runyankore', 'Runyoro', 'Rutooro', 'Sesotho', 'Setswana',
-    'Shona', 'Somali', 'Spanish', 'Swahili', 'Tigrinya', 'Twi', 'Wolof',
-    'Xhosa', 'Yoruba', 'Zulu',
+  final List<Map<String, String>> _languages = [
+    {'name': 'English', 'code': 'en'},
+    {'name': 'French', 'code': 'fr'},
+    {'name': 'Spanish', 'code': 'es'},
+    {'name': 'German', 'code': 'de'},
+    {'name': 'Italian', 'code': 'it'},
+    {'name': 'Portuguese', 'code': 'pt'},
+    {'name': 'Arabic', 'code': 'ar'},
+    {'name': 'Chinese', 'code': 'zh'},
+    {'name': 'Japanese', 'code': 'ja'},
+    {'name': 'Swahili', 'code': 'sw'},
+    {'name': 'Hausa', 'code': 'ha'},
+    {'name': 'Yoruba', 'code': 'yo'},
+    {'name': 'Igbo', 'code': 'ig'},
+    {'name': 'Zulu', 'code': 'zu'},
+    {'name': 'Xhosa', 'code': 'xh'},
+    {'name': 'Shona', 'code': 'sn'},
+    {'name': 'Somali', 'code': 'so'},
+    {'name': 'Amharic', 'code': 'am'},
+    {'name': 'Tigrinya', 'code': 'ti'},
+    {'name': 'Oromo', 'code': 'om'},
+    {'name': 'Kinyarwanda', 'code': 'rw'},
+    {'name': 'Kirundi', 'code': 'rn'},
+    {'name': 'Luganda', 'code': 'lg'},
+    {'name': 'Acholi', 'code': 'ach'},
+    {'name': 'Alur', 'code': 'alz'},
+    {'name': 'Lugbara', 'code': 'lgg'},
+    {'name': 'Runyankore', 'code': 'nyn'},
+    {'name': 'Runyoro', 'code': 'nyo'},
+    {'name': 'Rutooro', 'code': 'ttj'},
+    {'name': 'Rukiga', 'code': 'cgg'},
+    {'name': 'Lumasaba', 'code': 'myx'},
+    {'name': 'Lugisu', 'code': 'myx'},
+    {'name': 'Lugwere', 'code': 'gwr'},
+    {'name': 'Luo', 'code': 'luo'},
+    {'name': 'Lingala', 'code': 'ln'},
+    {'name': 'Fula', 'code': 'ff'},
+    {'name': 'Wolof', 'code': 'wo'},
+    {'name': 'Twi', 'code': 'tw'},
+    {'name': 'Berber', 'code': 'ber'},
+    {'name': 'Chichewa', 'code': 'ny'},
+    {'name': 'Sesotho', 'code': 'st'},
+    {'name': 'Setswana', 'code': 'tn'},
+    {'name': 'Korean', 'code': 'ko'},
+    {'name': 'Russian', 'code': 'ru'},
+    {'name': 'Hindi', 'code': 'hi'},
+    {'name': 'Urdu', 'code': 'ur'},
+    {'name': 'Bengali', 'code': 'bn'},
+    {'name': 'Tamil', 'code': 'ta'},
+    {'name': 'Telugu', 'code': 'te'},
+    {'name': 'Malayalam', 'code': 'ml'},
+    {'name': 'Sinhala', 'code': 'si'},
+    {'name': 'Nepali', 'code': 'ne'},
+    {'name': 'Khmer', 'code': 'km'},
+    {'name': 'Thai', 'code': 'th'},
+    {'name': 'Vietnamese', 'code': 'vi'},
+    {'name': 'Indonesian', 'code': 'id'},
+    {'name': 'Malay', 'code': 'ms'},
+    {'name': 'Tagalog', 'code': 'tl'},
+    {'name': 'Greek', 'code': 'el'},
+    {'name': 'Turkish', 'code': 'tr'},
+    {'name': 'Polish', 'code': 'pl'},
+    {'name': 'Ukrainian', 'code': 'uk'},
+    {'name': 'Czech', 'code': 'cs'},
+    {'name': 'Hungarian', 'code': 'hu'},
+    {'name': 'Romanian', 'code': 'ro'},
+    {'name': 'Bulgarian', 'code': 'bg'},
+    {'name': 'Croatian', 'code': 'hr'},
+    {'name': 'Serbian', 'code': 'sr'},
+    {'name': 'Albanian', 'code': 'sq'},
+    {'name': 'Macedonian', 'code': 'mk'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedLanguage();
+  }
+
+  Future<void> _loadSavedLanguage() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final savedLanguageCode = prefs.getString('language_code');
+      
+      if (savedLanguageCode != null && savedLanguageCode.isNotEmpty) {
+        // Find the language name from the code
+        final language = _languages.firstWhere(
+          (lang) => lang['code'] == savedLanguageCode,
+          orElse: () => {'name': 'English', 'code': 'en'},
+        );
+        setState(() {
+          _selectedLanguage = language['name']!;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _selectedLanguage = 'English';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _selectedLanguage = 'English';
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _changeLanguage() async {
+    if (_selectedLanguage == null) return;
+    
+    try {
+      // Get the language code for the selected language
+      final languageEntry = _languages.firstWhere(
+        (lang) => lang['name'] == _selectedLanguage,
+        orElse: () => {'name': 'English', 'code': 'en'},
+      );
+
+      final languageCode = languageEntry['code']!;
+      
+      // Save language preference
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('language_code', languageCode);
+      await prefs.setString('language_name', _selectedLanguage!);
+      
+      if (mounted) {
+        // Navigate to home with rebuild
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const MainShell(),
+          ),
+          (route) => false,
+        );
+      }
+    } catch (e) {
+      _showErrorSnackBar('Failed to change language. Please try again.');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red.shade700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final double headerHeight = MediaQuery.of(context).size.height * 0.32;
+
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: Color(0xFFF8F9FA),
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1E7B4E)),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
@@ -169,11 +324,11 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                                   });
                                 }
                               },
-                              items: _languages.map<DropdownMenuItem<String>>((String value) {
+                              items: _languages.map<DropdownMenuItem<String>>((Map<String, String> lang) {
                                 return DropdownMenuItem<String>(
-                                  value: value,
+                                  value: lang['name'],
                                   child: Text(
-                                    value,
+                                    lang['name']!,
                                     style: const TextStyle(
                                       color: Color(0xFF1A1F36),
                                       fontSize: 15,
@@ -182,6 +337,17 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                                   ),
                                 );
                               }).toList(),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '${_languages.length} languages available',
+                            style: const TextStyle(
+                              color: Color(0xFF9CA3AF),
+                              fontSize: 11,
                             ),
                           ),
                         ),
@@ -197,13 +363,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                               ),
                               elevation: 0,
                             ),
-                            onPressed: () {
-                              Navigator.pushAndRemoveUntil(
-                                context,
-                                MaterialPageRoute(builder: (context) => const MainShell()),
-                                (route) => false,
-                              );
-                            },
+                            onPressed: _changeLanguage,
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
@@ -222,9 +382,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                             ),
                           ),
                         ),
-                      ], // closes Card Column
-                    ), // closes Card Container padding/decoration
-                  ), // closes Card Container
+                      ],
+                    ),
+                  ),
 
                   const Spacer(),
 
@@ -237,11 +397,11 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                     ),
                   ),
                   const SizedBox(height: 20),
-                ], // closes outer Column
-              ), // closes outer Padding
-            ), // closes Expanded
+                ],
+              ),
+            ),
           ),
-        ], // closes Scaffold body Column
+        ],
       ),
     );
   }

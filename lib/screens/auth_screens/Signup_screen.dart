@@ -4,7 +4,7 @@ import '../terms_and_conditions.dart';
 import '../language_selection.dart';
 import '../../services/api_service.dart';
 
-// ─── App entry (only used when running this file directly) 
+// ─── App entry ──
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
   runApp(const _SignupApp());
@@ -27,6 +27,7 @@ const _kText = Color(0xFF1A1F36);
 const _kSubtext = Color(0xFF6B7280);
 const _kBorder = Color(0xFFE3E8EE);
 const _kFill = Color(0xFFF6F8FA);
+const _kPrimary = Color(0xFFFF7A1A);
 
 // ─── Password strength helper ───────────
 enum _PasswordStrength { empty, weak, fair, strong, veryStrong }
@@ -153,7 +154,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   Future<void> _handleRegister() async {
-    // Close keyboard
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) return;
@@ -168,31 +168,48 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     setState(() => _isLoading = true);
     
-    // Call the Django backend API
-    final username = _emailCtrl.text.trim().split('@').first; // Generate a username from email
-    final result = await ApiService.register(
-      username: username,
-      email: _emailCtrl.text.trim(),
-      password: _passwordCtrl.text,
-      firstName: _firstNameCtrl.text.trim(),
-      lastName: _lastNameCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-    );
-    
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    try {
+      final apiService = ApiService();
+      
+      final String email = _emailCtrl.text.trim();
+      final String username = email.split('@').first;
+      
+      final userData = {
+        'name': '${_firstNameCtrl.text.trim()} ${_lastNameCtrl.text.trim()}',
+        'email': email,
+        'password': _passwordCtrl.text,
+        'password_confirmation': _confirmPasswordCtrl.text,
+        'phone_number': _phoneCtrl.text.trim(),
+        'role': 'farmer',
+        'farm_name': '',
+        'farm_location': '',
+      };
+      
+      final result = await apiService.register(userData);
+      
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-    if (result['success'] == true) {
-      _showSnack('Account created successfully! Welcome aboard');
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
-      );
-    } else {
-      _showSnack(
-        result['error'] ?? 'Registration failed. Please try again.',
-        isError: true,
-      );
+      if (result['success'] == true) {
+        _showSnack('Account created successfully! Welcome aboard');
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+        );
+      } else {
+        String errorMessage = 'Registration failed. Please try again.';
+        if (result['error'] is Map) {
+          final errors = result['error'] as Map;
+          errorMessage = errors.values.first.toString();
+        } else if (result['error'] is String) {
+          errorMessage = result['error'];
+        }
+        _showSnack(errorMessage, isError: true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      _showSnack('Network error: ${e.toString()}', isError: true);
     }
   }
 
@@ -229,13 +246,10 @@ class _RegisterScreenState extends State<RegisterScreen>
         backgroundColor: Colors.white,
         body: Column(
           children: [
-            // ── Green header banner 
             FadeTransition(
               opacity: _headerFade,
               child: _buildHeader(context),
             ),
-
-            // ── Form body 
             Expanded(
               child: SingleChildScrollView(
                 keyboardDismissBehavior:
@@ -248,7 +262,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      
                       Row(
                         children: [
                           Expanded(
@@ -297,7 +310,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // ── Email ───────
                       _FormGroup(
                         label: 'Email Address',
                         child: _AppField(
@@ -323,7 +335,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // ── Phone ───────
                       _FormGroup(
                         label: 'Phone Number',
                         child: _PhoneField(
@@ -338,7 +349,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                       const SizedBox(height: 16),
 
-                      // ── Password ────
                       _FormGroup(
                         label: 'Password',
                         child: _AppField(
@@ -372,14 +382,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                         ),
                       ),
 
-                      // ── Strength meter 
                       if (_passwordStrength != _PasswordStrength.empty) ...[
                         const SizedBox(height: 10),
                         _PasswordStrengthMeter(strength: _passwordStrength),
                       ],
                       const SizedBox(height: 16),
 
-                      // ── Confirm Password
                       _FormGroup(
                         label: 'Confirm Password',
                         child: _AppField(
@@ -415,7 +423,6 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                       const SizedBox(height: 24),
 
-                      // ── Terms checkbox
                       _TermsRow(
                         isChecked: _agreedToTerms,
                         onChanged: (v) =>
@@ -434,14 +441,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                       ),
                       const SizedBox(height: 28),
 
-                      // ── Register button 
                       _RegisterButton(
                         isLoading: _isLoading,
                         onPressed: _handleRegister,
                       ),
                       const SizedBox(height: 20),
 
-                      // Sign in link 
                       Center(
                         child: GestureDetector(
                           onTap: () => Navigator.maybePop(context),
@@ -487,18 +492,11 @@ class _RegisterScreenState extends State<RegisterScreen>
       clipper: _WaveClipper(),
       child: Container(
         width: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [_kGreen, _kGreenLight],
-          ),
-        ),
+        color: _kGreen,
         padding: const EdgeInsets.fromLTRB(22, 48, 22, 60),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Back button
             GestureDetector(
               onTap: () => Navigator.maybePop(context),
               child: Container(
@@ -775,8 +773,7 @@ class _PasswordStrengthMeter extends StatelessWidget {
           children: List.generate(4, (i) {
             return Expanded(
               child: Container(
-                margin:
-                    EdgeInsets.only(left: i == 0 ? 0 : 4),
+                margin: EdgeInsets.only(left: i == 0 ? 0 : 4),
                 height: 5,
                 decoration: BoxDecoration(
                   color: i < filled ? color : _kBorder,
@@ -896,59 +893,47 @@ class _RegisterButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: isLoading ? null : onPressed,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        height: 54,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: isLoading
-              ? const LinearGradient(
-                  colors: [Color(0xFF7DB89A), Color(0xFF7DB89A)])
-              : const LinearGradient(
-                  colors: [_kGreen, _kGreenLight],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ),
-          boxShadow: isLoading
-              ? []
-              : [
-                  BoxShadow(
-                    color: _kGreen.withValues(alpha: 0.38),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
+    return SizedBox(
+      height: 54,
+      child: ElevatedButton(
+        onPressed: isLoading ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: _kPrimary,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: _kPrimary.withOpacity(0.6),
+          disabledForegroundColor: Colors.white,
+          elevation: 0,
+          shadowColor: Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
-        child: Center(
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2.5,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'CREATE ACCOUNT',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
-                      ),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'CREATE ACCOUNT',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 1.2,
                     ),
-                    SizedBox(width: 8),
-                    Icon(Icons.arrow_forward_rounded,
-                        color: Colors.white, size: 18),
-                  ],
-                ),
-        ),
+                  ),
+                  SizedBox(width: 8),
+                  Icon(Icons.arrow_forward_rounded,
+                      color: Colors.white, size: 18),
+                ],
+              ),
       ),
     );
   }

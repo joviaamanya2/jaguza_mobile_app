@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
 // ─── Theme constants ──────────────────────────────────────────────────────────
-const _kGreen = Color(0xFF2E7D32);
-const _kGreenLight = Color(0xFF2E7D32);
-const _kGreenFaint = Color(0xFF2E7D32);
+const _kPrimary = Color(0xFFFF7A1A);
+const _kPrimaryLight = Color(0xFFFF8C3A);
+const _kPrimaryFaint = Color(0xFFFFF0E6);
 const _kText = Color(0xFF1A1F36);
 const _kSubtext = Color(0xFF6B7280);
 const _kBorder = Color(0xFFE8EDF2);
@@ -55,14 +55,14 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
           ],
         ),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: _kGreen,
+        backgroundColor: _kPrimary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
     );
 
     if (widget.fromSignup) {
-      Navigator.pop(context, true); // Return true to signup screen
+      Navigator.pop(context, true);
     } else {
       Navigator.pop(context);
     }
@@ -86,133 +86,201 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Last updated badge
+                  // ── Single Card Container ──────────────────────────────────
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: _kGreenFaint,
+                      color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.calendar_today_rounded,
-                            size: 12, color: _kGreen),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Last updated: January 15, 2025',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            color: _kGreen,
-                            fontWeight: FontWeight.w600,
-                          ),
+                      border: Border.all(color: _kBorder),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(height: 24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Last updated badge
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: _kPrimaryFaint,
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.calendar_today_rounded,
+                                    size: 12, color: _kPrimary),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Last updated: January 15, 2025',
+                                  style: TextStyle(
+                                    fontSize: 11.5,
+                                    color: _kPrimary,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
 
-                  // Intro blurb
+                        // Intro blurb
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: _kPrimaryFaint,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: _kPrimary.withValues(alpha: 0.15)),
+                            ),
+                            child: const Text(
+                              'Please read these Terms & Conditions carefully before creating an account or using the Jaguza Livestock app. By using our services, you agree to these terms.',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: _kText,
+                                height: 1.6,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
+                        // ── All sections ─────────────────────────────────────
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Column(
+                            children: [
+                              _buildSection(
+                                number: '1',
+                                title: 'Introduction',
+                                icon: Icons.info_outline_rounded,
+                                body:
+                                    'Welcome to Jaguza Livestock ("we," "our," or "us"). By accessing or using our mobile application, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our app.',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                number: '2',
+                                title: 'Acceptance of Terms',
+                                icon: Icons.handshake_outlined,
+                                body:
+                                    'By creating an account, logging in, or using the Jaguza Livestock app, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions in their entirety.',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                number: '3',
+                                title: 'User Accounts',
+                                icon: Icons.person_outline_rounded,
+                                body:
+                                    'To access certain features, you may be required to register for an account. You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account. You agree to notify us immediately of any unauthorized use of your account.',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                number: '4',
+                                title: 'Use of Service',
+                                icon: Icons.apps_rounded,
+                                body:
+                                    'Jaguza Livestock provides tools for livestock tracking, health monitoring, GPS location mapping, and AI-powered analytics. You agree to use the app only for lawful purposes and in accordance with these terms. You must not misuse the app by attempting to access unauthorized areas or interfere with its proper functioning.',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                number: '5',
+                                title: 'Data and Privacy',
+                                icon: Icons.shield_outlined,
+                                body:
+                                    'Your privacy is important to us. Our collection and use of personal information, including livestock data and location tracking, is governed by our Privacy Policy, which is incorporated into these Terms by reference. By using the app, you consent to the collection and use of your information as outlined in the Privacy Policy.',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                number: '6',
+                                title: 'Intellectual Property',
+                                icon: Icons.copyright_rounded,
+                                body:
+                                    'All content, features, and functionality of the Jaguza Livestock app — including but not limited to text, graphics, logos, icons, images, audio clips, digital downloads, and software — are the exclusive property of Jaguza Livestock and are protected by international copyright, trademark, and other intellectual property laws.',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                number: '7',
+                                title: 'Limitation of Liability',
+                                icon: Icons.gavel_rounded,
+                                body:
+                                    'In no event shall Jaguza Livestock, its directors, employees, partners, agents, suppliers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or livestock, resulting from your access to or use of (or inability to access or use) the app.',
+                              ),
+                              const SizedBox(height: 12),
+                              _buildSection(
+                                number: '8',
+                                title: 'Changes to Terms',
+                                icon: Icons.edit_note_rounded,
+                                body:
+                                    'We reserve the right to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days\' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.',
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
+                  ),
+
+                  // ── Contact Info (outside the card) ──────────────────────
+                  const SizedBox(height: 24),
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: _kGreenFaint,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _kGreen.withValues(alpha: 0.18)),
+                      color: _kPrimaryFaint,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: _kPrimary.withValues(alpha: 0.12)),
                     ),
-                    child: const Text(
-                      'Please read these Terms & Conditions carefully before creating an account or using the Jaguza Livestock app. By using our services, you agree to these terms.',
-                      style: TextStyle(
-                        fontSize: 13.5,
-                        color: _kText,
-                        height: 1.6,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 28),
-
-                  _buildSection(
-                    number: '1',
-                    title: 'Introduction',
-                    icon: Icons.info_outline_rounded,
-                    body:
-                        'Welcome to Jaguza Livestock ("we," "our," or "us"). By accessing or using our mobile application, you agree to be bound by these Terms and Conditions. If you do not agree with any part of these terms, you must not use our app.',
-                  ),
-
-                  _buildSection(
-                    number: '2',
-                    title: 'Acceptance of Terms',
-                    icon: Icons.handshake_outlined,
-                    body:
-                        'By creating an account, logging in, or using the Jaguza Livestock app, you acknowledge that you have read, understood, and agree to be bound by these Terms and Conditions in their entirety.',
-                  ),
-
-                  _buildSection(
-                    number: '3',
-                    title: 'User Accounts',
-                    icon: Icons.person_outline_rounded,
-                    body:
-                        'To access certain features, you may be required to register for an account. You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account. You agree to notify us immediately of any unauthorized use of your account.',
-                  ),
-
-                  _buildSection(
-                    number: '4',
-                    title: 'Use of Service',
-                    icon: Icons.apps_rounded,
-                    body:
-                        'Jaguza Livestock provides tools for livestock tracking, health monitoring, GPS location mapping, and AI-powered analytics. You agree to use the app only for lawful purposes and in accordance with these terms. You must not misuse the app by attempting to access unauthorized areas or interfere with its proper functioning.',
-                  ),
-
-                  _buildSection(
-                    number: '5',
-                    title: 'Data and Privacy',
-                    icon: Icons.shield_outlined,
-                    body:
-                        'Your privacy is important to us. Our collection and use of personal information, including livestock data and location tracking, is governed by our Privacy Policy, which is incorporated into these Terms by reference. By using the app, you consent to the collection and use of your information as outlined in the Privacy Policy.',
-                  ),
-
-                  _buildSection(
-                    number: '6',
-                    title: 'Intellectual Property',
-                    icon: Icons.copyright_rounded,
-                    body:
-                        'All content, features, and functionality of the Jaguza Livestock app — including but not limited to text, graphics, logos, icons, images, audio clips, digital downloads, and software — are the exclusive property of Jaguza Livestock and are protected by international copyright, trademark, and other intellectual property laws.',
-                  ),
-
-                  _buildSection(
-                    number: '7',
-                    title: 'Limitation of Liability',
-                    icon: Icons.gavel_rounded,
-                    body:
-                        'In no event shall Jaguza Livestock, its directors, employees, partners, agents, suppliers, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or livestock, resulting from your access to or use of (or inability to access or use) the app.',
-                  ),
-
-                  _buildSection(
-                    number: '8',
-                    title: 'Changes to Terms',
-                    icon: Icons.edit_note_rounded,
-                    body:
-                        'We reserve the right to modify or replace these Terms at any time. If a revision is material, we will provide at least 30 days\' notice prior to any new terms taking effect. What constitutes a material change will be determined at our sole discretion.',
-                  ),
-
-                  _buildSection(
-                    number: '9',
-                    title: 'Contact Information',
-                    icon: Icons.contact_mail_outlined,
-                    body:
-                        'If you have any questions about these Terms and Conditions, please reach out to us:',
-                    extra: Column(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildContactChip(Icons.email_outlined,
-                            'legal@jaguzalivestock.com'),
-                        const SizedBox(height: 8),
-                        _buildContactChip(
-                            Icons.phone_outlined, '+256 XXX XXX XXX'),
-                        const SizedBox(height: 8),
-                        _buildContactChip(
-                            Icons.location_on_outlined, 'Kampala, Uganda'),
+                        Row(
+                          children: [
+                            Icon(Icons.contact_mail_outlined,
+                                color: _kPrimary, size: 20),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Contact Information',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: _kText,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'If you have any questions about these Terms and Conditions, please reach out to us:',
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: _kSubtext,
+                            height: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildContactChip(Icons.email_outlined,
+                                'legal@jaguzalivestock.com'),
+                            _buildContactChip(
+                                Icons.phone_outlined, '+256 XXX XXX XXX'),
+                            _buildContactChip(
+                                Icons.location_on_outlined, 'Kampala, Uganda'),
+                          ],
+                        ),
                       ],
                     ),
                   ),
@@ -233,8 +301,8 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                             ),
                           ),
                           const SizedBox(height: 4),
-                          const Icon(Icons.keyboard_arrow_down_rounded,
-                              color: _kGreen, size: 22),
+                          Icon(Icons.keyboard_arrow_down_rounded,
+                              color: _kPrimary, size: 22),
                         ],
                       ),
                     ),
@@ -255,13 +323,7 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [_kGreen, _kGreenLight],
-        ),
-      ),
+      color: const Color.fromARGB(255, 8, 117, 8),
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -313,8 +375,8 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                   color: Colors.white.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child:
-                    const Icon(Icons.description_outlined, color: Colors.white, size: 22),
+                child: const Icon(Icons.description_outlined,
+                    color: Colors.white, size: 22),
               ),
             ],
           ),
@@ -328,53 +390,43 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
     required String title,
     required IconData icon,
     required String body,
-    Widget? extra,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: _kBorder),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Section header
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: const BoxDecoration(
-                border: Border(
-                    bottom: BorderSide(color: _kBorder, width: 1)),
+                border: Border(bottom: BorderSide(color: _kBorder, width: 1)),
               ),
               child: Row(
                 children: [
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 28,
+                    height: 28,
                     decoration: BoxDecoration(
-                      color: _kGreenFaint,
-                      borderRadius: BorderRadius.circular(8),
+                      color: _kPrimaryFaint,
+                      borderRadius: BorderRadius.circular(6),
                     ),
                     child: Center(
-                      child: Icon(icon, size: 17, color: _kGreen),
+                      child: Icon(icon, size: 15, color: _kPrimary),
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       '$number. $title',
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: _kText,
                         letterSpacing: 0.1,
@@ -386,24 +438,15 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
             ),
             // Section body
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    body,
-                    textAlign: TextAlign.justify,
-                    style: const TextStyle(
-                      fontSize: 13.5,
-                      color: _kSubtext,
-                      height: 1.65,
-                    ),
-                  ),
-                  if (extra != null) ...[
-                    const SizedBox(height: 14),
-                    extra,
-                  ],
-                ],
+              padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
+              child: Text(
+                body,
+                textAlign: TextAlign.justify,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: _kSubtext,
+                  height: 1.6,
+                ),
               ),
             ),
           ],
@@ -414,23 +457,23 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
 
   Widget _buildContactChip(IconData icon, String label) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: _kGreenFaint,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _kGreen.withValues(alpha: 0.15)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: _kBorder),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: _kGreen),
-          const SizedBox(width: 10),
+          Icon(icon, size: 14, color: _kPrimary),
+          const SizedBox(width: 8),
           Text(
             label,
             style: const TextStyle(
-              fontSize: 13,
-              color: _kGreen,
-              fontWeight: FontWeight.w600,
+              fontSize: 12.5,
+              color: _kText,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -483,25 +526,19 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
           ],
 
           // Accept button
-          GestureDetector(
-            onTap: _handleAccept,
-            child: Container(
-              width: double.infinity,
-              height: 54,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                gradient: const LinearGradient(
-                  colors: [_kGreen, _kGreenLight],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: _handleAccept,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _kPrimary,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shadowColor: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: _kGreen.withValues(alpha: 0.35),
-                    blurRadius: 18,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,

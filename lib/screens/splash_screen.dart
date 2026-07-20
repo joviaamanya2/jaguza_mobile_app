@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jaguza_app/screens/onboarding%20screens/onboarding1.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
+import 'home_screen.dart';
+import 'language_selection.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -46,7 +50,7 @@ class _SplashScreenState extends State<SplashScreen>
     _scaleController.forward();
     _fadeController.forward();
 
-    Future.delayed(const Duration(seconds: 3), _navigateToOnboarding);
+    Future.delayed(const Duration(seconds: 3), _checkAuthAndNavigate);
   }
 
   @override
@@ -56,10 +60,43 @@ class _SplashScreenState extends State<SplashScreen>
     super.dispose();
   }
 
-  void _navigateToOnboarding() {
+  Future<void> _checkAuthAndNavigate() async {
     if (_hasNavigated || !mounted) return;
-    setState(() => _hasNavigated = true);
 
+    try {
+      final apiService = ApiService();
+      await apiService.loadTokens();
+
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('access_token');
+      final savedLanguage = prefs.getString('language_code');
+
+      if (!mounted) return;
+      setState(() => _hasNavigated = true);
+
+      if (token != null && token.isNotEmpty) {
+        if (savedLanguage != null && savedLanguage.isNotEmpty) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const MainShell()),
+          );
+        } else {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+          );
+        }
+      } else {
+        _goToOnboarding();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _hasNavigated = true);
+      _goToOnboarding();
+    }
+  }
+
+  void _goToOnboarding() {
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(

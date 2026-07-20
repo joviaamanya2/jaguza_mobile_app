@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:jaguza_app/models/app_models.dart';
 import 'dart:io';
 import '../Gestation tracker/gestation_tracker.dart';
 

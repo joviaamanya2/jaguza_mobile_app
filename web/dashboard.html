@@ -1,0 +1,1525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Jaguza Admin Dashboard – Livestock Management</title>
+  <meta name="description" content="Jaguza Livestock Management Admin Dashboard – Manage users, farms, livestock, sickness reports, doctors, disease info, gestation tracking, videos, ads, notifications and more." />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --green-900: #0a2e14; 
+      --green-800: #133b24; 
+      --green-700: #1b5e20;
+      --green-600: #2e7d32; 
+      --green-500: #388e3c; 
+      --green-400: #43a047;
+      --green-300: #66bb6a; 
+      --green-200: #a5d6a7; 
+      --green-100: #e8f5e9;
+      --accent: #2e7d32; 
+      --gold: #f5c518; 
+      --red: #dc3545;
+      --blue: #0d6efd; 
+      --orange: #fd7e14;
+      --sidebar-w: 260px; 
+      --sidebar-collapsed: 68px;
+      --topbar-h: 64px; 
+      --radius: 12px;
+      --shadow: 0 2px 12px rgba(0,0,0,.08);
+      --transition: .25s cubic-bezier(.4,0,.2,1);
+    }
+    
+    html, body { 
+      height: 100%; 
+      margin: 0; 
+      padding: 0; 
+    }
+    
+    body { 
+      font-family:'Inter',sans-serif; 
+      background:#f0f2f5; 
+      color:#1a1a2e; 
+      min-height:100vh; 
+      display:flex; 
+      overflow:hidden;
+    }
+
+    /* SIDEBAR - White */
+    #sidebar { 
+      width:var(--sidebar-w); 
+      background:#ffffff; 
+      border-right:1px solid #e8ecf1; 
+      display:flex; 
+      flex-direction:column; 
+      transition:width var(--transition); 
+      overflow:hidden; 
+      position:fixed; 
+      top:0; 
+      left:0; 
+      bottom:0; 
+      z-index:100; 
+      box-shadow:2px 0 12px rgba(0,0,0,.06); 
+    }
+    #sidebar.collapsed { width:var(--sidebar-collapsed); }
+    
+    /* Logo Area - Green */
+    .sidebar-logo { 
+      display:flex; 
+      align-items:center; 
+      gap:12px; 
+      padding:16px 20px; 
+      background:linear-gradient(135deg, var(--green-700), var(--green-600));
+      border-bottom:1px solid rgba(255,255,255,.1); 
+      min-height:var(--topbar-h); 
+      flex-shrink:0; 
+    }
+    .logo-icon { 
+      width:40px; 
+      height:40px; 
+      background:rgba(255,255,255,.2); 
+      border-radius:10px; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      flex-shrink:0; 
+    }
+    .logo-icon i { color:#fff; font-size:20px; }
+    .logo-text { overflow:hidden; white-space:nowrap; }
+    .logo-text h1 { 
+      font-size:18px; 
+      font-weight:700; 
+      color:#fff; 
+      letter-spacing:-.5px; 
+    }
+    .logo-text span { 
+      font-size:11px; 
+      color:rgba(255,255,255,.7); 
+      font-weight:400; 
+    }
+    
+    /* Sidebar scroll */
+    .sidebar-scroll { 
+      flex:1; 
+      overflow-y:auto; 
+      overflow-x:hidden; 
+      padding:8px 0 20px; 
+      min-height:0;
+      background:#ffffff;
+    }
+    .sidebar-scroll::-webkit-scrollbar { width:4px; }
+    .sidebar-scroll::-webkit-scrollbar-thumb { background:#d0d7de; border-radius:2px; }
+    
+    .nav-section-label { 
+      font-size:10px; 
+      font-weight:600; 
+      text-transform:uppercase; 
+      letter-spacing:0.8px; 
+      color:#8c9aab; 
+      padding:16px 20px 6px; 
+      white-space:nowrap; 
+      overflow:hidden; 
+    }
+    #sidebar.collapsed .nav-section-label { opacity:0; height:0; padding:0; }
+    
+    .nav-item { 
+      display:flex; 
+      align-items:center; 
+      gap:12px; 
+      padding:10px 16px; 
+      margin:2px 10px; 
+      border-radius:8px; 
+      cursor:pointer; 
+      transition:all var(--transition); 
+      text-decoration:none; 
+      color:#5a6a7a; 
+      white-space:nowrap; 
+      overflow:hidden; 
+      position:relative; 
+    }
+    .nav-item:hover { 
+      background:#e8f5e9; 
+      color:#1b5e20; 
+      transform:translateX(2px); 
+    }
+    .nav-item.active { 
+      background:#e8f5e9; 
+      color:#1b5e20; 
+      font-weight:500;
+    }
+    .nav-item .nav-icon { 
+      width:34px; 
+      height:34px; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      border-radius:8px; 
+      background:#f0f2f5; 
+      flex-shrink:0; 
+      font-size:14px; 
+      transition:all var(--transition); 
+      color:#5a6a7a;
+    }
+    .nav-item:hover .nav-icon,
+    .nav-item.active .nav-icon { 
+      background:#c8e6c9; 
+      color:#1b5e20; 
+    }
+    .nav-item .nav-label { font-size:13px; font-weight:500; flex:1; }
+    .nav-item .nav-badge { 
+      background:#dc3545; 
+      color:#fff; 
+      font-size:10px; 
+      font-weight:600; 
+      border-radius:10px; 
+      padding:1px 8px; 
+      flex-shrink:0; 
+    }
+    #sidebar.collapsed .nav-label, 
+    #sidebar.collapsed .nav-badge { display:none; }
+    
+    .sidebar-footer { 
+      padding:12px 16px; 
+      border-top:1px solid #e8ecf1; 
+      flex-shrink:0; 
+      background:#ffffff;
+    }
+    .sidebar-user { 
+      display:flex; 
+      align-items:center; 
+      gap:10px; 
+      padding:8px 12px; 
+      border-radius:8px; 
+      cursor:pointer; 
+      transition:background var(--transition); 
+    }
+    .sidebar-user:hover { background:#f0f2f5; }
+    .user-avatar { 
+      width:36px; 
+      height:36px; 
+      border-radius:50%; 
+      background:linear-gradient(135deg, var(--green-500), var(--green-700)); 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      color:#fff; 
+      font-size:14px; 
+      font-weight:600; 
+      flex-shrink:0; 
+    }
+    .user-info { overflow:hidden; }
+    .user-info p { 
+      font-size:13px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+      white-space:nowrap; 
+      overflow:hidden; 
+      text-overflow:ellipsis; 
+    }
+    .user-info span { 
+      font-size:11px; 
+      color:#8c9aab; 
+    }
+    #sidebar.collapsed .user-info { display:none; }
+
+    /* TOPBAR - White */
+    #topbar { 
+      position:fixed; 
+      top:0; 
+      left:var(--sidebar-w); 
+      right:0; 
+      height:var(--topbar-h); 
+      background:#ffffff; 
+      border-bottom:1px solid #e8ecf1; 
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      padding:0 24px; 
+      z-index:90; 
+      transition:left var(--transition); 
+    }
+    #topbar.shifted { left:var(--sidebar-collapsed); }
+    
+    .topbar-left { display:flex; align-items:center; gap:16px; }
+    #toggle-btn { 
+      width:36px; 
+      height:36px; 
+      background:#f0f2f5; 
+      border:1px solid #e8ecf1; 
+      border-radius:8px; 
+      color:#1a1a2e; 
+      cursor:pointer; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:16px; 
+      transition:all var(--transition); 
+    }
+    #toggle-btn:hover { 
+      background:#e8f5e9; 
+      border-color:#a5d6a7; 
+      color:#1b5e20; 
+    }
+    #page-title { 
+      font-size:18px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+    }
+    
+    .topbar-search { 
+      display:flex; 
+      align-items:center; 
+      background:#f0f2f5; 
+      border:1px solid #e8ecf1; 
+      border-radius:8px; 
+      padding:0 14px; 
+      gap:8px; 
+      height:38px; 
+      min-width:220px; 
+      transition:all var(--transition);
+    }
+    .topbar-search:focus-within {
+      border-color:#66bb6a;
+      box-shadow:0 0 0 3px rgba(46,125,50,.1);
+    }
+    .topbar-search i { color:#8c9aab; font-size:14px; }
+    .topbar-search input { 
+      background:transparent; 
+      border:none; 
+      outline:none; 
+      color:#1a1a2e; 
+      font-size:13px; 
+      width:100%; 
+    }
+    .topbar-search input::placeholder { color:#b0bec5; }
+    
+    .topbar-right { display:flex; align-items:center; gap:8px; }
+    .topbar-action-btn { 
+      width:36px; 
+      height:36px; 
+      border-radius:8px; 
+      background:transparent; 
+      border:1px solid #e8ecf1; 
+      color:#5a6a7a; 
+      cursor:pointer; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:15px; 
+      position:relative; 
+      transition:all var(--transition); 
+    }
+    .topbar-action-btn:hover { 
+      background:#e8f5e9; 
+      border-color:#a5d6a7; 
+      color:#1b5e20; 
+    }
+    .topbar-badge { 
+      position:absolute; 
+      top:-4px; 
+      right:-4px; 
+      width:18px; 
+      height:18px; 
+      background:#dc3545; 
+      border-radius:50%; 
+      font-size:9px; 
+      color:#fff; 
+      font-weight:600; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+    }
+
+    /* MAIN - White background */
+    #main-wrap { 
+      margin-left:var(--sidebar-w); 
+      margin-top:var(--topbar-h); 
+      flex:1; 
+      height:calc(100vh - var(--topbar-h)); 
+      overflow-y:auto; 
+      overflow-x:hidden; 
+      transition:margin-left var(--transition); 
+      position:relative;
+      background:#f0f2f5;
+    }
+    #main-wrap.shifted { margin-left:var(--sidebar-collapsed); }
+    
+    .page { 
+      display:none; 
+      padding:28px; 
+      animation:fadeIn .3s ease; 
+      min-height:100%; 
+    }
+    .page.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Scrollbar */
+    #main-wrap::-webkit-scrollbar { width:8px; }
+    #main-wrap::-webkit-scrollbar-track { background:#f0f2f5; }
+    #main-wrap::-webkit-scrollbar-thumb { 
+      background:#c8d0d8; 
+      border-radius:4px; 
+    }
+    #main-wrap::-webkit-scrollbar-thumb:hover { background:#a8b8c8; }
+
+    /* STATS - White cards with green accents */
+    .stats-grid { 
+      display:grid; 
+      grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); 
+      gap:18px; 
+      margin-bottom:28px; 
+    }
+    .stat-card { 
+      background:#ffffff; 
+      border:1px solid #e8ecf1; 
+      border-radius:var(--radius); 
+      padding:20px 22px; 
+      display:flex; 
+      align-items:center; 
+      gap:16px; 
+      box-shadow:var(--shadow); 
+      transition:all .2s; 
+    }
+    .stat-card:hover { 
+      transform:translateY(-2px); 
+      box-shadow:0 4px 20px rgba(0,0,0,.08); 
+      border-color:#a5d6a7;
+    }
+    .stat-icon { 
+      width:50px; 
+      height:50px; 
+      border-radius:12px; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:20px; 
+      flex-shrink:0; 
+    }
+    .stat-body h3 { 
+      font-size:24px; 
+      font-weight:700; 
+      color:#1a1a2e; 
+    }
+    .stat-body p { 
+      font-size:12.5px; 
+      color:#6a7a8a; 
+      margin-top:2px; 
+    }
+    .stat-trend { 
+      font-size:11px; 
+      font-weight:600; 
+      margin-top:4px; 
+    }
+    .trend-up { color:#2e7d32; } 
+    .trend-down { color:#dc3545; }
+
+    /* SECTION HEADING */
+    .section-heading { 
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      margin-bottom:16px; 
+    }
+    .section-heading h2 { 
+      font-size:16px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+    }
+    .btn { 
+      padding:8px 20px; 
+      border-radius:8px; 
+      font-size:13px; 
+      font-weight:500; 
+      cursor:pointer; 
+      border:none; 
+      transition:all .2s; 
+    }
+    .btn:hover { 
+      opacity:.9; 
+      transform:translateY(-1px); 
+      box-shadow:0 4px 12px rgba(46,125,50,.2);
+    }
+    .btn-primary { 
+      background:linear-gradient(135deg, var(--green-600), var(--green-700)); 
+      color:#fff; 
+    }
+    .btn-outline { 
+      background:transparent; 
+      border:1px solid #c8d0d8; 
+      color:#1a1a2e; 
+    }
+    .btn-outline:hover {
+      border-color:#66bb6a;
+      color:#1b5e20;
+      background:#e8f5e9;
+    }
+
+    /* CARDS / TABLES - White */
+    .card { 
+      background:#ffffff; 
+      border:1px solid #e8ecf1; 
+      border-radius:var(--radius); 
+      padding:20px; 
+      box-shadow:var(--shadow); 
+    }
+    .table-wrap { overflow-x:auto; border-radius:8px; }
+    table { width:100%; border-collapse:collapse; font-size:13px; }
+    thead th { 
+      background:#f8f9fa; 
+      color:#4a5a6a; 
+      padding:12px 14px; 
+      text-align:left; 
+      font-weight:600; 
+      font-size:11px; 
+      text-transform:uppercase; 
+      letter-spacing:.5px; 
+      white-space:nowrap; 
+      border-bottom:2px solid #e8ecf1;
+    }
+    tbody tr { 
+      border-bottom:1px solid #f0f2f5; 
+      transition:background .15s; 
+    }
+    tbody tr:hover { background:#f8f9fa; }
+    tbody td { 
+      padding:12px 14px; 
+      color:#1a1a2e; 
+      vertical-align:middle; 
+    }
+    
+    .avatar-sm { 
+      width:32px; 
+      height:32px; 
+      border-radius:50%; 
+      background:linear-gradient(135deg, var(--green-500), var(--green-700)); 
+      display:inline-flex; 
+      align-items:center; 
+      justify-content:center; 
+      color:#fff; 
+      font-size:12px; 
+      font-weight:600; 
+      margin-right:8px; 
+    }
+    .badge { 
+      display:inline-block; 
+      padding:3px 10px; 
+      border-radius:20px; 
+      font-size:11px; 
+      font-weight:500; 
+    }
+    .badge-green  { background:#e8f5e9; color:#2e7d32; }
+    .badge-red    { background:#fde8e8; color:#c62828; }
+    .badge-orange { background:#fff3e0; color:#e65100; }
+    .badge-blue   { background:#e3f2fd; color:#0d47a1; }
+    .badge-purple { background:#f3e5f5; color:#4a148c; }
+
+    /* CHARTS - White */
+    .charts-grid { 
+      display:grid; 
+      grid-template-columns:1fr 1fr; 
+      gap:18px; 
+      margin-top:18px; 
+    }
+    @media(max-width:900px) { .charts-grid { grid-template-columns:1fr; } }
+    .chart-card { 
+      background:#ffffff; 
+      border:1px solid #e8ecf1; 
+      border-radius:var(--radius); 
+      padding:20px; 
+      box-shadow:var(--shadow);
+    }
+    .chart-card h3 { 
+      font-size:14px; 
+      font-weight:600; 
+      margin-bottom:16px; 
+      color:#1a1a2e; 
+    }
+    canvas { max-height:240px; }
+
+    /* QUICK ACTIONS - White */
+    .quick-grid { 
+      display:grid; 
+      grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); 
+      gap:14px; 
+      margin-top:8px; 
+    }
+    .quick-card { 
+      background:#ffffff; 
+      border:1px solid #e8ecf1; 
+      border-radius:10px; 
+      padding:18px 14px; 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      gap:10px; 
+      cursor:pointer; 
+      transition:all .2s; 
+      text-align:center; 
+      box-shadow:var(--shadow);
+    }
+    .quick-card:hover { 
+      transform:translateY(-3px); 
+      border-color:#66bb6a;
+      box-shadow:0 4px 20px rgba(46,125,50,.12);
+    }
+    .quick-card .qi { 
+      width:44px; 
+      height:44px; 
+      border-radius:10px; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:18px; 
+    }
+    .quick-card span { 
+      font-size:12px; 
+      font-weight:500; 
+      color:#1a1a2e; 
+    }
+
+    /* FORM */
+    .form-group { margin-bottom:16px; }
+    .form-group label { 
+      display:block; 
+      font-size:12px; 
+      font-weight:500; 
+      color:#4a5a6a; 
+      margin-bottom:6px; 
+      text-transform:uppercase; 
+      letter-spacing:.4px; 
+    }
+    .form-control { 
+      width:100%; 
+      background:#ffffff; 
+      border:1px solid #d0d7de; 
+      border-radius:8px; 
+      padding:10px 14px; 
+      color:#1a1a2e; 
+      font-size:13px; 
+      font-family:'Inter',sans-serif; 
+      outline:none; 
+      transition:border-color .2s; 
+    }
+    .form-control:focus { 
+      border-color:#66bb6a;
+      box-shadow:0 0 0 3px rgba(46,125,50,.1);
+    }
+
+    /* NOTIFICATIONS - White */
+    .notif-item { 
+      display:flex; 
+      gap:14px; 
+      padding:14px 0; 
+      border-bottom:1px solid #f0f2f5; 
+    }
+    .notif-item:last-child { border-bottom:none; }
+    .notif-dot { 
+      width:10px; 
+      height:10px; 
+      border-radius:50%; 
+      margin-top:5px; 
+      flex-shrink:0; 
+    }
+    .notif-body p { 
+      font-size:13.5px; 
+      color:#1a1a2e; 
+    }
+    .notif-body span { 
+      font-size:11px; 
+      color:#8c9aab; 
+      margin-top:3px; 
+      display:block; 
+    }
+
+    /* MESSAGES - White */
+    .msg-item { 
+      display:flex; 
+      align-items:center; 
+      gap:12px; 
+      padding:12px 0; 
+      border-bottom:1px solid #f0f2f5; 
+      cursor:pointer; 
+      transition:background .15s; 
+      border-radius:8px; 
+    }
+    .msg-item:hover { background:#f8f9fa; padding-left:8px; }
+    .msg-body { flex:1; min-width:0; }
+    .msg-body h4 { 
+      font-size:13.5px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+    }
+    .msg-body p { 
+      font-size:12px; 
+      color:#6a7a8a; 
+      white-space:nowrap; 
+      overflow:hidden; 
+      text-overflow:ellipsis; 
+    }
+    .msg-meta { text-align:right; flex-shrink:0; }
+    .msg-meta span { font-size:11px; color:#8c9aab; }
+    .msg-unread { 
+      width:8px; 
+      height:8px; 
+      border-radius:50%; 
+      background:#2e7d32; 
+      margin-top:4px; 
+      float:right; 
+    }
+
+    /* VIDEOS - White */
+    .video-grid { 
+      display:grid; 
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); 
+      gap:18px; 
+    }
+    .video-card { 
+      background:#ffffff; 
+      border:1px solid #e8ecf1; 
+      border-radius:var(--radius); 
+      overflow:hidden; 
+      transition:all .2s; 
+      box-shadow:var(--shadow);
+    }
+    .video-card:hover { 
+      transform:translateY(-3px); 
+      box-shadow:0 4px 20px rgba(0,0,0,.08);
+    }
+    .video-thumb { 
+      height:150px; 
+      background:linear-gradient(135deg, #e8f5e9, #c8e6c9); 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:48px; 
+      color:rgba(46,125,50,.3); 
+      position:relative; 
+    }
+    .play-btn { 
+      position:absolute; 
+      width:48px; 
+      height:48px; 
+      background:rgba(46,125,50,.15); 
+      border-radius:50%; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      color:#2e7d32; 
+      font-size:20px; 
+      cursor:pointer; 
+      transition:all .2s; 
+      backdrop-filter:blur(4px); 
+    }
+    .play-btn:hover { 
+      background:rgba(46,125,50,.3);
+      transform:scale(1.1);
+    }
+    .video-info { padding:14px; }
+    .video-info h4 { 
+      font-size:13.5px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+      margin-bottom:4px; 
+    }
+    .video-info p { 
+      font-size:12px; 
+      color:#6a7a8a; 
+    }
+
+    /* ANIMAL CARDS - White */
+    .animal-grid { 
+      display:grid; 
+      grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); 
+      gap:18px; 
+    }
+    .animal-card { 
+      background:#ffffff; 
+      border:1px solid #e8ecf1; 
+      border-radius:var(--radius); 
+      padding:20px; 
+      text-align:center; 
+      transition:all .2s; 
+      box-shadow:var(--shadow);
+    }
+    .animal-card:hover { 
+      transform:translateY(-3px); 
+      border-color:#66bb6a;
+      box-shadow:0 4px 20px rgba(46,125,50,.1);
+    }
+    .animal-emoji { font-size:40px; margin-bottom:8px; }
+    .animal-card h4 { 
+      font-size:15px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+    }
+    .animal-card p { 
+      font-size:12px; 
+      color:#6a7a8a; 
+      margin-top:4px; 
+    }
+    .animal-stat { 
+      font-size:20px; 
+      font-weight:700; 
+      color:#2e7d32; 
+      margin-top:8px; 
+    }
+
+    /* ADS - White */
+    .ad-grid { 
+      display:grid; 
+      grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); 
+      gap:18px; 
+    }
+    .ad-card { 
+      background:#ffffff; 
+      border:1px solid #e8ecf1; 
+      border-radius:var(--radius); 
+      overflow:hidden; 
+      box-shadow:var(--shadow);
+      transition:all .2s;
+    }
+    .ad-card:hover {
+      transform:translateY(-2px);
+      box-shadow:0 4px 20px rgba(0,0,0,.08);
+    }
+    .ad-banner { 
+      height:120px; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      font-size:36px; 
+      background:linear-gradient(135deg, #e8f5e9, #c8e6c9);
+    }
+    .ad-info { padding:14px; }
+    .ad-info h4 { 
+      font-size:14px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+      margin-bottom:4px; 
+    }
+    .ad-info p { 
+      font-size:12px; 
+      color:#6a7a8a; 
+      margin-bottom:10px; 
+    }
+    .ad-stats { display:flex; gap:16px; }
+    .ad-stats span { 
+      font-size:12px; 
+      color:#4a5a6a; 
+    }
+    .ad-stats span i { margin-right:4px; }
+
+    /* GESTATION - White */
+    .gestation-item { 
+      display:flex; 
+      align-items:center; 
+      gap:14px; 
+      padding:14px; 
+      background:#f8f9fa; 
+      border-radius:10px; 
+      margin-bottom:12px; 
+      border:1px solid #e8ecf1; 
+    }
+    .gestation-icon { font-size:32px; flex-shrink:0; }
+    .gestation-body { flex:1; }
+    .gestation-body h4 { 
+      font-size:14px; 
+      font-weight:600; 
+      color:#1a1a2e; 
+    }
+    .gestation-body p { 
+      font-size:12px; 
+      color:#6a7a8a; 
+      margin-top:2px; 
+    }
+    .progress-bar { 
+      background:#e8ecf1; 
+      border-radius:20px; 
+      height:6px; 
+      margin-top:8px; 
+    }
+    .progress-fill { 
+      height:100%; 
+      border-radius:20px; 
+      background:linear-gradient(90deg, var(--green-400), var(--green-600)); 
+    }
+    .progress-pct { 
+      font-size:11px; 
+      color:#2e7d32; 
+      font-weight:600; 
+      margin-top:3px; 
+    }
+
+    /* RESPONSIVE */
+    @media(max-width:768px) {
+      #sidebar { width:var(--sidebar-collapsed); }
+      #topbar { left:var(--sidebar-collapsed); }
+      #main-wrap { margin-left:var(--sidebar-collapsed); }
+      .topbar-search { min-width:120px; }
+      .stats-grid { grid-template-columns:1fr 1fr; }
+      .charts-grid { grid-template-columns:1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside id="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon"><i class="fas fa-seedling"></i></div>
+    <div class="logo-text">
+      <h1>Jaguza</h1>
+      <span>Admin Dashboard</span>
+    </div>
+  </div>
+  <div class="sidebar-scroll">
+    <div class="nav-section-label">Overview</div>
+    <a class="nav-item active" id="nav-dashboard" onclick="navigate('dashboard','Dashboard Overview')">
+      <div class="nav-icon"><i class="fas fa-th-large"></i></div><span class="nav-label">Dashboard</span>
+    </a>
+    <a class="nav-item" id="nav-analytics" onclick="navigate('analytics','Analytics')">
+      <div class="nav-icon"><i class="fas fa-chart-line"></i></div><span class="nav-label">Analytics</span>
+    </a>
+
+    <div class="nav-section-label">People</div>
+    <a class="nav-item" id="nav-users" onclick="navigate('users','Users')">
+      <div class="nav-icon"><i class="fas fa-users"></i></div><span class="nav-label">Users</span><span class="nav-badge">248</span>
+    </a>
+    <a class="nav-item" id="nav-doctors" onclick="navigate('doctors','Veterinary Doctors')">
+      <div class="nav-icon"><i class="fas fa-stethoscope"></i></div><span class="nav-label">Doctors</span>
+    </a>
+    <a class="nav-item" id="nav-messages" onclick="navigate('messages','Messages')">
+      <div class="nav-icon"><i class="fas fa-comments"></i></div><span class="nav-label">Messages</span><span class="nav-badge">12</span>
+    </a>
+    <a class="nav-item" id="nav-notifications" onclick="navigate('notifications','Notifications')">
+      <div class="nav-icon"><i class="fas fa-bell"></i></div><span class="nav-label">Notifications</span><span class="nav-badge">7</span>
+    </a>
+
+    <div class="nav-section-label">Farm &amp; Animals</div>
+    <a class="nav-item" id="nav-farms" onclick="navigate('farms','Farms')">
+      <div class="nav-icon"><i class="fas fa-warehouse"></i></div><span class="nav-label">Farms</span>
+    </a>
+    <a class="nav-item" id="nav-livestock" onclick="navigate('livestock','Livestock Animals')">
+      <div class="nav-icon"><i class="fas fa-horse"></i></div><span class="nav-label">Livestock Animals</span>
+    </a>
+    <a class="nav-item" id="nav-gestation" onclick="navigate('gestation','Gestation Info')">
+      <div class="nav-icon"><i class="fas fa-baby"></i></div><span class="nav-label">Gestation Info</span>
+    </a>
+    <a class="nav-item" id="nav-vaccinations" onclick="navigate('vaccinations','Vaccinations')">
+      <div class="nav-icon"><i class="fas fa-syringe"></i></div><span class="nav-label">Vaccinations</span>
+    </a>
+
+    <div class="nav-section-label">Health &amp; Disease</div>
+    <a class="nav-item" id="nav-sickness" onclick="navigate('sickness','Sickness Reports')">
+      <div class="nav-icon"><i class="fas fa-file-medical"></i></div><span class="nav-label">Sickness Reports</span><span class="nav-badge">34</span>
+    </a>
+    <a class="nav-item" id="nav-disease" onclick="navigate('disease','Disease Information')">
+      <div class="nav-icon"><i class="fas fa-virus"></i></div><span class="nav-label">Disease Info</span>
+    </a>
+    <a class="nav-item" id="nav-decision" onclick="navigate('decision','Decision Support')">
+      <div class="nav-icon"><i class="fas fa-brain"></i></div><span class="nav-label">Decision Support</span>
+    </a>
+
+    <div class="nav-section-label">Market &amp; Media</div>
+    <a class="nav-item" id="nav-marketplace" onclick="navigate('marketplace','Market Place')">
+      <div class="nav-icon"><i class="fas fa-store"></i></div><span class="nav-label">Market Place</span>
+    </a>
+    <a class="nav-item" id="nav-videos" onclick="navigate('videos','Videos')">
+      <div class="nav-icon"><i class="fas fa-play-circle"></i></div><span class="nav-label">Videos</span>
+    </a>
+    <a class="nav-item" id="nav-ads" onclick="navigate('ads','Advertisements')">
+      <div class="nav-icon"><i class="fas fa-bullhorn"></i></div><span class="nav-label">Advertisements</span>
+    </a>
+
+    <div class="nav-section-label">Other</div>
+    <a class="nav-item" id="nav-weather" onclick="navigate('weather','Weather Updates')">
+      <div class="nav-icon"><i class="fas fa-cloud-sun"></i></div><span class="nav-label">Weather Updates</span>
+    </a>
+    <a class="nav-item" id="nav-aichat" onclick="navigate('aichat','AI Chat (Vet Bot)')">
+      <div class="nav-icon"><i class="fas fa-robot"></i></div><span class="nav-label">AI Chat (Vet Bot)</span>
+    </a>
+    <a class="nav-item" id="nav-settings" onclick="navigate('settings','Settings')">
+      <div class="nav-icon"><i class="fas fa-cog"></i></div><span class="nav-label">Settings</span>
+    </a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">JA</div>
+      <div class="user-info"><p>Jaguza Admin</p><span>Super Admin</span></div>
+    </div>
+  </div>
+</aside>
+
+<!-- TOPBAR -->
+<header id="topbar">
+  <div class="topbar-left">
+    <button id="toggle-btn" onclick="toggleSidebar()"><i class="fas fa-bars"></i></button>
+    <span id="page-title">Dashboard Overview</span>
+  </div>
+  <div class="topbar-search">
+    <i class="fas fa-search"></i>
+    <input type="text" placeholder="Search anything..." />
+  </div>
+  <div class="topbar-right">
+    <button class="topbar-action-btn" onclick="navigate('notifications','Notifications')">
+      <i class="fas fa-bell"></i><span class="topbar-badge">7</span>
+    </button>
+    <button class="topbar-action-btn" onclick="navigate('messages','Messages')">
+      <i class="fas fa-envelope"></i><span class="topbar-badge">12</span>
+    </button>
+    <button class="topbar-action-btn"><i class="fas fa-user-circle"></i></button>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<div id="main-wrap">
+
+  <!-- DASHBOARD -->
+  <div class="page active" id="page-dashboard">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-users"></i></div>
+        <div class="stat-body"><h3>2,481</h3><p>Total Users</p><div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 12.4% this month</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fde8e8;color:#c62828;"><i class="fas fa-file-medical"></i></div>
+        <div class="stat-body"><h3>347</h3><p>Sickness Reports</p><div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 8.1% this week</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e3f2fd;color:#0d47a1;"><i class="fas fa-stethoscope"></i></div>
+        <div class="stat-body"><h3>86</h3><p>Active Doctors</p><div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 4 new this month</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-warehouse"></i></div>
+        <div class="stat-body"><h3>1,104</h3><p>Registered Farms</p><div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 6.2% growth</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f3e5f5;color:#4a148c;"><i class="fas fa-horse"></i></div>
+        <div class="stat-body"><h3>18,942</h3><p>Livestock Animals</p><div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 3.8% new</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-play-circle"></i></div>
+        <div class="stat-body"><h3>534</h3><p>Videos Published</p><div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 22 this week</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#f5f5f5;color:#f57c00;"><i class="fas fa-bullhorn"></i></div>
+        <div class="stat-body"><h3>128</h3><p>Active Ads</p><div class="stat-trend trend-down"><i class="fas fa-arrow-down"></i> 3 expired</div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#fce4ec;color:#c62828;"><i class="fas fa-baby"></i></div>
+        <div class="stat-body"><h3>412</h3><p>Gestation Records</p><div class="stat-trend trend-up"><i class="fas fa-arrow-up"></i> 18 due this week</div></div>
+      </div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3><i class="fas fa-chart-bar" style="color:#2e7d32;margin-right:8px;"></i>Sickness Reports (Monthly)</h3><canvas id="sickChart"></canvas></div>
+      <div class="chart-card"><h3><i class="fas fa-chart-pie" style="color:#0d6efd;margin-right:8px;"></i>Livestock by Type</h3><canvas id="animalChart"></canvas></div>
+      <div class="chart-card"><h3><i class="fas fa-chart-line" style="color:#2e7d32;margin-right:8px;"></i>User Registrations</h3><canvas id="userChart"></canvas></div>
+      <div class="chart-card"><h3><i class="fas fa-store" style="color:#fd7e14;margin-right:8px;"></i>Market Activity</h3><canvas id="marketChart"></canvas></div>
+    </div>
+    <div class="section-heading" style="margin-top:28px;"><h2>Quick Actions</h2></div>
+    <div class="quick-grid">
+      <div class="quick-card" onclick="navigate('users','Users')"><div class="qi" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-user-plus"></i></div><span>Add User</span></div>
+      <div class="quick-card" onclick="navigate('sickness','Sickness Reports')"><div class="qi" style="background:#fde8e8;color:#c62828;"><i class="fas fa-file-medical"></i></div><span>New Report</span></div>
+      <div class="quick-card" onclick="navigate('doctors','Veterinary Doctors')"><div class="qi" style="background:#e3f2fd;color:#0d47a1;"><i class="fas fa-stethoscope"></i></div><span>Add Doctor</span></div>
+      <div class="quick-card" onclick="navigate('livestock','Livestock Animals')"><div class="qi" style="background:#f3e5f5;color:#4a148c;"><i class="fas fa-horse"></i></div><span>Add Animal</span></div>
+      <div class="quick-card" onclick="navigate('ads','Advertisements')"><div class="qi" style="background:#f5f5f5;color:#f57c00;"><i class="fas fa-bullhorn"></i></div><span>New Ad</span></div>
+      <div class="quick-card" onclick="navigate('videos','Videos')"><div class="qi" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-upload"></i></div><span>Upload Video</span></div>
+      <div class="quick-card" onclick="navigate('gestation','Gestation Info')"><div class="qi" style="background:#fce4ec;color:#c62828;"><i class="fas fa-baby"></i></div><span>Add Gestation</span></div>
+      <div class="quick-card" onclick="navigate('notifications','Notifications')"><div class="qi" style="background:#fff3e0;color:#e65100;"><i class="fas fa-paper-plane"></i></div><span>Send Notification</span></div>
+    </div>
+  </div>
+
+  <!-- USERS -->
+  <div class="page" id="page-users">
+    <div class="section-heading"><h2><i class="fas fa-users" style="color:#2e7d32;margin-right:8px;"></i>Users Management</h2><button class="btn btn-primary">+ Add User</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>User</th><th>Email</th><th>Farm</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><span class="avatar-sm">JM</span>John Mwebaze</td><td>john.m@email.com</td><td>Green Valley Farm</td><td><span class="badge badge-purple">Farmer</span></td><td><span class="badge badge-green">Active</span></td><td>Jan 12, 2025</td><td><button class="btn btn-outline" style="padding:4px 10px;font-size:11px;">Edit</button></td></tr>
+            <tr><td>2</td><td><span class="avatar-sm">AK</span>Amina Kato</td><td>amina.k@email.com</td><td>Sunset Cattle Ranch</td><td><span class="badge badge-blue">Vet</span></td><td><span class="badge badge-green">Active</span></td><td>Feb 3, 2025</td><td><button class="btn btn-outline" style="padding:4px 10px;font-size:11px;">Edit</button></td></tr>
+            <tr><td>3</td><td><span class="avatar-sm">BO</span>Brian Okello</td><td>brian.o@email.com</td><td>Horizon Poultry</td><td><span class="badge badge-purple">Farmer</span></td><td><span class="badge badge-orange">Pending</span></td><td>Mar 8, 2025</td><td><button class="btn btn-outline" style="padding:4px 10px;font-size:11px;">Edit</button></td></tr>
+            <tr><td>4</td><td><span class="avatar-sm">GN</span>Grace Nakato</td><td>grace.n@email.com</td><td>Northern Goat Farm</td><td><span class="badge badge-purple">Farmer</span></td><td><span class="badge badge-green">Active</span></td><td>Apr 14, 2025</td><td><button class="btn btn-outline" style="padding:4px 10px;font-size:11px;">Edit</button></td></tr>
+            <tr><td>5</td><td><span class="avatar-sm">DM</span>David Musoke</td><td>david.m@email.com</td><td>Lakeside Pigs</td><td><span class="badge badge-red">Admin</span></td><td><span class="badge badge-red">Inactive</span></td><td>May 20, 2025</td><td><button class="btn btn-outline" style="padding:4px 10px;font-size:11px;">Edit</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SICKNESS REPORTS -->
+  <div class="page" id="page-sickness">
+    <div class="section-heading"><h2><i class="fas fa-file-medical" style="color:#dc3545;margin-right:8px;"></i>Sickness Reports</h2><button class="btn btn-primary">+ New Report</button></div>
+    <div class="stats-grid" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="stat-icon" style="background:#fde8e8;color:#c62828;"><i class="fas fa-exclamation-circle"></i></div><div class="stat-body"><h3>34</h3><p>Open Cases</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-clock"></i></div><div class="stat-body"><h3>18</h3><p>Under Treatment</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-check-circle"></i></div><div class="stat-body"><h3>295</h3><p>Resolved</p></div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Animal</th><th>Farm</th><th>Symptoms</th><th>Reported By</th><th>Date</th><th>Status</th><th>Doctor</th></tr></thead>
+          <tbody>
+            <tr><td>SR-001</td><td>Dairy Cow C-421</td><td>Green Valley</td><td>Fever, loss of appetite</td><td>John Mwebaze</td><td>Jul 10, 2026</td><td><span class="badge badge-red">Open</span></td><td>Dr. Amina</td></tr>
+            <tr><td>SR-002</td><td>Pig P-88</td><td>Lakeside Pigs</td><td>Swollen joints, limping</td><td>David Musoke</td><td>Jul 9, 2026</td><td><span class="badge badge-orange">Treating</span></td><td>Dr. James</td></tr>
+            <tr><td>SR-003</td><td>Chicken CH-203</td><td>Horizon Poultry</td><td>Coughing, runny nose</td><td>Brian Okello</td><td>Jul 8, 2026</td><td><span class="badge badge-green">Resolved</span></td><td>Dr. Grace</td></tr>
+            <tr><td>SR-004</td><td>Goat G-55</td><td>Northern Goat</td><td>Diarrhea, weak</td><td>Grace Nakato</td><td>Jul 7, 2026</td><td><span class="badge badge-red">Open</span></td><td>Unassigned</td></tr>
+            <tr><td>SR-005</td><td>Bull C-107</td><td>Sunset Ranch</td><td>Eye discharge, nasal</td><td>Amina Kato</td><td>Jul 6, 2026</td><td><span class="badge badge-orange">Treating</span></td><td>Dr. Amina</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DOCTORS -->
+  <div class="page" id="page-doctors">
+    <div class="section-heading"><h2><i class="fas fa-stethoscope" style="color:#0d6efd;margin-right:8px;"></i>Veterinary Doctors</h2><button class="btn btn-primary">+ Add Doctor</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Doctor</th><th>Specialization</th><th>Location</th><th>Phone</th><th>Cases</th><th>Rating</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td><span class="avatar-sm">AO</span>Dr. Amina Ochieng</td><td>Bovine Medicine</td><td>Kampala</td><td>+256 700 111 222</td><td>124</td><td>4.9 / 5</td><td><span class="badge badge-green">Available</span></td></tr>
+            <tr><td>2</td><td><span class="avatar-sm">JK</span>Dr. James Karimi</td><td>Swine &amp; Poultry</td><td>Entebbe</td><td>+256 701 333 444</td><td>98</td><td>4.7 / 5</td><td><span class="badge badge-green">Available</span></td></tr>
+            <tr><td>3</td><td><span class="avatar-sm">GM</span>Dr. Grace Mukasa</td><td>Small Ruminants</td><td>Jinja</td><td>+256 702 555 666</td><td>87</td><td>4.8 / 5</td><td><span class="badge badge-orange">On Call</span></td></tr>
+            <tr><td>4</td><td><span class="avatar-sm">PO</span>Dr. Peter Onen</td><td>General Veterinary</td><td>Gulu</td><td>+256 703 777 888</td><td>210</td><td>4.6 / 5</td><td><span class="badge badge-red">Busy</span></td></tr>
+            <tr><td>5</td><td><span class="avatar-sm">RN</span>Dr. Rose Nambi</td><td>Avian Medicine</td><td>Mbarara</td><td>+256 704 999 000</td><td>56</td><td>4.5 / 5</td><td><span class="badge badge-green">Available</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISEASE INFO -->
+  <div class="page" id="page-disease">
+    <div class="section-heading"><h2><i class="fas fa-virus" style="color:#fd7e14;margin-right:8px;"></i>Disease Information</h2><button class="btn btn-primary">+ Add Disease</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Disease</th><th>Species Affected</th><th>Symptoms</th><th>Treatment</th><th>Severity</th><th>Outbreak Risk</th></tr></thead>
+          <tbody>
+            <tr><td><strong style="color:#1a1a2e;">Foot &amp; Mouth Disease</strong></td><td>Cattle, Pigs, Sheep</td><td>Blisters in mouth, hooves</td><td>Vaccination, isolation</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-red">High</span></td></tr>
+            <tr><td><strong style="color:#1a1a2e;">Newcastle Disease</strong></td><td>Poultry</td><td>Respiratory distress</td><td>Vaccination (live)</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-orange">Medium</span></td></tr>
+            <tr><td><strong style="color:#1a1a2e;">Brucellosis</strong></td><td>Cattle, Goats</td><td>Abortion, reduced milk</td><td>Antibiotics, culling</td><td><span class="badge badge-orange">Medium</span></td><td><span class="badge badge-orange">Medium</span></td></tr>
+            <tr><td><strong style="color:#1a1a2e;">East Coast Fever</strong></td><td>Cattle</td><td>High fever, swollen lymph nodes</td><td>Buparvaquone injection</td><td><span class="badge badge-red">High</span></td><td><span class="badge badge-orange">Medium</span></td></tr>
+            <tr><td><strong style="color:#1a1a2e;">Mange</strong></td><td>Goats, Sheep, Cattle</td><td>Skin lesions, hair loss</td><td>Acaricides, ivermectin</td><td><span class="badge badge-green">Low</span></td><td><span class="badge badge-green">Low</span></td></tr>
+            <tr><td><strong style="color:#1a1a2e;">African Swine Fever</strong></td><td>Pigs</td><td>High fever, hemorrhage</td><td>No vaccine – quarantine</td><td><span class="badge badge-red">Critical</span></td><td><span class="badge badge-red">High</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- FARMS -->
+  <div class="page" id="page-farms">
+    <div class="section-heading"><h2><i class="fas fa-warehouse" style="color:#fd7e14;margin-right:8px;"></i>Farms</h2><button class="btn btn-primary">+ Add Farm</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Farm Name</th><th>Owner</th><th>Location</th><th>Animals</th><th>Type</th><th>Registered</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>Green Valley Farm</td><td>John Mwebaze</td><td>Kampala, UG</td><td>142</td><td><span class="badge badge-blue">Dairy</span></td><td>Jan 2024</td><td><span class="badge badge-green">Active</span></td></tr>
+            <tr><td>2</td><td>Sunset Cattle Ranch</td><td>Amina Kato</td><td>Mbarara, UG</td><td>320</td><td><span class="badge badge-orange">Mixed</span></td><td>Mar 2024</td><td><span class="badge badge-green">Active</span></td></tr>
+            <tr><td>3</td><td>Horizon Poultry</td><td>Brian Okello</td><td>Jinja, UG</td><td>4500</td><td><span class="badge badge-purple">Poultry</span></td><td>Jun 2024</td><td><span class="badge badge-green">Active</span></td></tr>
+            <tr><td>4</td><td>Northern Goat Farm</td><td>Grace Nakato</td><td>Gulu, UG</td><td>87</td><td><span class="badge badge-green">Goat</span></td><td>Aug 2024</td><td><span class="badge badge-orange">Pending</span></td></tr>
+            <tr><td>5</td><td>Lakeside Pigs</td><td>David Musoke</td><td>Entebbe, UG</td><td>230</td><td><span class="badge badge-red">Swine</span></td><td>Oct 2024</td><td><span class="badge badge-green">Active</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- LIVESTOCK ANIMALS -->
+  <div class="page" id="page-livestock">
+    <div class="section-heading"><h2><i class="fas fa-horse" style="color:#2e7d32;margin-right:8px;"></i>Livestock Animals</h2><button class="btn btn-primary">+ Add Animal</button></div>
+    <div class="animal-grid" style="margin-bottom:24px;">
+      <div class="animal-card"><div class="animal-emoji">&#x1F404;</div><h4>Cattle</h4><p>Dairy &amp; Beef</p><div class="animal-stat">8,420</div></div>
+      <div class="animal-card"><div class="animal-emoji">&#x1F410;</div><h4>Goats</h4><p>Meat &amp; Milk</p><div class="animal-stat">4,210</div></div>
+      <div class="animal-card"><div class="animal-emoji">&#x1F411;</div><h4>Sheep</h4><p>Wool &amp; Meat</p><div class="animal-stat">1,830</div></div>
+      <div class="animal-card"><div class="animal-emoji">&#x1F416;</div><h4>Pigs</h4><p>Swine Production</p><div class="animal-stat">2,140</div></div>
+      <div class="animal-card"><div class="animal-emoji">&#x1F414;</div><h4>Poultry</h4><p>Eggs &amp; Meat</p><div class="animal-stat">18,900</div></div>
+      <div class="animal-card"><div class="animal-emoji">&#x1F407;</div><h4>Rabbits</h4><p>Meat &amp; Fur</p><div class="animal-stat">640</div></div>
+    </div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Animal</th><th>Breed</th><th>Age</th><th>Farm</th><th>Health</th><th>Last Checkup</th></tr></thead>
+          <tbody>
+            <tr><td>C-421</td><td>Dairy Cow</td><td>Friesian</td><td>3 yrs</td><td>Green Valley</td><td><span class="badge badge-green">Healthy</span></td><td>Jul 5, 2026</td></tr>
+            <tr><td>G-055</td><td>Boer Goat</td><td>Boer</td><td>1.5 yrs</td><td>Northern Goat</td><td><span class="badge badge-red">Sick</span></td><td>Jul 7, 2026</td></tr>
+            <tr><td>P-088</td><td>Landrace Pig</td><td>Landrace</td><td>2 yrs</td><td>Lakeside Pigs</td><td><span class="badge badge-orange">Under Treatment</span></td><td>Jul 9, 2026</td></tr>
+            <tr><td>CH-203</td><td>Broiler</td><td>Ross 308</td><td>6 wks</td><td>Horizon Poultry</td><td><span class="badge badge-green">Healthy</span></td><td>Jul 8, 2026</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEOS -->
+  <div class="page" id="page-videos">
+    <div class="section-heading"><h2><i class="fas fa-play-circle" style="color:#2e7d32;margin-right:8px;"></i>Educational Videos</h2><button class="btn btn-primary">+ Upload Video</button></div>
+    <div class="video-grid">
+      <div class="video-card"><div class="video-thumb"><i class="fas fa-seedling"></i><div class="play-btn"><i class="fas fa-play"></i></div></div><div class="video-info"><h4>Proper Cattle Feeding Techniques</h4><p>14:32 &nbsp;&bull;&nbsp; 2,410 views &nbsp;&bull;&nbsp; Jul 5</p></div></div>
+      <div class="video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb);"><i class="fas fa-syringe" style="font-size:48px;color:rgba(13,71,161,.3);"></i><div class="play-btn"><i class="fas fa-play"></i></div></div><div class="video-info"><h4>Vaccination Schedule for Poultry</h4><p>8:15 &nbsp;&bull;&nbsp; 1,830 views &nbsp;&bull;&nbsp; Jul 3</p></div></div>
+      <div class="video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#fce4ec,#f8bbd0);"><i class="fas fa-viruses" style="font-size:48px;color:rgba(198,40,40,.3);"></i><div class="play-btn"><i class="fas fa-play"></i></div></div><div class="video-info"><h4>Identifying Foot &amp; Mouth Disease</h4><p>11:47 &nbsp;&bull;&nbsp; 3,100 views &nbsp;&bull;&nbsp; Jul 1</p></div></div>
+      <div class="video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);"><i class="fas fa-warehouse" style="font-size:48px;color:rgba(230,81,0,.3);"></i><div class="play-btn"><i class="fas fa-play"></i></div></div><div class="video-info"><h4>Building a Low-Cost Pig Pen</h4><p>22:10 &nbsp;&bull;&nbsp; 980 views &nbsp;&bull;&nbsp; Jun 28</p></div></div>
+      <div class="video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#e8f5e9,#c8e6c9);"><i class="fas fa-tint" style="font-size:48px;color:rgba(46,125,50,.3);"></i><div class="play-btn"><i class="fas fa-play"></i></div></div><div class="video-info"><h4>Water Management for Livestock</h4><p>9:55 &nbsp;&bull;&nbsp; 1,520 views &nbsp;&bull;&nbsp; Jun 25</p></div></div>
+      <div class="video-card"><div class="video-thumb" style="background:linear-gradient(135deg,#e8f5e9,#a5d6a7);"><i class="fas fa-leaf" style="font-size:48px;color:rgba(46,125,50,.3);"></i><div class="play-btn"><i class="fas fa-play"></i></div></div><div class="video-info"><h4>Organic Feed Preparation</h4><p>16:40 &nbsp;&bull;&nbsp; 740 views &nbsp;&bull;&nbsp; Jun 20</p></div></div>
+    </div>
+  </div>
+
+  <!-- ADVERTISEMENTS -->
+  <div class="page" id="page-ads">
+    <div class="section-heading"><h2><i class="fas fa-bullhorn" style="color:#f57c00;margin-right:8px;"></i>Advertisements</h2><button class="btn btn-primary">+ Create Ad</button></div>
+    <div class="ad-grid">
+      <div class="ad-card"><div class="ad-banner">&#x1F33E;</div><div class="ad-info"><h4>Premium Cattle Feed – FeedMax</h4><p>High-protein concentrate for dairy cows. Boost milk production by 30%.</p><div class="ad-stats"><span style="color:#2e7d32;"><i class="fas fa-eye"></i> 14,200</span><span style="color:#0d6efd;"><i class="fas fa-mouse-pointer"></i> 820</span><span class="badge badge-green">Active</span></div></div></div>
+      <div class="ad-card"><div class="ad-banner" style="background:linear-gradient(135deg,#e3f2fd,#bbdefb);">&#x1F489;</div><div class="ad-info"><h4>VetCare Pro Vaccines</h4><p>Government-certified vaccines for all livestock. Delivery countrywide.</p><div class="ad-stats"><span style="color:#2e7d32;"><i class="fas fa-eye"></i> 9,800</span><span style="color:#0d6efd;"><i class="fas fa-mouse-pointer"></i> 540</span><span class="badge badge-green">Active</span></div></div></div>
+      <div class="ad-card"><div class="ad-banner" style="background:linear-gradient(135deg,#fff3e0,#ffe0b2);">&#x1F3EA;</div><div class="ad-info"><h4>AgriMart – Farm Supplies</h4><p>Tools, equipment &amp; housing materials at wholesale prices.</p><div class="ad-stats"><span style="color:#2e7d32;"><i class="fas fa-eye"></i> 6,400</span><span style="color:#0d6efd;"><i class="fas fa-mouse-pointer"></i> 310</span><span class="badge badge-orange">Pending</span></div></div></div>
+      <div class="ad-card"><div class="ad-banner" style="background:linear-gradient(135deg,#f3e5f5,#ce93d8);">&#x1F404;</div><div class="ad-info"><h4>Dairy Cow Insurance – SafeFarm</h4><p>Protect your livestock investment. Plans starting at UGX 30,000/month.</p><div class="ad-stats"><span style="color:#2e7d32;"><i class="fas fa-eye"></i> 4,100</span><span style="color:#0d6efd;"><i class="fas fa-mouse-pointer"></i> 190</span><span class="badge badge-red">Expired</span></div></div></div>
+    </div>
+  </div>
+
+  <!-- GESTATION INFO -->
+  <div class="page" id="page-gestation">
+    <div class="section-heading"><h2><i class="fas fa-baby" style="color:#dc3545;margin-right:8px;"></i>Gestation Information</h2><button class="btn btn-primary">+ Add Record</button></div>
+    <div class="stats-grid" style="margin-bottom:20px;">
+      <div class="stat-card"><div class="stat-icon" style="background:#fde8e8;color:#c62828;"><i class="fas fa-clock"></i></div><div class="stat-body"><h3>18</h3><p>Due This Week</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-calendar-alt"></i></div><div class="stat-body"><h3>54</h3><p>Due This Month</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-check-double"></i></div><div class="stat-body"><h3>340</h3><p>Total Active</p></div></div>
+    </div>
+    <div class="card">
+      <div class="gestation-item"><div class="gestation-icon">&#x1F404;</div><div class="gestation-body"><h4>Friesian Cow – C-421 &nbsp;<span class="badge badge-red">Due in 3 days</span></h4><p>Farm: Green Valley · Mated: Oct 1, 2025 · Expected: Jul 16, 2026</p><div class="progress-bar"><div class="progress-fill" style="width:97%;"></div></div><div class="progress-pct">97% Complete</div></div></div>
+      <div class="gestation-item"><div class="gestation-icon">&#x1F410;</div><div class="gestation-body"><h4>Boer Goat – G-032 &nbsp;<span class="badge badge-orange">Due in 12 days</span></h4><p>Farm: Northern Goat · Mated: Feb 14, 2026 · Expected: Jul 25, 2026</p><div class="progress-bar"><div class="progress-fill" style="width:88%;"></div></div><div class="progress-pct">88% Complete</div></div></div>
+      <div class="gestation-item"><div class="gestation-icon">&#x1F411;</div><div class="gestation-body"><h4>Merino Sheep – S-019 &nbsp;<span class="badge badge-blue">Due in 22 days</span></h4><p>Farm: Sunset Ranch · Mated: Mar 4, 2026 · Expected: Aug 4, 2026</p><div class="progress-bar"><div class="progress-fill" style="width:74%;"></div></div><div class="progress-pct">74% Complete</div></div></div>
+      <div class="gestation-item"><div class="gestation-icon">&#x1F416;</div><div class="gestation-body"><h4>Landrace Sow – P-065 &nbsp;<span class="badge badge-green">Due in 45 days</span></h4><p>Farm: Lakeside Pigs · Mated: Apr 12, 2026 · Expected: Aug 26, 2026</p><div class="progress-bar"><div class="progress-fill" style="width:52%;"></div></div><div class="progress-pct">52% Complete</div></div></div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="page" id="page-notifications">
+    <div class="section-heading"><h2><i class="fas fa-bell" style="color:#fd7e14;margin-right:8px;"></i>Notifications</h2><button class="btn btn-primary">+ Send Notification</button></div>
+    <div class="card">
+      <div class="notif-item"><div class="notif-dot" style="background:#dc3545;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Disease Alert:</strong> Suspected FMD outbreak in Mbarara region. 12 farms notified.</p><span>2 minutes ago</span></div></div>
+      <div class="notif-item"><div class="notif-dot" style="background:#fd7e14;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Gestation Due:</strong> 4 animals due for delivery within 24 hours.</p><span>1 hour ago</span></div></div>
+      <div class="notif-item"><div class="notif-dot" style="background:#0d6efd;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">New User Registration:</strong> Fatuma Said joined from Coastal Fish Farm.</p><span>3 hours ago</span></div></div>
+      <div class="notif-item"><div class="notif-dot" style="background:#2e7d32;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Vaccination Reminder:</strong> 18 cattle in Green Valley overdue for FMD vaccine.</p><span>5 hours ago</span></div></div>
+      <div class="notif-item"><div class="notif-dot" style="background:#f57c00;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Ad Expired:</strong> SafeFarm Insurance advertisement expired.</p><span>Yesterday, 4:30 PM</span></div></div>
+      <div class="notif-item"><div class="notif-dot" style="background:#388e3c;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Report Resolved:</strong> SR-003 Horizon Poultry chicken case closed.</p><span>Yesterday, 2:15 PM</span></div></div>
+    </div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="page" id="page-messages">
+    <div class="section-heading"><h2><i class="fas fa-comments" style="color:#0d6efd;margin-right:8px;"></i>Messages</h2><button class="btn btn-primary">+ Compose</button></div>
+    <div style="display:grid;grid-template-columns:300px 1fr;gap:18px;">
+      <div class="card" style="padding:14px;">
+        <div class="msg-item"><div class="user-avatar" style="width:40px;height:40px;">JM</div><div class="msg-body"><h4>John Mwebaze</h4><p>Hello, my cow is showing signs of...</p></div><div class="msg-meta"><span>9:41 AM</span><div class="msg-unread"></div></div></div>
+        <div class="msg-item"><div class="user-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,#0d6efd,#0a58ca);">AK</div><div class="msg-body"><h4>Dr. Amina Kato</h4><p>The vaccination schedule has been...</p></div><div class="msg-meta"><span>8:20 AM</span></div></div>
+        <div class="msg-item"><div class="user-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,#fd7e14,#e65100);">BO</div><div class="msg-body"><h4>Brian Okello</h4><p>Can you please approve my new...</p></div><div class="msg-meta"><span>Yesterday</span><div class="msg-unread"></div></div></div>
+        <div class="msg-item"><div class="user-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,#6f42c1,#4a148c);">GN</div><div class="msg-body"><h4>Grace Nakato</h4><p>Thank you for your quick response!</p></div><div class="msg-meta"><span>Jul 11</span></div></div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;padding-bottom:14px;border-bottom:1px solid #e8ecf1;">
+          <div class="user-avatar" style="width:44px;height:44px;font-size:16px;">JM</div>
+          <div><h4 style="color:#1a1a2e;font-size:15px;">John Mwebaze</h4><span style="font-size:12px;color:#6a7a8a;">Online &middot; Green Valley Farm</span></div>
+        </div>
+        <div style="flex:1;padding:10px 0;display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;justify-content:flex-start;"><div style="background:#f0f2f5;border-radius:0 12px 12px 12px;padding:10px 14px;max-width:70%;font-size:13px;color:#1a1a2e;">Hello admin, my Friesian cow has been showing signs of lethargy and refusing to eat since yesterday. Should I be worried?</div></div>
+          <div style="display:flex;justify-content:flex-end;"><div style="background:linear-gradient(135deg, #2e7d32, #1b5e20);border-radius:12px 12px 0 12px;padding:10px 14px;max-width:70%;font-size:13px;color:#fff;">Hi John, I'm assigning Dr. Amina to your case immediately. Please take her temperature and let me know.</div></div>
+          <div style="display:flex;justify-content:flex-start;"><div style="background:#f0f2f5;border-radius:0 12px 12px 12px;padding:10px 14px;max-width:70%;font-size:13px;color:#1a1a2e;">Her temperature is 40.2 degrees. She also has swollen lymph nodes on her neck.</div></div>
+        </div>
+        <div style="display:flex;gap:10px;padding-top:14px;border-top:1px solid #e8ecf1;">
+          <input class="form-control" type="text" placeholder="Type a message..." style="flex:1;" />
+          <button class="btn btn-primary" style="padding:10px 20px;"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="page" id="page-analytics">
+    <div class="section-heading"><h2><i class="fas fa-chart-line" style="color:#2e7d32;margin-right:8px;"></i>Analytics</h2><button class="btn btn-outline">Export Report</button></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-users"></i></div><div class="stat-body"><h3>2,481</h3><p>Total Users</p><div class="stat-trend trend-up">12.4% growth</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#e3f2fd;color:#0d47a1;"><i class="fas fa-eye"></i></div><div class="stat-body"><h3>148K</h3><p>Monthly App Opens</p><div class="stat-trend trend-up">22.1% growth</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-store"></i></div><div class="stat-body"><h3>UGX 42M</h3><p>Market Volume</p><div class="stat-trend trend-up">18.3% growth</div></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#f3e5f5;color:#4a148c;"><i class="fas fa-play-circle"></i></div><div class="stat-body"><h3>89K</h3><p>Video Views</p><div class="stat-trend trend-up">31.2% growth</div></div></div>
+    </div>
+    <div class="charts-grid">
+      <div class="chart-card"><h3>User Growth (12 Months)</h3><canvas id="userGrowthChart"></canvas></div>
+      <div class="chart-card"><h3>Disease Cases by Type</h3><canvas id="diseaseChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- VACCINATIONS -->
+  <div class="page" id="page-vaccinations">
+    <div class="section-heading"><h2><i class="fas fa-syringe" style="color:#0d6efd;margin-right:8px;"></i>Vaccinations</h2><button class="btn btn-primary">+ Add Record</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>ID</th><th>Animal</th><th>Vaccine</th><th>Farm</th><th>Administered By</th><th>Date</th><th>Next Due</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>V-001</td><td>C-421 Friesian</td><td>FMD Vaccine</td><td>Green Valley</td><td>Dr. Amina</td><td>Jan 10, 2026</td><td>Jul 10, 2026</td><td><span class="badge badge-red">Overdue</span></td></tr>
+            <tr><td>V-002</td><td>CH-203 Broiler</td><td>Newcastle</td><td>Horizon Poultry</td><td>Dr. Rose</td><td>Jul 1, 2026</td><td>Oct 1, 2026</td><td><span class="badge badge-green">Done</span></td></tr>
+            <tr><td>V-003</td><td>G-055 Boer Goat</td><td>CCPP Vaccine</td><td>Northern Goat</td><td>Dr. James</td><td>Jun 15, 2026</td><td>Dec 15, 2026</td><td><span class="badge badge-green">Done</span></td></tr>
+            <tr><td>V-004</td><td>P-088 Landrace Pig</td><td>CSF Vaccine</td><td>Lakeside Pigs</td><td>Dr. Peter</td><td>May 20, 2026</td><td>Nov 20, 2026</td><td><span class="badge badge-green">Done</span></td></tr>
+            <tr><td>V-005</td><td>C-107 Ankole Bull</td><td>Brucellosis</td><td>Sunset Ranch</td><td>Dr. Grace</td><td>Apr 5, 2026</td><td>Jul 5, 2026</td><td><span class="badge badge-orange">Due Soon</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MARKETPLACE -->
+  <div class="page" id="page-marketplace">
+    <div class="section-heading"><h2><i class="fas fa-store" style="color:#fd7e14;margin-right:8px;"></i>Market Place</h2><button class="btn btn-primary">+ Add Listing</button></div>
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Listing</th><th>Seller</th><th>Category</th><th>Price</th><th>Location</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td>1</td><td>5 Friesian Dairy Cows</td><td>John Mwebaze</td><td><span class="badge badge-green">Livestock</span></td><td>UGX 4,500,000</td><td>Kampala</td><td><span class="badge badge-green">Active</span></td></tr>
+            <tr><td>2</td><td>500 Broiler Chicks (Day Old)</td><td>Brian Okello</td><td><span class="badge badge-purple">Poultry</span></td><td>UGX 12,000/each</td><td>Jinja</td><td><span class="badge badge-green">Active</span></td></tr>
+            <tr><td>3</td><td>Dairy Meal (50kg Bag)</td><td>AgriMart</td><td><span class="badge badge-orange">Feed</span></td><td>UGX 95,000</td><td>Kampala</td><td><span class="badge badge-orange">Pending</span></td></tr>
+            <tr><td>4</td><td>Ivermectin Injection (50ml)</td><td>VetCare Pro</td><td><span class="badge badge-blue">Medicine</span></td><td>UGX 25,000</td><td>Mbarara</td><td><span class="badge badge-green">Active</span></td></tr>
+            <tr><td>5</td><td>20 Boer Goats</td><td>Grace Nakato</td><td><span class="badge badge-green">Livestock</span></td><td>UGX 480,000/each</td><td>Gulu</td><td><span class="badge badge-red">Sold</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEATHER -->
+  <div class="page" id="page-weather">
+    <div class="section-heading"><h2><i class="fas fa-cloud-sun" style="color:#f57c00;margin-right:8px;"></i>Weather Updates</h2></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon" style="font-size:28px;background:#fff3e0;">&#x2600;&#xFE0F;</div><div class="stat-body"><h3>28&deg;C</h3><p>Kampala – Sunny</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="font-size:28px;background:#e3f2fd;">&#x1F327;&#xFE0F;</div><div class="stat-body"><h3>22&deg;C</h3><p>Mbarara – Rain</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="font-size:28px;background:#f0f2f5;">&#x26C5;</div><div class="stat-body"><h3>25&deg;C</h3><p>Jinja – Partly Cloudy</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="font-size:28px;background:#fff3e0;">&#x1F324;&#xFE0F;</div><div class="stat-body"><h3>31&deg;C</h3><p>Gulu – Hot &amp; Dry</p></div></div>
+    </div>
+    <div class="card" style="margin-top:8px;">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:16px;color:#1a1a2e;">Farming Advisories</h3>
+      <div class="notif-item"><div class="notif-dot" style="background:#fd7e14;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Mbarara:</strong> Heavy rains expected. Ensure proper drainage in pig pens.</p><span>Valid until Jul 15, 2026</span></div></div>
+      <div class="notif-item"><div class="notif-dot" style="background:#dc3545;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Gulu:</strong> Extreme heat warning. Increase water supply for cattle by 40%.</p><span>Valid until Jul 17, 2026</span></div></div>
+      <div class="notif-item"><div class="notif-dot" style="background:#2e7d32;"></div><div class="notif-body"><p><strong style="color:#1a1a2e;">Kampala:</strong> Good conditions for grazing. Optimal dairy production temperatures.</p><span>Valid until Jul 14, 2026</span></div></div>
+    </div>
+  </div>
+
+  <!-- AI CHAT -->
+  <div class="page" id="page-aichat">
+    <div class="section-heading"><h2><i class="fas fa-robot" style="color:#0d6efd;margin-right:8px;"></i>AI Chat (Vet Bot)</h2></div>
+    <div class="card" style="display:flex;flex-direction:column;height:520px;">
+      <div style="flex:1;overflow-y:auto;padding:10px 0;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#0d6efd,#0a58ca);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-robot" style="color:#fff;font-size:16px;"></i></div>
+          <div style="background:#f0f2f5;border:1px solid #e8ecf1;border-radius:0 12px 12px 12px;padding:12px 16px;max-width:75%;font-size:13.5px;color:#1a1a2e;line-height:1.6;">Hello! I am JaguzaAI, your veterinary assistant. I can help you diagnose animal symptoms, recommend treatments, provide disease information, and more. How can I help you today?</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse;">
+          <div class="user-avatar" style="width:36px;height:36px;flex-shrink:0;">JA</div>
+          <div style="background:linear-gradient(135deg, #e8f5e9, #c8e6c9);border-radius:12px 0 12px 12px;padding:12px 16px;max-width:75%;font-size:13.5px;color:#1a1a2e;line-height:1.6;">A farmer reported their cattle showing high fever (40.5C), swollen lymph nodes, and nasal discharge. What could this be?</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;">
+          <div style="width:36px;height:36px;background:linear-gradient(135deg,#0d6efd,#0a58ca);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;"><i class="fas fa-robot" style="color:#fff;font-size:16px;"></i></div>
+          <div style="background:#f0f2f5;border:1px solid #e8ecf1;border-radius:0 12px 12px 12px;padding:12px 16px;max-width:75%;font-size:13.5px;color:#1a1a2e;line-height:1.6;">Based on the symptoms – high fever, swollen lymph nodes, and nasal discharge – this most likely indicates <strong style="color:#1b5e20;">East Coast Fever (ECF)</strong> caused by Theileria parva, transmitted by brown ear ticks.<br><br><strong style="color:#1b5e20;">Recommended Actions:</strong><br>1. Administer Buparvaquone (Butalex) – 2.5mg/kg IM<br>2. Isolate the affected animal<br>3. Apply tick grease to all animals<br>4. Contact Dr. Amina Ochieng for on-site evaluation<br><br>ECF is fatal if untreated within 3 to 5 days. Act immediately!</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;padding-top:16px;border-top:1px solid #e8ecf1;margin-top:10px;">
+        <input class="form-control" type="text" placeholder="Ask JaguzaAI about symptoms, treatments, diseases..." style="flex:1;" />
+        <button class="btn btn-primary" style="padding:10px 20px;"><i class="fas fa-paper-plane"></i></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DECISION SUPPORT -->
+  <div class="page" id="page-decision">
+    <div class="section-heading"><h2><i class="fas fa-brain" style="color:#0d6efd;margin-right:8px;"></i>Decision Support</h2></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon" style="background:#e8f5e9;color:#2e7d32;"><i class="fas fa-lightbulb"></i></div><div class="stat-body"><h3>1,204</h3><p>AI Recommendations</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#e3f2fd;color:#0d47a1;"><i class="fas fa-check-circle"></i></div><div class="stat-body"><h3>94%</h3><p>Accuracy Rate</p></div></div>
+      <div class="stat-card"><div class="stat-icon" style="background:#fff3e0;color:#e65100;"><i class="fas fa-clock"></i></div><div class="stat-body"><h3>1.2s</h3><p>Avg Response Time</p></div></div>
+    </div>
+    <div class="card"><p style="color:#4a5a6a;font-size:13px;line-height:1.8;">The Decision Support module uses AI to help farmers and veterinarians make informed decisions about livestock health, feeding schedules, market timing, and farm management based on historical data and real-time inputs from your Jaguza mobile app.</p></div>
+  </div>
+
+  <!-- SETTINGS -->
+  <div class="page" id="page-settings">
+    <div class="section-heading"><h2><i class="fas fa-cog" style="color:#2e7d32;margin-right:8px;"></i>Settings</h2><button class="btn btn-primary">Save Changes</button></div>
+    <div class="card">
+      <h3 style="font-size:14px;font-weight:600;margin-bottom:20px;color:#1a1a2e;">General Settings</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="form-group"><label>App Name</label><input class="form-control" value="Jaguza Livestock Management" /></div>
+        <div class="form-group"><label>Admin Email</label><input class="form-control" value="admin@jaguzalivestock.com" /></div>
+        <div class="form-group"><label>Country</label><input class="form-control" value="Uganda" /></div>
+        <div class="form-group"><label>Currency</label><input class="form-control" value="UGX" /></div>
+        <div class="form-group"><label>App Version</label><input class="form-control" value="2.0.0" readonly /></div>
+        <div class="form-group"><label>Backend URL</label><input class="form-control" value="https://api.jaguzalivestock.com" /></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+Chart.defaults.color = '#4a5a6a';
+Chart.defaults.borderColor = '#e8ecf1';
+Chart.defaults.font.family = 'Inter';
+
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  document.getElementById('topbar').classList.toggle('shifted');
+  document.getElementById('main-wrap').classList.toggle('shifted');
+}
+
+function navigate(pageId, title) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  var page = document.getElementById('page-' + pageId);
+  if (page) page.classList.add('active');
+  var nav = document.getElementById('nav-' + pageId);
+  if (nav) nav.classList.add('active');
+  document.getElementById('page-title').textContent = title;
+  document.getElementById('main-wrap').scrollTop = 0;
+  if (pageId === 'analytics' && !window.analyticsRendered) { 
+    renderAnalyticsCharts(); 
+    window.analyticsRendered = true; 
+  }
+}
+
+function renderDashboardCharts() {
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul'];
+  new Chart(document.getElementById('sickChart'), { 
+    type:'bar', 
+    data:{ 
+      labels:months, 
+      datasets:[{ 
+        label:'Reports', 
+        data:[28,34,22,41,38,47,34], 
+        backgroundColor:'rgba(220,53,69,.2)', 
+        borderColor:'#dc3545', 
+        borderWidth:2, 
+        borderRadius:6 
+      }] 
+    }, 
+    options:{ 
+      responsive:true, 
+      maintainAspectRatio:true,
+      plugins:{legend:{display:false}}, 
+      scales:{y:{beginAtZero:true}} 
+    } 
+  });
+  
+  new Chart(document.getElementById('animalChart'), { 
+    type:'doughnut', 
+    data:{ 
+      labels:['Cattle','Goats','Sheep','Pigs','Poultry','Rabbits'], 
+      datasets:[{ 
+        data:[8420,4210,1830,2140,18900,640], 
+        backgroundColor:['#43a047','#66bb6a','#ffa726','#ef5350','#42a5f5','#ab47bc'], 
+        borderWidth:0 
+      }] 
+    }, 
+    options:{ 
+      responsive:true, 
+      maintainAspectRatio:true,
+      plugins:{legend:{position:'right'}} 
+    } 
+  });
+  
+  new Chart(document.getElementById('userChart'), { 
+    type:'line', 
+    data:{ 
+      labels:months, 
+      datasets:[{ 
+        label:'New Users', 
+        data:[180,220,195,310,280,360,248], 
+        borderColor:'#2e7d32', 
+        backgroundColor:'rgba(46,125,50,0.1)', 
+        borderWidth:2.5, 
+        tension:0.4, 
+        fill:true, 
+        pointBackgroundColor:'#2e7d32' 
+      }] 
+    }, 
+    options:{ 
+      responsive:true, 
+      maintainAspectRatio:true,
+      plugins:{legend:{display:false}}, 
+      scales:{y:{beginAtZero:true}} 
+    } 
+  });
+  
+  new Chart(document.getElementById('marketChart'), { 
+    type:'bar', 
+    data:{ 
+      labels:months, 
+      datasets:[{ 
+        label:'Listings', 
+        data:[42,38,55,61,48,74,66], 
+        backgroundColor:'rgba(253,126,20,.2)', 
+        borderColor:'#fd7e14', 
+        borderWidth:2, 
+        borderRadius:6 
+      }] 
+    }, 
+    options:{ 
+      responsive:true, 
+      maintainAspectRatio:true,
+      plugins:{legend:{display:false}}, 
+      scales:{y:{beginAtZero:true}} 
+    } 
+  });
+}
+
+function renderAnalyticsCharts() {
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  new Chart(document.getElementById('userGrowthChart'), { 
+    type:'line', 
+    data:{ 
+      labels:months, 
+      datasets:[{ 
+        label:'Users', 
+        data:[800,920,1040,1200,1380,1520,1700,1840,1980,2150,2300,2481], 
+        borderColor:'#2e7d32', 
+        backgroundColor:'rgba(46,125,50,0.08)', 
+        borderWidth:2.5, 
+        tension:0.4, 
+        fill:true 
+      }] 
+    }, 
+    options:{ 
+      responsive:true, 
+      maintainAspectRatio:true,
+      plugins:{legend:{display:false}}, 
+      scales:{y:{beginAtZero:false}} 
+    } 
+  });
+  
+  new Chart(document.getElementById('diseaseChart'), { 
+    type:'pie', 
+    data:{ 
+      labels:['ECF','FMD','Newcastle','Brucellosis','ASF','Other'], 
+      datasets:[{ 
+        data:[82,64,58,41,28,74], 
+        backgroundColor:['#ef5350','#ffa726','#42a5f5','#ab47bc','#66bb6a','#78909c'], 
+        borderWidth:0 
+      }] 
+    }, 
+    options:{ 
+      responsive:true, 
+      maintainAspectRatio:true,
+      plugins:{legend:{position:'right'}} 
+    } 
+  });
+}
+
+window.addEventListener('DOMContentLoaded', function() {
+  renderDashboardCharts();
+});
+</script>
+</body>
+</html>
