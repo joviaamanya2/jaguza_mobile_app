@@ -6,15 +6,26 @@ class LanguageService {
   static const String _languageCodeKey = 'language_code';
   static const String _languageNameKey = 'language_name';
   
-  static Locale? _currentLocale;
+  /// The single source of truth for the language used by the whole app.
+  /// `MyApp` listens to this notifier and rebuilds its MaterialApp immediately.
+  static final ValueNotifier<Locale> localeNotifier =
+      ValueNotifier(const Locale('en'));
+
+  static Locale get currentLocale => localeNotifier.value;
+
+  static Future<void> initialize() async {
+    final languageCode = await getLanguageCode();
+    localeNotifier.value = Locale(languageCode?.isNotEmpty == true
+        ? languageCode!
+        : 'en');
+  }
 
   static Future<void> saveLanguage(String languageCode, String languageName) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_languageCodeKey, languageCode);
     await prefs.setString(_languageNameKey, languageName);
     
-    // Update the AppLanguage notifier
-    _currentLocale = Locale(languageCode);
+    localeNotifier.value = Locale(languageCode);
   }
 
   static Future<String?> getLanguageCode() async {
@@ -28,18 +39,18 @@ class LanguageService {
   }
 
   static Future<void> setLocale(String languageCode) async {
-    _currentLocale = Locale(languageCode);
+    localeNotifier.value = Locale(languageCode);
   }
 
-  static Locale? getCurrentLocale() {
-    return _currentLocale;
+  static Locale getCurrentLocale() {
+    return currentLocale;
   }
 
   static Future<void> clearLanguage() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_languageCodeKey);
     await prefs.remove(_languageNameKey);
-    _currentLocale = null;
+    localeNotifier.value = const Locale('en');
   }
 
   static String getLanguageCodeFromName(String languageName) {

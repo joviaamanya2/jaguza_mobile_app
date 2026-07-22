@@ -3,8 +3,17 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://localhost:8000/api/v1/';
-  static const String tokenUrl = 'http://localhost:8000/api/token/';
+  // Pass --dart-define=API_BASE_URL=<your-server-url> when running/building.
+  // `localhost` is only correct when the app and Laravel server run on the
+  // same machine (for an Android emulator use 10.0.2.2 instead).
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8000/api/v1/',
+  );
+  static const String tokenUrl = String.fromEnvironment(
+    'TOKEN_URL',
+    defaultValue: 'http://localhost:8000/api/token/',
+  );
   
   String? _accessToken;
   String? _refreshToken;
@@ -66,8 +75,12 @@ class ApiService {
         final error = json.decode(response.body);
         return {'success': false, 'error': error['message'] ?? 'Invalid credentials'};
       }
-    } catch (e) {
-      return {'success': false, 'error': e.toString()};
+    } catch (_) {
+      return {
+        'success': false,
+        'error': 'Cannot reach the server at $baseUrl. Start the Laravel API '
+            'or run the app with the correct API_BASE_URL.',
+      };
     }
   }
   

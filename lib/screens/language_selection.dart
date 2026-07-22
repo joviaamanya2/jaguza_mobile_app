@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
+import '../services/language_service.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
   const LanguageSelectionScreen({super.key});
@@ -95,8 +96,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
 
   Future<void> _loadSavedLanguage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final savedLanguageCode = prefs.getString('language_code');
+      final savedLanguageCode = await LanguageService.getLanguageCode();
       
       if (savedLanguageCode != null && savedLanguageCode.isNotEmpty) {
         // Find the language name from the code
@@ -134,10 +134,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
 
       final languageCode = languageEntry['code']!;
       
-      // Save language preference
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('language_code', languageCode);
-      await prefs.setString('language_name', _selectedLanguage!);
+      // Saving also updates the app-wide locale notifier immediately.
+      await LanguageService.saveLanguage(languageCode, _selectedLanguage!);
       
       if (mounted) {
         // Navigate to home with rebuild

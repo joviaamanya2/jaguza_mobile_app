@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jaguza_app/screens/splash_screen.dart';
+import 'package:jaguza_app/services/language_service.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -28,7 +28,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  Locale? _locale;
   bool _isLoading = true;
 
   @override
@@ -39,23 +38,11 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _loadLanguage() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final languageCode = prefs.getString('language_code');
-      if (languageCode != null && languageCode.isNotEmpty) {
-        setState(() {
-          _locale = Locale(languageCode);
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
+      await LanguageService.initialize();
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
       }
-    } catch (e) {
-      // If any error occurs, just use default language
-      setState(() {
-        _isLoading = false;
-      });
     }
   }
 
@@ -83,10 +70,12 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    return MaterialApp(
+    return ValueListenableBuilder<Locale>(
+      valueListenable: LanguageService.localeNotifier,
+      builder: (context, locale, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Jaguza Livestock',
-      locale: _locale,
+      locale: locale,
       // Add these to provide MaterialLocalizations
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -175,6 +164,7 @@ class _MyAppState extends State<MyApp> {
         return const Locale('en');
       },
       home: const SplashScreen(),
+    ),
     );
   }
 }

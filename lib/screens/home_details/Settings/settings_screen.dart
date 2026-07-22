@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:jaguza_app/services/language_service.dart';
 
 // Import your Profile/Account screen
 import 'package:jaguza_app/screens/home_details/Profile/profile_screen.dart';
@@ -34,6 +35,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   static const _kText = Color(0xFF1A1F36);
   static const _kSubtext = Color(0xFF6B7280);
   static const _kBorder = Color(0xFFE8EDF2);
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedLanguage = LanguageService.getLanguageNameFromCode(
+      LanguageService.currentLocale.languageCode,
+    );
+    LanguageService.localeNotifier.addListener(_syncLanguage);
+  }
+
+  @override
+  void dispose() {
+    LanguageService.localeNotifier.removeListener(_syncLanguage);
+    super.dispose();
+  }
+
+  void _syncLanguage() {
+    if (!mounted) return;
+    setState(() {
+      _selectedLanguage = LanguageService.getLanguageNameFromCode(
+        LanguageService.currentLocale.languageCode,
+      );
+    });
+  }
+
+  Future<void> _changeLanguage(String languageName) async {
+    await LanguageService.saveLanguage(
+      LanguageService.getLanguageCodeFromName(languageName),
+      languageName,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -131,8 +163,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           'Runyankore',
                           'Acholi',
                         ],
-                        onChanged: (v) =>
-                            setState(() => _selectedLanguage = v ?? _selectedLanguage),
+                        onChanged: (v) {
+                          if (v != null) _changeLanguage(v);
+                        },
                       ),
                       
                     ]),

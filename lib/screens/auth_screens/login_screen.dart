@@ -475,7 +475,12 @@ class _SocialButtons extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _SocialTile(
-          icon: const _GoogleLogo(),
+          icon: Image.asset(
+            'lib/assets/images/google.png',
+            width: 26,
+            height: 26,
+            fit: BoxFit.contain,
+          ),
           semanticLabel: 'Sign in with Google',
           onTap: onGoogleTap,
         ),
