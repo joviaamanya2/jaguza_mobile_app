@@ -106,11 +106,11 @@ class _AIChatTabState extends State<AIChatTab> {
         },
         listenFor: const Duration(seconds: 30),
         pauseFor: const Duration(seconds: 5),
-        partialResults: true,
         localeId: _getSpeechLocale(),
         onSoundLevelChange: (level) {
           // You can use this to show voice level animation
         },
+        listenOptions: stt.SpeechListenOptions(partialResults: true),
       );
     } catch (e) {
       setState(() {
