@@ -8,11 +8,11 @@ class ApiService {
   // same machine (for an Android emulator use 10.0.2.2 instead).
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:8000/api/v1/',
+    defaultValue: 'http://188.166.8.72:9044/api/v1/',
   );
   static const String tokenUrl = String.fromEnvironment(
     'TOKEN_URL',
-    defaultValue: 'http://localhost:8000/api/token/',
+    defaultValue: 'http://188.166.8.72:9044/api/token/',
   );
   
   String? _accessToken;
