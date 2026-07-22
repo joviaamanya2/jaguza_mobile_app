@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../services/api_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
 
 class ReportSicknessScreen extends StatefulWidget {
   const ReportSicknessScreen({super.key});
@@ -16,27 +12,16 @@ class ReportSicknessScreen extends StatefulWidget {
 
 class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _farmerNameController = TextEditingController();
-  final _farmNameController = TextEditingController();
-  final _contactNumberController = TextEditingController();
-  final _locationController = TextEditingController();
   final _animalCountController = TextEditingController();
   final _additionalNotesController = TextEditingController();
 
   String _selectedAnimalType = 'Cattle';
   String _selectedSeverity = 'Medium';
-  String _selectedLocation = 'Kampala';
   String _selectedDuration = 'Less than 24 hours';
   String _selectedSymptoms = 'Select symptoms';
   String _selectedPrimarySymptom = 'Fever';
   bool _isEmergency = false;
   bool _isSubmitting = false;
-
-  // Map location state - using simple coordinates
-  double? _selectedLatitude;
-  double? _selectedLongitude;
-  String _mapLocationAddress = '';
-  bool _isGettingLocation = false;
 
   // Media files
   final List<File> _selectedImages = [];
@@ -45,11 +30,6 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   final List<String> _severityLevels = ['Mild', 'Medium', 'Severe', 'Critical'];
   final List<String> _animalTypes = [
     'Cattle', 'Goat', 'Sheep', 'Pig', 'Poultry', 'Rabbit', 'Fish', 'Other'
-  ];
-
-  final List<String> _locations = [
-    'Kampala', 'Wakiso', 'Mukono', 'Jinja', 'Mbarara', 'Gulu', 'Lira',
-    'Mbale', 'Masaka', 'Entebbe', 'Fort Portal', 'Kabale', 'Other'
   ];
 
   final List<String> _durations = [
@@ -80,10 +60,6 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
 
   final ImagePicker _imagePicker = ImagePicker();
 
-  // Default center (Kampala, Uganda)
-  static const double _defaultLatitude = 0.3476;
-  static const double _defaultLongitude = 32.5825;
-
   @override
   void initState() {
     super.initState();
@@ -91,276 +67,9 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
 
   @override
   void dispose() {
-    _farmerNameController.dispose();
-    _farmNameController.dispose();
-    _contactNumberController.dispose();
-    _locationController.dispose();
     _animalCountController.dispose();
     _additionalNotesController.dispose();
     super.dispose();
-  }
-
-  // ── Helper: Create Default Position ───────────────────────────
-  Position _createDefaultPosition() {
-    return Position(
-      latitude: _defaultLatitude,
-      longitude: _defaultLongitude,
-      timestamp: DateTime.now(),
-      heading: 0,
-      headingAccuracy: 0,
-      speed: 0,
-      speedAccuracy: 0,
-      accuracy: 0,
-      altitude: 0,
-      altitudeAccuracy: 0,
-    );
-  }
-
-  // ── Get Current Location ─────────────────────────────────────
-  Future<Position> _getCurrentLocation() async {
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        return _createDefaultPosition();
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return _createDefaultPosition();
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        return _createDefaultPosition();
-      }
-
-      final Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      return position;
-    } catch (e) {
-      debugPrint('Error getting location: $e');
-      return _createDefaultPosition();
-    }
-  }
-
-  // ── Reverse Geocode to Get Address ──────────────────────────
-  Future<String> _getAddressFromCoordinates(double latitude, double longitude) async {
-    try {
-      final List<Placemark> placemarks = await placemarkFromCoordinates(
-        latitude,
-        longitude,
-      );
-
-      if (placemarks.isNotEmpty) {
-        final Placemark place = placemarks.first;
-        final List<String> addressParts = [
-          place.subLocality ?? '',
-          place.locality ?? '',
-          place.subAdministrativeArea ?? '',
-          place.administrativeArea ?? '',
-        ].where((part) => part.isNotEmpty).toList();
-
-        return addressParts.isNotEmpty 
-            ? addressParts.join(', ') 
-            : '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
-      }
-      return '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
-    } catch (e) {
-      debugPrint('Geocoding error: $e');
-      return '${latitude.toStringAsFixed(5)}, ${longitude.toStringAsFixed(5)}';
-    }
-  }
-
-  // ── Open Google Maps ─────────────────────────────────────────
-  Future<void> _openGoogleMaps() async {
-    setState(() {
-      _isGettingLocation = true;
-    });
-
-    try {
-      // Get current location first
-      final Position currentLocation = await _getCurrentLocation();
-      
-      // Create Google Maps URL
-      final String googleMapsUrl = 
-          'https://www.google.com/maps/search/?api=1&query=${currentLocation.latitude},${currentLocation.longitude}';
-      
-      final Uri url = Uri.parse(googleMapsUrl);
-
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-        
-        // After user returns, show a dialog to confirm location
-        _showLocationConfirmationDialog();
-      } else {
-        // Fallback to Google Maps web if app not installed
-        final String fallbackUrl = 
-            'https://www.google.com/maps/search/?api=1&query=${currentLocation.latitude},${currentLocation.longitude}';
-        final Uri fallbackUri = Uri.parse(fallbackUrl);
-        
-        if (await canLaunchUrl(fallbackUri)) {
-          await launchUrl(fallbackUri, mode: LaunchMode.inAppWebView);
-          _showLocationConfirmationDialog();
-        } else {
-          _showErrorSnackBar('Could not open Google Maps');
-        }
-      }
-    } catch (e) {
-      debugPrint('Error opening Google Maps: $e');
-      _showErrorSnackBar('Could not open Google Maps: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGettingLocation = false;
-        });
-      }
-    }
-  }
-
-  // ── Open Google Maps with Specific Location ─────────────────
-  Future<void> _openGoogleMapsWithLocation(double latitude, double longitude) async {
-    try {
-      final String googleMapsUrl = 
-          'https://www.google.com/maps/search/?api=1&query=$latitude,$longitude';
-      
-      final Uri url = Uri.parse(googleMapsUrl);
-
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        final String fallbackUrl = 
-            'https://www.google.com/maps/@$latitude,$longitude,15z';
-        final Uri fallbackUri = Uri.parse(fallbackUrl);
-        
-        if (await canLaunchUrl(fallbackUri)) {
-          await launchUrl(fallbackUri, mode: LaunchMode.inAppWebView);
-        }
-      }
-    } catch (e) {
-      debugPrint('Error opening Google Maps: $e');
-      _showErrorSnackBar('Could not open Google Maps');
-    }
-  }
-
-  // ── Show Location Confirmation Dialog ────────────────────────
-  void _showLocationConfirmationDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: const Text(
-          'Confirm Location',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Icon(
-              Icons.location_on_rounded,
-              color: Color(0xFF2E7D32),
-              size: 48,
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Did you select your location on the map?',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF1A1F36),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'After returning from Google Maps, the app will automatically detect your location.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              // Try to get updated location
-              _getCurrentLocationAndUpdate();
-            },
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                color: Colors.grey,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _getCurrentLocationAndUpdate();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-            child: const Text('Set Location'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Get Current Location and Update ─────────────────────────
-  Future<void> _getCurrentLocationAndUpdate() async {
-    setState(() {
-      _isGettingLocation = true;
-    });
-
-    try {
-      final Position position = await _getCurrentLocation();
-      final String address = await _getAddressFromCoordinates(
-        position.latitude, 
-        position.longitude
-      );
-      
-      if (mounted) {
-        setState(() {
-          _selectedLatitude = position.latitude;
-          _selectedLongitude = position.longitude;
-          _mapLocationAddress = address;
-          _selectedLocation = address.isNotEmpty 
-              ? address 
-              : 'Lat: ${position.latitude.toStringAsFixed(4)}, Lng: ${position.longitude.toStringAsFixed(4)}';
-          _locationController.text = _selectedLocation;
-        });
-        _showSuccessSnackBar('Location set to: $_selectedLocation');
-      }
-    } catch (e) {
-      if (mounted) {
-        _showErrorSnackBar('Could not get location: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isGettingLocation = false;
-        });
-      }
-    }
   }
 
   // ── Pick Images ───────────────────────────────────────────────
@@ -662,209 +371,6 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
             children: [
               // Emergency Banner
               _buildEmergencyBanner(),
-
-              const SizedBox(height: 20),
-
-              // Farmer Information Section
-              _buildSectionHeader('Farmer Details'),
-              const SizedBox(height: 12),
-
-              // Farmer Name
-              _buildTextField(
-                controller: _farmerNameController,
-                label: 'Farmer Name',
-                hint: 'Enter your full name',
-                icon: Icons.person_rounded,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter farmer name';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 14),
-
-              // Farm Name
-              _buildTextField(
-                controller: _farmNameController,
-                label: 'Farm Name',
-                hint: 'Enter your farm name',
-                icon: Icons.storefront_rounded,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter farm name';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 14),
-
-              // Contact Number
-              _buildTextField(
-                controller: _contactNumberController,
-                label: 'Contact Number',
-                hint: 'e.g., 0772 123 456',
-                icon: Icons.phone_rounded,
-                keyboardType: TextInputType.phone,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter contact number';
-                  }
-                  if (value.length < 10) {
-                    return 'Please enter a valid phone number';
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 14),
-
-              // Location with Map Button
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 3,
-                        child: _buildDropdownField(
-                          label: 'Location',
-                          hint: 'Select your district',
-                          value: _selectedLocation,
-                          items: _locations,
-                          icon: Icons.location_on_rounded,
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedLocation = value ?? 'Kampala';
-                              _selectedLatitude = null;
-                              _selectedLongitude = null;
-                              _mapLocationAddress = '';
-                              _locationController.clear();
-                              if (_selectedLocation == 'Other') {
-                                _showCustomLocationDialog();
-                              }
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please select your location';
-                            }
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      // Map Button - Opens Google Maps
-                      Expanded(
-                        flex: 1,
-                        child: SizedBox(
-                          height: 54,
-                          child: ElevatedButton(
-                            onPressed: _isGettingLocation ? null : _openGoogleMaps,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: _selectedLatitude != null
-                                  ? const Color(0xFF1B5E20)
-                                  : const Color(0xFF2E7D32),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              padding: EdgeInsets.zero,
-                            ),
-                            child: _isGettingLocation
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        _selectedLatitude != null
-                                            ? Icons.check_circle_rounded
-                                            : Icons.map_rounded,
-                                        size: 18,
-                                      ),
-                                      const SizedBox(height: 2),
-                                      Text(
-                                        _selectedLatitude != null ? 'Set' : 'Map',
-                                        style: const TextStyle(
-                                          fontSize: 10,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // Show map-selected location info
-                  if (_selectedLatitude != null && _selectedLongitude != null) ...[
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32).withOpacity(0.06),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: const Color(0xFF2E7D32).withOpacity(0.15),
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.my_location_rounded,
-                            color: Color(0xFF2E7D32),
-                            size: 16,
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _selectedLocation,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w500,
-                                color: Color(0xFF2E7D32),
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedLatitude = null;
-                                _selectedLongitude = null;
-                                _mapLocationAddress = '';
-                                _selectedLocation = 'Kampala';
-                                _locationController.clear();
-                              });
-                            },
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 16,
-                              color: const Color(0xFF2E7D32).withOpacity(0.6),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ],
-              ),
 
               const SizedBox(height: 20),
 
@@ -1231,46 +737,43 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     });
 
     try {
-      // Build the report data including map coordinates if available
+      // The backend sickness_reports schema only stores the structured fields
+      // below. The emergency flag has no dedicated column, so it is folded into
+      // `notes` to avoid losing it.
+      final additionalNotes = _additionalNotesController.text.trim();
+      final notes = [
+        if (additionalNotes.isNotEmpty) additionalNotes,
+        if (_isEmergency) '⚠️ EMERGENCY',
+      ].join('\n\n');
+
+      // Map the form to the backend columns. `user_id` is filled in
+      // server-side from the authenticated user, so it is not sent here.
       final Map<String, dynamic> reportData = {
-        'farmerName': _farmerNameController.text.trim(),
-        'farmName': _farmNameController.text.trim(),
-        'contactNumber': _contactNumberController.text.trim(),
-        'location': _selectedLocation,
-        'animalType': _selectedAnimalType,
-        'animalCount': int.tryParse(_animalCountController.text.trim()) ?? 0,
-        'primarySymptom': _selectedPrimarySymptom,
-        'otherSymptoms': _selectedSymptoms != 'Select symptoms'
-            ? _selectedSymptoms
-            : null,
-        'duration': _selectedDuration,
-        'severity': _selectedSeverity,
-        'additionalNotes': _additionalNotesController.text.trim(),
-        'isEmergency': _isEmergency,
-        // Include map coordinates if set
-        if (_selectedLatitude != null && _selectedLongitude != null) ...{
-          'latitude': _selectedLatitude,
-          'longitude': _selectedLongitude,
-          'mapAddress': _mapLocationAddress,
-        },
+        'affected_animal_type': _selectedAnimalType.toLowerCase(),
+        'affected_animal_count':
+            int.tryParse(_animalCountController.text.trim()) ?? 1,
+        'symptom_primary': _selectedPrimarySymptom,
+        'symptom_other':
+            _selectedSymptoms != 'Select symptoms' ? _selectedSymptoms : null,
+        'symptom_duration': _selectedDuration,
+        'severity_level': _selectedSeverity.toLowerCase(),
+        'notes': notes.isNotEmpty ? notes : null,
+        // Media upload is not yet supported by the API (no storage endpoint),
+        // so attachments are sent empty for now. See note below.
+        'attachments': <String>[],
       };
 
-      // TODO: Replace with your actual API call
-      // final response = await ApiService.submitSicknessReport(
-      //   reportData: reportData,
-      //   images: _selectedImages,
-      //   videos: _selectedVideos,
-      // );
-
-      // Simulate API delay
-      await Future.delayed(const Duration(seconds: 2));
+      await ApiService().createReport(reportData);
 
       if (mounted) {
         _showSuccessDialog();
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Failed to submit report: $e');
+        _showErrorSnackBar(
+          'Failed to submit report: '
+          '${e.toString().replaceFirst('Exception: ', '')}',
+        );
       }
     } finally {
       if (mounted) {
@@ -1511,73 +1014,6 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     );
   }
 
-  // ── Custom Location Dialog ────────────────────────────────────
-  void _showCustomLocationDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final TextEditingController customLocationController =
-            TextEditingController();
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text(
-            'Enter Location',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1F36),
-            ),
-          ),
-          content: TextField(
-            controller: customLocationController,
-            decoration: InputDecoration(
-              hintText: 'Enter your district or village',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              filled: true,
-              fillColor: const Color(0xFFF5F5F5),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (customLocationController.text.trim().isNotEmpty) {
-                  setState(() {
-                    _selectedLocation =
-                        customLocationController.text.trim();
-                  });
-                }
-                Navigator.pop(context);
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
   // ── Show Success Dialog ──────────────────────────────────────
   void _showSuccessDialog() {
     showDialog(
@@ -1635,17 +1071,10 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildSuccessRow('Farmer', _farmerNameController.text),
-                  _buildSuccessRow('Farm', _farmNameController.text),
                   _buildSuccessRow('Animal', _selectedAnimalType),
+                  _buildSuccessRow('Count', _animalCountController.text),
                   _buildSuccessRow('Symptom', _selectedPrimarySymptom),
                   _buildSuccessRow('Severity', _selectedSeverity),
-                  if (_selectedLatitude != null && _selectedLongitude != null) ...[
-                    _buildSuccessRow(
-                      'GPS',
-                      '${_selectedLatitude!.toStringAsFixed(4)}, ${_selectedLongitude!.toStringAsFixed(4)}',
-                    ),
-                  ],
                   if (_selectedImages.isNotEmpty) ...[
                     _buildSuccessRow(
                         'Images', '${_selectedImages.length} attached'),
@@ -1705,24 +1134,16 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                     // Reset form
                     _formKey.currentState?.reset();
                     setState(() {
-                      _farmerNameController.clear();
-                      _farmNameController.clear();
-                      _contactNumberController.clear();
-                      _locationController.clear();
                       _animalCountController.clear();
                       _additionalNotesController.clear();
                       _selectedAnimalType = 'Cattle';
                       _selectedSeverity = 'Medium';
-                      _selectedLocation = 'Kampala';
                       _selectedDuration = 'Less than 24 hours';
                       _selectedSymptoms = 'Select symptoms';
                       _selectedPrimarySymptom = 'Fever';
                       _isEmergency = false;
                       _selectedImages.clear();
                       _selectedVideos.clear();
-                      _selectedLatitude = null;
-                      _selectedLongitude = null;
-                      _mapLocationAddress = '';
                     });
                   },
                   style: ElevatedButton.styleFrom(
@@ -1775,27 +1196,6 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   }
 
   // ── SnackBars ─────────────────────────────────────────────────
-  void _showSuccessSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded,
-                color: Colors.white, size: 20),
-            const SizedBox(width: 10),
-            Expanded(child: Text(message)),
-          ],
-        ),
-        backgroundColor: const Color(0xFF2E7D32),
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
-
   void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
