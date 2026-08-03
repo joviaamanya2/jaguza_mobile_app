@@ -3,9 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Pass --dart-define=API_BASE_URL=<your-server-url> when running/building.
-  // `localhost` is only correct when the app and Laravel server run on the
-  // same machine (for an Android emulator use 10.0.2.2 instead).
+  // Production URLs
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://188.166.8.72:9044/api/v1/',
@@ -15,43 +13,108 @@ class ApiService {
     defaultValue: 'http://188.166.8.72:9044/api/token/',
   );
   
-  String? _accessToken;
+  // Local development URLs
+  static const String _localApi =
+      'http://127.0.0.1:8000/api/v1/';
+  static const String _localToken =
+      'http://127.0.0.1:8000/api/token/';
+  
+  // For Android emulator:
+  // static const String _localApi = 'http://10.0.2.2:8000/api/v1/';
+  
+  // Separate tokens for local and production
+  String? _productionToken;
+  String? _localTokenValue;
   String? _refreshToken;
+  
+  // Mode tracking
+  bool _isLocalMode = false;
   
   // Singleton
   static final ApiService _instance = ApiService._internal();
   factory ApiService() => _instance;
   ApiService._internal();
   
-  // Get tokens from storage
+  // Get the current token based on mode
+  String? get _currentToken => _isLocalMode ? _localTokenValue : _productionToken;
+  
+  // Load tokens from storage
   Future<void> loadTokens() async {
     final prefs = await SharedPreferences.getInstance();
-    _accessToken = prefs.getString('access_token');
+    _productionToken = prefs.getString('production_token');
+    _localTokenValue = prefs.getString('local_token');
     _refreshToken = prefs.getString('refresh_token');
+    _isLocalMode = prefs.getBool('is_local_mode') ?? false;
+    
+    print('🔑 Mode: ${_isLocalMode ? "LOCAL" : "PRODUCTION"}');
+    print('🔑 Production Token: ${_productionToken?.substring(0, 20)}...');
+    print('🔑 Local Token: ${_localTokenValue?.substring(0, 20)}...');
   }
   
-  // Save tokens
-  Future<void> saveTokens(String access, String refresh) async {
+  // Save production tokens
+  Future<void> saveProductionTokens(String access, String refresh) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('access_token', access);
+    await prefs.setString('production_token', access);
     await prefs.setString('refresh_token', refresh);
-    _accessToken = access;
+    await prefs.setBool('is_local_mode', false);
+    _productionToken = access;
     _refreshToken = refresh;
+    _isLocalMode = false;
+    print('💾 Production token saved');
   }
   
-  // Clear tokens (logout)
+  // Save local tokens
+  Future<void> saveLocalTokens(String access, String refresh) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('local_token', access);
+    await prefs.setString('refresh_token', refresh);
+    await prefs.setBool('is_local_mode', true);
+    _localTokenValue = access;
+    _refreshToken = refresh;
+    _isLocalMode = true;
+    print('💾 Local token saved');
+  }
+  
+  // Clear all tokens
   Future<void> clearTokens() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token');
+    await prefs.remove('production_token');
+    await prefs.remove('local_token');
     await prefs.remove('refresh_token');
-    _accessToken = null;
+    await prefs.remove('is_local_mode');
+    _productionToken = null;
+    _localTokenValue = null;
     _refreshToken = null;
+    _isLocalMode = false;
+    print('🗑️ All tokens cleared');
   }
+  
+  // Switch to production mode
+  Future<void> switchToProduction() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_local_mode', false);
+    _isLocalMode = false;
+    print('🔄 Switched to PRODUCTION mode');
+  }
+  
+  // Switch to local mode
+  Future<void> switchToLocal() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_local_mode', true);
+    _isLocalMode = true;
+    print('🔄 Switched to LOCAL mode');
+  }
+  
+  // Check if authenticated in current mode
+  bool get isAuthenticated => _currentToken != null;
   
   // ========== AUTHENTICATION ==========
   
+  // Login to production server
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
+      print('🌐 Logging in to PRODUCTION server');
+      
       final response = await http.post(
         Uri.parse('${baseUrl}login'),
         headers: {'Content-Type': 'application/json'},
@@ -61,12 +124,15 @@ class ApiService {
         }),
       );
       
+      print('📥 Login Response Status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          await saveTokens(
-            data['data']['token'],
-            'refresh_token_placeholder'
+          String token = data['data']['token'] ?? data['token'];
+          await saveProductionTokens(
+            token,
+            data['data']['refresh_token'] ?? 'refresh_token_placeholder'
           );
           return {'success': true, 'data': data['data']};
         }
@@ -75,11 +141,64 @@ class ApiService {
         final error = json.decode(response.body);
         return {'success': false, 'error': error['message'] ?? 'Invalid credentials'};
       }
-    } catch (_) {
+    } catch (e) {
+      print('❌ Login Error: $e');
       return {
         'success': false,
-        'error': 'Cannot reach the server at $baseUrl. Start the Laravel API '
-            'or run the app with the correct API_BASE_URL.',
+        'error': 'Cannot reach the server at $baseUrl',
+      };
+    }
+  }
+  
+  // Login to local server - THIS IS WHAT YOU NEED TO USE
+  Future<Map<String, dynamic>> loginLocal(String email, String password) async {
+    try {
+      print('🔧 Logging in to LOCAL server: ${_localApi}login');
+      
+      final response = await http.post(
+        Uri.parse('${_localApi}login'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'password': password,
+        }),
+      );
+      
+      print('📥 Local Login Response Status: ${response.statusCode}');
+      print('📥 Local Login Response Body: ${response.body}');
+      
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          // Extract token - handle different response formats
+          String token = data['data']['token'] ?? 
+                        data['data']['access_token'] ?? 
+                        data['token'] ?? 
+                        '';
+          
+          if (token.isEmpty) {
+            return {'success': false, 'error': 'No token received from server'};
+          }
+          
+          // Save token with local mode flag
+          await saveLocalTokens(
+            token,
+            data['data']['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'
+          );
+          
+          print('✅ Successfully logged in to LOCAL server');
+          return {'success': true, 'data': data['data']};
+        }
+        return {'success': false, 'error': data['message'] ?? 'Login failed'};
+      } else {
+        final error = json.decode(response.body);
+        return {'success': false, 'error': error['message'] ?? 'Invalid credentials'};
+      }
+    } catch (e) {
+      print('❌ Local Login Error: $e');
+      return {
+        'success': false,
+        'error': 'Cannot reach the local server at $_localApi. Make sure your Laravel server is running.',
       };
     }
   }
@@ -95,8 +214,7 @@ class ApiService {
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          // Auto login after registration
-          await saveTokens(
+          await saveProductionTokens(
             data['data']['token'],
             'refresh_token_placeholder'
           );
@@ -113,30 +231,57 @@ class ApiService {
   }
   
   Future<void> logout() async {
-    await get('logout');
     await clearTokens();
   }
   
   // ========== GENERIC HTTP METHODS ==========
   
+  // Get the base URL based on mode
+  String _getBaseUrl() {
+    return _isLocalMode ? _localApi : baseUrl;
+  }
+  
+  // Get the current token
+  String? _getToken() {
+    return _isLocalMode ? _localTokenValue : _productionToken;
+  }
+  
   Future<dynamic> get(String endpoint) async {
     await loadTokens();
-    if (_accessToken == null) {
-      throw Exception('Not authenticated');
+    
+    String token = _getToken() ?? '';
+    String baseUrlToUse = _getBaseUrl();
+    String fullUrl = '$baseUrlToUse$endpoint';
+    
+    print('📡 GET Request: $fullUrl');
+    print('📍 Mode: ${_isLocalMode ? "LOCAL" : "PRODUCTION"}');
+    print('🔑 Token exists: ${token.isNotEmpty}');
+    
+    if (token.isEmpty) {
+      throw Exception('Not authenticated. Please login to ${_isLocalMode ? "local" : "production"} server first.');
     }
     
     try {
       final response = await http.get(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(fullUrl),
         headers: {
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
       );
       
+      print('📥 GET Response Status: ${response.statusCode}');
+      
       if (response.statusCode == 401) {
-        throw Exception('Session expired');
+        // Token is invalid for this server
+        if (_isLocalMode) {
+          await clearTokens();
+          throw Exception('Local session expired. Please login to local server again.');
+        } else {
+          await clearTokens();
+          throw Exception('Production session expired. Please login again.');
+        }
       }
       
       if (response.statusCode == 200) {
@@ -147,29 +292,49 @@ class ApiService {
         throw Exception(error['message'] ?? 'Request failed');
       }
     } catch (e) {
+      print('❌ GET Error: $e');
       rethrow;
     }
   }
   
   Future<dynamic> post(String endpoint, Map<String, dynamic> data) async {
     await loadTokens();
-    if (_accessToken == null) {
-      throw Exception('Not authenticated');
+    
+    String token = _getToken() ?? '';
+    String baseUrlToUse = _getBaseUrl();
+    String fullUrl = '$baseUrlToUse$endpoint';
+    
+    print('📡 POST Request: $fullUrl');
+    print('📍 Mode: ${_isLocalMode ? "LOCAL" : "PRODUCTION"}');
+    print('🔑 Token exists: ${token.isNotEmpty}');
+    print('📦 POST Data: $data');
+    
+    if (token.isEmpty) {
+      throw Exception('Not authenticated. Please login to ${_isLocalMode ? "local" : "production"} server first.');
     }
     
     try {
       final response = await http.post(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(fullUrl),
         headers: {
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
         body: json.encode(data),
       );
       
+      print('📥 POST Response Status: ${response.statusCode}');
+      print('📥 POST Response Body: ${response.body}');
+      
       if (response.statusCode == 401) {
-        throw Exception('Session expired');
+        if (_isLocalMode) {
+          await clearTokens();
+          throw Exception('Local session expired. Please login to local server again.');
+        } else {
+          await clearTokens();
+          throw Exception('Production session expired. Please login again.');
+        }
       }
       
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -177,24 +342,40 @@ class ApiService {
         return result['data'] ?? result;
       } else {
         final error = json.decode(response.body);
+        if (response.statusCode == 422) {
+          String errorMessage = 'Validation failed: ';
+          if (error['errors'] != null) {
+            final errors = error['errors'] as Map<String, dynamic>;
+            errorMessage += errors.values.map((e) => e.join(', ')).join('; ');
+          } else if (error['message'] != null) {
+            errorMessage = error['message'];
+          }
+          throw Exception(errorMessage);
+        }
         throw Exception(error['message'] ?? 'Request failed');
       }
     } catch (e) {
+      print('❌ POST Error: $e');
       rethrow;
     }
   }
   
   Future<dynamic> put(String endpoint, Map<String, dynamic> data) async {
     await loadTokens();
-    if (_accessToken == null) {
+    
+    String token = _getToken() ?? '';
+    String baseUrlToUse = _getBaseUrl();
+    String fullUrl = '$baseUrlToUse$endpoint';
+    
+    if (token.isEmpty) {
       throw Exception('Not authenticated');
     }
     
     try {
       final response = await http.put(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(fullUrl),
         headers: {
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
@@ -202,7 +383,8 @@ class ApiService {
       );
       
       if (response.statusCode == 401) {
-        throw Exception('Session expired');
+        await clearTokens();
+        throw Exception('Session expired. Please login again.');
       }
       
       if (response.statusCode == 200) {
@@ -210,38 +392,66 @@ class ApiService {
         return result['data'] ?? result;
       } else {
         final error = json.decode(response.body);
+        if (response.statusCode == 422) {
+          String errorMessage = 'Validation failed: ';
+          if (error['errors'] != null) {
+            final errors = error['errors'] as Map<String, dynamic>;
+            errorMessage += errors.values.map((e) => e.join(', ')).join('; ');
+          } else if (error['message'] != null) {
+            errorMessage = error['message'];
+          }
+          throw Exception(errorMessage);
+        }
         throw Exception(error['message'] ?? 'Request failed');
       }
     } catch (e) {
+      print('❌ PUT Error: $e');
       rethrow;
     }
   }
   
   Future<void> delete(String endpoint) async {
     await loadTokens();
-    if (_accessToken == null) {
+    
+    String token = _getToken() ?? '';
+    String baseUrlToUse = _getBaseUrl();
+    String fullUrl = '$baseUrlToUse$endpoint';
+    
+    if (token.isEmpty) {
       throw Exception('Not authenticated');
     }
     
     try {
       final response = await http.delete(
-        Uri.parse('$baseUrl$endpoint'),
+        Uri.parse(fullUrl),
         headers: {
-          'Authorization': 'Bearer $_accessToken',
+          'Authorization': 'Bearer $token',
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
       );
       
       if (response.statusCode == 401) {
-        throw Exception('Session expired');
+        await clearTokens();
+        throw Exception('Session expired. Please login again.');
       }
       
       if (response.statusCode != 200 && response.statusCode != 204) {
         final error = json.decode(response.body);
+        if (response.statusCode == 422) {
+          String errorMessage = 'Validation failed: ';
+          if (error['errors'] != null) {
+            final errors = error['errors'] as Map<String, dynamic>;
+            errorMessage += errors.values.map((e) => e.join(', ')).join('; ');
+          } else if (error['message'] != null) {
+            errorMessage = error['message'];
+          }
+          throw Exception(errorMessage);
+        }
         throw Exception(error['message'] ?? 'Delete failed');
       }
     } catch (e) {
+      print('❌ DELETE Error: $e');
       rethrow;
     }
   }

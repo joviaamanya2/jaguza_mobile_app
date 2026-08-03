@@ -17,8 +17,16 @@ class _ProfileTabState extends State<ProfileTab> {
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
 
+  // User data - would come from Signup/Signin screens
+  String _userName = 'John Mukasa';
+  String _userEmail = 'john.mukasa@email.com';
+  String _userPhone = '+256 772 123 456';
+  String _userLocation = 'Wakiso, Uganda';
+  String _userFarmType = 'Poultry & Cattle';
+  String _userFarmSize = '5 acres';
+
   Future<void> _pickImage(ImageSource source) async {
-    Navigator.pop(context); // Close bottom sheet
+    Navigator.pop(context);
     setState(() => _isUploading = true);
     try {
       final picked = await _picker.pickImage(source: source, imageQuality: 85);
@@ -105,6 +113,42 @@ class _ProfileTabState extends State<ProfileTab> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
 
+  void _updateUserData({
+    String? name,
+    String? email,
+    String? phone,
+    String? location,
+    String? farmType,
+    String? farmSize,
+  }) {
+    setState(() {
+      if (name != null) _userName = name;
+      if (email != null) _userEmail = email;
+      if (phone != null) _userPhone = phone;
+      if (location != null) _userLocation = location;
+      if (farmType != null) _userFarmType = farmType;
+      if (farmSize != null) _userFarmSize = farmSize;
+    });
+  }
+
+  void _showChangePasswordDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => ChangePasswordDialog(
+        onPasswordChanged: () {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Password changed successfully'),
+              backgroundColor: Color(0xFF2E7D32),
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,10 +172,9 @@ class _ProfileTabState extends State<ProfileTab> {
               MenuItem(icon: Icons.chat_rounded, title: 'Chat History', subtitle: 'Previous AI conversations', color: const Color(0xFF8E24AA), count: '23', screen: const ChatHistoryScreen()),
             ]),
             _buildMenuSection('Settings', [
-              MenuItem(icon: Icons.person_rounded, title: 'Edit Profile', subtitle: 'Update your information', color: const Color(0xFF2E7D32), screen: const EditProfileScreen()),
-              MenuItem(icon: Icons.ring_volume, title: 'Notifications', subtitle: 'Manage alert preferences', color: const Color(0xFFFB8C00), screen: const NotificationsScreen()),
-              MenuItem(icon: Icons.help_rounded, title: 'Help & Support', subtitle: 'FAQs and contact us', color: const Color(0xFF039BE5), screen: const HelpSupportScreen()),
-              MenuItem(icon: Icons.logout_rounded, title: 'Log Out', subtitle: 'Sign out of your account', color: const Color(0xFFE53935)),
+              MenuItem(icon: Icons.lock_rounded, title: 'Change Password', subtitle: 'Update your account password', color: const Color(0xFF2E7D32), screen: null, onTap: _showChangePasswordDialog),
+              MenuItem(icon: Icons.notifications_rounded, title: 'Notifications', subtitle: 'Manage your alerts', color: const Color(0xFFF59E0B), screen: const NotificationsScreen()),
+              MenuItem(icon: Icons.help_rounded, title: 'Help & Support', subtitle: 'FAQs and contact us', color: const Color(0xFF3B82F6), screen: const HelpSupportScreen()),
             ]),
             const SizedBox(height: 32),
           ],
@@ -141,6 +184,15 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Widget _buildProfileHeader(BuildContext context) {
+    // Get initials from name
+    String initials = _userName
+        .split(' ')
+        .map((e) => e.isNotEmpty ? e[0] : '')
+        .take(2)
+        .join()
+        .toUpperCase();
+    if (initials.isEmpty) initials = 'U';
+
     return Container(
       color: const Color(0xFF2E7D32),
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
@@ -158,7 +210,17 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
               const Spacer(),
               GestureDetector(
-                onTap: () => _navigateTo(const EditProfileScreen()),
+                onTap: () => _navigateTo(
+                  EditProfileScreen(
+                    currentName: _userName,
+                    currentEmail: _userEmail,
+                    currentPhone: _userPhone,
+                    currentLocation: _userLocation,
+                    currentFarmType: _userFarmType,
+                    currentFarmSize: _userFarmSize,
+                    onSave: _updateUserData,
+                  )
+                ),
                 child: Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
@@ -186,8 +248,8 @@ class _ProfileTabState extends State<ProfileTab> {
                               borderRadius: BorderRadius.circular(23),
                               child: Image.file(_profileImage!, width: 90, height: 90, fit: BoxFit.cover),
                             )
-                          : const Center(
-                              child: Text('JM', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
+                          : Center(
+                              child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
                             ),
                 ),
                 Positioned(
@@ -202,9 +264,11 @@ class _ProfileTabState extends State<ProfileTab> {
             ),
           ),
           const SizedBox(height: 12),
-          const Text('John Mukasa', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+          Text(_userName, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text('Poultry & Cattle Farmer • Wakiso, Uganda', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
+          Text(_userLocation, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
+          const SizedBox(height: 4),
+          Text(_userEmail, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11)),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -278,7 +342,7 @@ class _ProfileTabState extends State<ProfileTab> {
                   color: Colors.transparent,
                   child: InkWell(
                     borderRadius: isLast ? const BorderRadius.vertical(bottom: Radius.circular(14)) : BorderRadius.zero,
-                    onTap: item.screen != null ? () => _navigateTo(item.screen!) : (item.title == 'Log Out' ? _showLogoutDialog : null),
+                    onTap: item.onTap ?? (item.screen != null ? () => _navigateTo(item.screen!) : null),
                     child: Padding(
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                       child: Row(
@@ -311,25 +375,6 @@ class _ProfileTabState extends State<ProfileTab> {
       ),
     );
   }
-
-  void _showLogoutDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: const Text('Log Out', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
-        content: const Text('Are you sure you want to sign out of your account?', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280))),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancel', style: TextStyle(color: Colors.grey[600]))),
-          ElevatedButton(
-            onPressed: () { Navigator.pop(context); Navigator.pop(context); },
-            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFE53935), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8))),
-            child: const Text('Log Out', style: TextStyle(fontWeight: FontWeight.w600)),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class MenuItem {
@@ -339,8 +384,408 @@ class MenuItem {
   final Color color;
   final String? count;
   final Widget? screen;
+  final VoidCallback? onTap;
 
-  const MenuItem({required this.icon, required this.title, required this.subtitle, required this.color, this.count, this.screen});
+  const MenuItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    this.count,
+    this.screen,
+    this.onTap,
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  CHANGE PASSWORD DIALOG
+// ═══════════════════════════════════════════════════════════════
+class ChangePasswordDialog extends StatefulWidget {
+  final VoidCallback onPasswordChanged;
+
+  const ChangePasswordDialog({
+    super.key,
+    required this.onPasswordChanged,
+  });
+
+  @override
+  State<ChangePasswordDialog> createState() => _ChangePasswordDialogState();
+}
+
+class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  
+  bool _obscureCurrent = true;
+  bool _obscureNew = true;
+  bool _obscureConfirm = true;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      
+      // Simulate API call
+      Future.delayed(const Duration(seconds: 1), () {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          Navigator.pop(context);
+          widget.onPasswordChanged();
+        }
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E7D32).withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.lock_rounded,
+              color: Color(0xFF2E7D32),
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          const Text(
+            'Change Password',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF1A1F36),
+            ),
+          ),
+        ],
+      ),
+      content: Form(
+        key: _formKey,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildPasswordField(
+              'Current Password',
+              _currentPasswordController,
+              _obscureCurrent,
+              () => setState(() => _obscureCurrent = !_obscureCurrent),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter your current password';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildPasswordField(
+              'New Password',
+              _newPasswordController,
+              _obscureNew,
+              () => setState(() => _obscureNew = !_obscureNew),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please enter a new password';
+                }
+                if (value.length < 6) {
+                  return 'Password must be at least 6 characters';
+                }
+                if (value == _currentPasswordController.text) {
+                  return 'New password must be different';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+            _buildPasswordField(
+              'Confirm New Password',
+              _confirmPasswordController,
+              _obscureConfirm,
+              () => setState(() => _obscureConfirm = !_obscureConfirm),
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please confirm your new password';
+                }
+                if (value != _newPasswordController.text) {
+                  return 'Passwords do not match';
+                }
+                return null;
+              },
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: Color(0xFF6B7280)),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : _submit,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF2E7D32),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            minimumSize: const Size(100, 40),
+          ),
+          child: _isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Colors.white,
+                  ),
+                )
+              : const Text(
+                  'Update',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPasswordField(
+    String label,
+    TextEditingController controller,
+    bool obscure,
+    VoidCallback toggleVisibility, {
+    required String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscure,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        filled: true,
+        fillColor: const Color(0xFFF6F8FA),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        suffixIcon: IconButton(
+          icon: Icon(
+            obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
+            color: Colors.grey[400],
+            size: 20,
+          ),
+          onPressed: toggleVisibility,
+        ),
+      ),
+      style: const TextStyle(fontSize: 14, color: Color(0xFF1A1F36)),
+    );
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EDIT PROFILE SCREEN
+// ═══════════════════════════════════════════════════════════════
+class EditProfileScreen extends StatefulWidget {
+  final String currentName;
+  final String currentEmail;
+  final String currentPhone;
+  final String currentLocation;
+  final String currentFarmType;
+  final String currentFarmSize;
+  final Function({String? name, String? email, String? phone, String? location, String? farmType, String? farmSize}) onSave;
+
+  const EditProfileScreen({
+    super.key,
+    required this.currentName,
+    required this.currentEmail,
+    required this.currentPhone,
+    required this.currentLocation,
+    required this.currentFarmType,
+    required this.currentFarmSize,
+    required this.onSave,
+  });
+
+  @override
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
+}
+
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  late TextEditingController _nameController;
+  late TextEditingController _emailController;
+  late TextEditingController _phoneController;
+  late TextEditingController _locationController;
+  late TextEditingController _farmTypeController;
+  late TextEditingController _farmSizeController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.currentName);
+    _emailController = TextEditingController(text: widget.currentEmail);
+    _phoneController = TextEditingController(text: widget.currentPhone);
+    _locationController = TextEditingController(text: widget.currentLocation);
+    _farmTypeController = TextEditingController(text: widget.currentFarmType);
+    _farmSizeController = TextEditingController(text: widget.currentFarmSize);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _locationController.dispose();
+    _farmTypeController.dispose();
+    _farmSizeController.dispose();
+    super.dispose();
+  }
+
+  void _saveChanges() {
+    widget.onSave(
+      name: _nameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
+      location: _locationController.text.trim(),
+      farmType: _farmTypeController.text.trim(),
+      farmSize: _farmSizeController.text.trim(),
+    );
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Profile updated successfully'),
+        backgroundColor: Color(0xFF2E7D32),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF1A1F36),
+        elevation: 0,
+        title: const Text(
+          'Edit Profile',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: Color(0xFF1A1F36)
+          )
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          onPressed: () => Navigator.pop(context)
+        ),
+        actions: [
+          TextButton(
+            onPressed: _saveChanges,
+            child: const Text(
+              'Save',
+              style: TextStyle(
+                color: Color(0xFF2E7D32),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            _editField('Full Name', _nameController),
+            _editField('Email Address', _emailController, keyboardType: TextInputType.emailAddress),
+            _editField('Phone Number', _phoneController, keyboardType: TextInputType.phone),
+            _editField('Location', _locationController),
+            _editField('Farm Type', _farmTypeController),
+            _editField('Farm Size', _farmSizeController),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: _saveChanges,
+                icon: const Icon(Icons.save_rounded),
+                label: const Text('Save Changes'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)
+                  )
+                )
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _editField(String label, TextEditingController controller, {TextInputType keyboardType = TextInputType.text}) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE8E8E8)),
+      ),
+      child: TextField(
+        controller: controller,
+        keyboardType: keyboardType,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        ),
+      ),
+    );
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -433,16 +878,6 @@ class HealthRecordsScreen extends StatelessWidget {
       )).toList());
   }
 }
-
-
-  Widget _miniInfo(String label, String value) {
-    return Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text(label, style: TextStyle(fontSize: 10, color: Colors.grey[400])),
-      const SizedBox(height: 2),
-      Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
-    ]));
-  }
-
 
 // ═══════════════════════════════════════════════════════════════
 //  MY REPORTS SCREEN
@@ -591,6 +1026,7 @@ class MyReportsScreen extends StatelessWidget {
     );
   }
 }
+
 // ═══════════════════════════════════════════════════════════════
 //  SAVED ARTICLES SCREEN
 // ═══════════════════════════════════════════════════════════════
@@ -673,6 +1109,7 @@ class SavedArticlesScreen extends StatelessWidget {
     );
   }
 }
+
 // ═══════════════════════════════════════════════════════════════
 //  CHAT HISTORY SCREEN
 // ═══════════════════════════════════════════════════════════════
@@ -755,90 +1192,6 @@ class ChatHistoryScreen extends StatelessWidget {
     );
   }
 }
-// ═══════════════════════════════════════════════════════════════
-//  EDIT PROFILE SCREEN
-// ═══════════════════════════════════════════════════════════════
-class EditProfileScreen extends StatelessWidget {
-  const EditProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1F36),
-        elevation: 0,
-        title: const Text(
-          'Edit Profile',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36)
-          )
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Navigator.pop(context)
-        )
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            _editField('Full Name', 'John Mukasa'),
-            _editField('Phone Number', '+256 772 123 456', keyboardType: TextInputType.phone),
-            _editField('Email', 'john.mukasa@email.com', keyboardType: TextInputType.emailAddress),
-            _editField('Location', 'Wakiso, Uganda'),
-            _editField('Farm Type', 'Poultry & Cattle'),
-            _editField('Farm Size', '5 acres'),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Profile updated successfully'),
-                      backgroundColor: Color(0xFF2E7D32)
-                    )
-                  );
-                },
-                icon: const Icon(Icons.save_rounded),
-                label: const Text('Save Changes'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)
-                  )
-                )
-              ),
-            ),
-            const SizedBox(height: 20),
-          ],
-        ),
-      ),
-    );
-  }
-}
-  Widget _editField(String label, String value, {TextInputType keyboardType = TextInputType.text}) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8E8E8))),
-      child: TextField(
-        controller: TextEditingController(text: value),
-        keyboardType: keyboardType,
-        decoration: InputDecoration(labelText: label,
-          labelStyle:  TextStyle(fontSize: 12, color: Colors.grey[500]),
-          border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14)),
-      ),
-    );
-  }
-
 
 // ═══════════════════════════════════════════════════════════════
 //  NOTIFICATIONS SCREEN
@@ -875,7 +1228,7 @@ class NotificationsScreen extends StatelessWidget {
           const SizedBox(height: 2),
           Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
         ])),
-        Switch(value: initial, activeThumbColor: const Color(0xFF2E7D32), onChanged: (val) {}),
+        Switch(value: initial, activeColor: const Color(0xFF2E7D32), onChanged: (val) {}),
       ]),
     );
   }

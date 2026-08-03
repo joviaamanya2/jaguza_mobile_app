@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
-import 'package:jaguza_app/screens/home_details/Market%20place/market_place.dart';
 import 'package:jaguza_app/screens/home_details/Profile/profile_screen.dart';
 import 'package:jaguza_app/screens/home_screen.dart';
 import '../My farm/my_farm.dart';
@@ -111,7 +109,6 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
         children: [
           _buildHeader(),
           _buildSearchBar(),
-          _buildQuickActions(),
           _buildFilterChips(),
           _buildTabBar(),
           Expanded(
@@ -447,92 +444,11 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
     );
   }
 
-  Widget _buildQuickActions() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Expanded(
-            child: _quickBanner(
-              icon: Icons.storefront_rounded,
-              title: 'Sell Products',
-              subtitle: 'Market Place',
-              color: const Color(0xFFF57C00),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MarketplaceScreen()),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _quickBanner(
-              icon: Icons.biotech_rounded,
-              title: 'Diseases Info',
-              subtitle: 'Learn more',
-              color: const Color(0xFF2E7D32),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AnimalDiseasesScreen()),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _quickBanner({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.15)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(color: color, fontSize: 13, fontWeight: FontWeight.w700)),
-                  Text(subtitle, style: TextStyle(color: Colors.grey[600], fontSize: 11)),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
-          ],
-        ),
-      ),
-    );
-  }
+  // Removed _buildQuickActions() method entirely
 
   Widget _buildFilterChips() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: SizedBox(
         height: 36,
         child: ListView.separated(
@@ -572,7 +488,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
 
   Widget _buildTabBar() {
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       decoration: BoxDecoration(
         color: Colors.grey[200],
         borderRadius: BorderRadius.circular(10),
@@ -716,7 +632,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  DATA MODELS
+//  DATA MODELS (unchanged)
 // ═══════════════════════════════════════════════════════════════
 
 class VetDoctor {
@@ -1026,7 +942,7 @@ final List<ExtensionWorker> extensionWorkers = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
-//  HELPERS
+//  HELPERS (unchanged)
 // ═══════════════════════════════════════════════════════════════
 
 Future<void> _makePhoneCall(String phone) async {
@@ -1073,7 +989,7 @@ String _getGoogleMapsStaticUrl(double lat, double lng) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  PROFILE SCREEN WRAPPER
+//  PROFILE SCREEN WRAPPER (unchanged)
 // ═══════════════════════════════════════════════════════════════
 class ProfileScreenWrapper extends StatelessWidget {
   const ProfileScreenWrapper({super.key});
@@ -1088,7 +1004,7 @@ class ProfileScreenWrapper extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  DOCTOR INFO SCREEN
+//  DOCTOR INFO SCREEN (unchanged)
 // ═══════════════════════════════════════════════════════════════
 class DoctorInfoScreen extends StatelessWidget {
   final VetDoctor doctor;
@@ -1155,7 +1071,7 @@ class DoctorInfoScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  WORKER INFO SCREEN
+//  WORKER INFO SCREEN (unchanged)
 // ═══════════════════════════════════════════════════════════════
 class WorkerInfoScreen extends StatelessWidget {
   final ExtensionWorker worker;
@@ -1224,7 +1140,7 @@ class WorkerInfoScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  SHARED WIDGETS for Info Screens
+//  SHARED WIDGETS for Info Screens (unchanged)
 // ═══════════════════════════════════════════════════════════════
 
 Widget _buildProfileHeader({
@@ -1437,7 +1353,7 @@ Widget _buildActionButtons({
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  LOCATION SCREEN
+//  LOCATION SCREEN (unchanged)
 // ═══════════════════════════════════════════════════════════════
 class LocationScreen extends StatelessWidget {
   final String name;
@@ -1563,7 +1479,7 @@ class LocationScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  DOCTOR CARD
+//  DOCTOR CARD (unchanged)
 // ═══════════════════════════════════════════════════════════════
 class _DoctorCard extends StatelessWidget {
   final VetDoctor doctor;
@@ -1645,7 +1561,7 @@ class _DoctorCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  WORKER CARD
+//  WORKER CARD (unchanged)
 // ═══════════════════════════════════════════════════════════════
 class _WorkerCard extends StatelessWidget {
   final ExtensionWorker worker;
@@ -1727,7 +1643,7 @@ class _WorkerCard extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════════
-//  SHARED CARD WIDGETS
+//  SHARED CARD WIDGETS (unchanged)
 // ═══════════════════════════════════════════════════════════════
 
 Widget _buildAvatar(Color color, String initials) {

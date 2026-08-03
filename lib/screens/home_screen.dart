@@ -560,7 +560,7 @@ class _NavData {
   const _NavData(this.icon, this.activeIcon, this.label);
 }
 
-// HomeTab - Reinstated with all your original content
+// HomeTab - Clean version without overlay
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
@@ -568,49 +568,8 @@ class HomeTab extends StatefulWidget {
   State<HomeTab> createState() => _HomeTabState();
 }
 
-class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
-  late AnimationController _overlayController;
-  late Animation<double> _overlayScale;
-  late Animation<double> _overlayFade;
-  bool _showOverlay = true;
+class _HomeTabState extends State<HomeTab> {
   bool _showAd = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _overlayController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 350),
-    );
-    _overlayScale = CurvedAnimation(
-      parent: _overlayController,
-      curve: Curves.easeOutCubic,
-    );
-    _overlayFade = CurvedAnimation(
-      parent: _overlayController,
-      curve: Curves.easeIn,
-    );
-    _overlayController.forward();
-  }
-
-  @override
-  void dispose() {
-    _overlayController.dispose();
-    super.dispose();
-  }
-
-  void _closeOverlay() {
-    _overlayController.reverse().then((_) {
-      setState(() => _showOverlay = false);
-    });
-  }
-
-  void _showFeatureOverlay() {
-    if (!_showOverlay) {
-      setState(() => _showOverlay = true);
-      _overlayController.forward(from: 0.0);
-    }
-  }
 
   void _dismissAd() => setState(() => _showAd = false);
 
@@ -621,31 +580,26 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        SafeArea(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              children: [
-                _buildAppBar(),
-                const SizedBox(height: 12),
-                _buildGreetingSection(),
-                const SizedBox(height: 16),
-                _buildAIQuestionBox(),
-                const SizedBox(height: 20),
-                _buildFeatureGrid(),
-                if (_showAd) ...[
-                  const SizedBox(height: 20),
-                  _buildAdvertiseBanner(),
-                ],
-                const SizedBox(height: 24),
-              ],
-            ),
-          ),
+    return SafeArea(
+      child: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        child: Column(
+          children: [
+            _buildAppBar(),
+            const SizedBox(height: 12),
+            _buildGreetingSection(),
+            const SizedBox(height: 16),
+            _buildAIQuestionBox(),
+            const SizedBox(height: 20),
+            _buildFeatureGrid(),
+            if (_showAd) ...[
+              const SizedBox(height: 20),
+              _buildAdvertiseBanner(),
+            ],
+            const SizedBox(height: 24),
+          ],
         ),
-        if (_showOverlay) _buildDropdownOverlay(),
-      ],
+      ),
     );
   }
 
@@ -1013,159 +967,6 @@ class _HomeTabState extends State<HomeTab> with TickerProviderStateMixin {
       ),
     );
   }
-
-  Widget _buildDropdownOverlay() {
-    final overlayItems = [
-      const _OverlayItem(icon: Icons.search_rounded, title: 'Diagnose Diseases', subtitle: 'AI-powered disease detection'),
-      const _OverlayItem(icon: Icons.storefront_rounded, title: 'Sell Farm Products', subtitle: 'Reach buyers easily'),
-      const _OverlayItem(icon: Icons.pets_rounded, title: 'Learn Animal Diseases', subtitle: 'Comprehensive knowledge base'),
-      const _OverlayItem(icon: Icons.vaccines_rounded, title: 'Vaccination Schedule', subtitle: 'Never miss a vaccination'),
-      const _OverlayItem(icon: Icons.chat_rounded, title: 'Ask Jaguza AI', subtitle: 'Instant agricultural answers'),
-    ];
-
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: GestureDetector(
-            onTap: _closeOverlay,
-            child: FadeTransition(
-              opacity: _overlayFade,
-              child: Container(color: Colors.black.withOpacity(0.25)),
-            ),
-          ),
-        ),
-        Positioned(
-          top: 80,
-          left: 20,
-          right: 20,
-          child: FadeTransition(
-            opacity: _overlayFade,
-            child: ScaleTransition(
-              scale: _overlayScale,
-              alignment: Alignment.topCenter,
-              child: Material(
-                elevation: 0,
-                borderRadius: BorderRadius.circular(20),
-                color: Colors.white,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 12, 14),
-                      decoration: const BoxDecoration(
-                        border: Border(bottom: BorderSide(color: Color(0xFFEEEEEE))),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Icon(Icons.agriculture_rounded, color: Colors.white, size: 22),
-                          ),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('What can Jaguza do?', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Color(0xFF1B1B1B))),
-                                SizedBox(height: 2),
-                                Text('Explore our core features', style: TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
-                              ],
-                            ),
-                          ),
-                          GestureDetector(
-                            onTap: _closeOverlay,
-                            child: Container(
-                              width: 34,
-                              height: 34,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFF5F5F5),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.close_rounded, color: Color(0xFF757575), size: 18),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    ...overlayItems.map((item) => _buildOverlayItem(item)),
-                    const SizedBox(height: 8),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 4, 20, 18),
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _closeOverlay,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2E7D32),
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'Get Started',
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildOverlayItem(_OverlayItem item) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: _closeOverlay,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF1F8E9),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(item.icon, color: const Color(0xFF2E7D32), size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(item.title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w600, color: Color(0xFF212121))),
-                    const SizedBox(height: 2),
-                    Text(item.subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF9E9E9E))),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right_rounded, color: Color(0xFFBDBDBD), size: 22),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 // SHARED WIDGETS
@@ -1299,13 +1100,6 @@ class FeatureItem {
     this.isWebsite = false,
     this.url,
   });
-}
-
-class _OverlayItem {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  const _OverlayItem({required this.icon, required this.title, required this.subtitle});
 }
 
 class ChatMessage {

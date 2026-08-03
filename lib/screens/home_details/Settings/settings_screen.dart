@@ -15,20 +15,15 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // ── Toggle states 
   bool _pushNotifications = true;
-  bool _smsAlerts = false;
- 
-  bool _locationServices = true;
   bool _darkMode = false;
-  bool _offlineMode = false;
- 
+
   // ── Selected values 
   String _selectedLanguage = 'English';
- 
 
   static const _kGreen = Color(0xFF2E7D32);
   static const _kGreenLight = Color(0xFF2E7D32);
   static const _kGreenFaint = Color(0xFF2E7D32);
-  static const _kOrange = Color(0xFFF57C00); // Orange color for switches
+  static const _kOrange = Color(0xFFF57C00);
   static const _kOrangeFaint = Color(0xFFFFF3E0);
   static const _kBg = Color(0xFFF4F6F8);
   static const _kCard = Colors.white;
@@ -87,33 +82,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Account section ─────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Text(
-                        'Account'.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: _kSubtext,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ),
+                    _buildSectionLabel('Account'),
                     _buildAccountCard(),
 
                     // ── Notifications ────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Text(
-                        'Notifications'.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: _kSubtext,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ),
+                    _buildSectionLabel('Notifications'),
                     _buildCard([
                       _toggleRow(
                         icon: Icons.notifications_active_rounded,
@@ -124,31 +97,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onChanged: (v) =>
                             setState(() => _pushNotifications = v),
                       ),
-                      _divider(),
-                      _toggleRow(
-                        icon: Icons.sms_rounded,
-                        iconColor: const Color(0xFF3B82F6),
-                        title: 'SMS Alerts',
-                        subtitle: 'Critical alerts via text message',
-                        value: _smsAlerts,
-                        onChanged: (v) => setState(() => _smsAlerts = v),
-                      ),
-                      
                     ]),
 
                     // ── Preferences ──────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Text(
-                        'Preferences'.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: _kSubtext,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ),
+                    _buildSectionLabel('Preferences'),
                     _buildCard([
                       _dropdownRow(
                         icon: Icons.language_rounded,
@@ -167,22 +119,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           if (v != null) _changeLanguage(v);
                         },
                       ),
-                      
                     ]),
 
                     // ── App Settings ─────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Text(
-                        'App Settings'.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: _kSubtext,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ),
+                    _buildSectionLabel('App Settings'),
                     _buildCard([
                       _toggleRow(
                         icon: Icons.dark_mode_rounded,
@@ -191,33 +131,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         subtitle: 'Switch to dark interface',
                         value: _darkMode,
                         onChanged: (v) => setState(() => _darkMode = v),
-                      ),
-                      _divider(),
-                      _toggleRow(
-                        icon: Icons.wifi_off_rounded,
-                        iconColor: const Color(0xFF64748B),
-                        title: 'Offline Mode',
-                        subtitle: 'Access data without internet',
-                        value: _offlineMode,
-                        onChanged: (v) => setState(() => _offlineMode = v),
-                      ),
-                      _divider(),
-                      _toggleRow(
-                        icon: Icons.location_on_rounded,
-                        iconColor: const Color(0xFFEF4444),
-                        title: 'Location Services',
-                        subtitle: 'Enable GPS tracking for your farm',
-                        value: _locationServices,
-                        onChanged: (v) =>
-                            setState(() => _locationServices = v),
-                      ),
-                      _divider(),
-                      _tapRow(
-                        icon: Icons.lock_reset_rounded,
-                        iconColor: const Color(0xFFF59E0B),
-                        title: 'Change Password',
-                        subtitle: 'Update your account password',
-                        onTap: () => _showChangePasswordSheet(context),
                       ),
                       _divider(),
                       _tapRow(
@@ -248,18 +161,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ]),
 
                     // ── Support ──────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Text(
-                        'Support'.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: _kSubtext,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ),
+                    _buildSectionLabel('Support'),
                     _buildCard([
                       _tapRow(
                         icon: Icons.help_outline_rounded,
@@ -273,37 +175,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               'Need help? Visit our help center at help.jaguzalivestock.com or contact us:\n\nEmail: support@jaguzalivestock.com\nPhone: +256 XXX XXX XXX\n\nOur support team is available Monday – Friday, 8 AM – 6 PM (EAT).',
                         ),
                       ),
-                      _divider(),
-                      _tapRow(
-                        icon: Icons.star_outline_rounded,
-                        iconColor: const Color(0xFFF59E0B),
-                        title: 'Rate the App',
-                        subtitle: 'Share your feedback on the store',
-                        onTap: () {},
-                      ),
-                      _divider(),
-                      _tapRow(
-                        icon: Icons.share_outlined,
-                        iconColor: _kGreen,
-                        title: 'Share Jaguza',
-                        subtitle: 'Invite friends and fellow farmers',
-                        onTap: () {},
-                      ),
                     ]),
 
                     // ── App info ─────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Text(
-                        'About'.toUpperCase(),
-                        style: const TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w700,
-                          color: _kSubtext,
-                          letterSpacing: 1.1,
-                        ),
-                      ),
-                    ),
+                    _buildSectionLabel('About'),
                     _buildCard([
                       _tapRow(
                         icon: Icons.info_outline_rounded,
@@ -408,7 +283,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              // Settings icon removed
             ],
           ),
         ),
@@ -420,7 +294,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget _buildAccountCard() {
     return GestureDetector(
       onTap: () {
-        // Navigate to Profile/Account screen
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const ProfileTab()),
@@ -444,7 +317,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: Row(
             children: [
-              // Avatar Icon
               Container(
                 width: 60,
                 height: 60,
@@ -485,7 +357,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         color: _kSubtext,
                       ),
                     ),
-                    
                   ],
                 ),
               ),
@@ -589,7 +460,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Switch.adaptive(
             value: value,
             onChanged: onChanged,
-            activeColor: _kOrange, // Changed to orange
+            activeColor: _kOrange,
             activeTrackColor: _kOrangeFaint,
           ),
         ],
@@ -710,47 +581,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _InfoSheet(title: title, body: body),
-    );
-  }
-
-  void _showChangePasswordSheet(BuildContext ctx) {
-    showModalBottomSheet(
-      context: ctx,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _ChangePasswordSheet(),
-    );
-  }
-
-  void _showClearCacheDialog(BuildContext ctx) {
-    showDialog(
-      context: ctx,
-      builder: (_) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Clear Cache',
-            style: TextStyle(fontWeight: FontWeight.w700)),
-        content: const Text(
-            'This will remove 4.2 MB of cached data. Your farm data will not be affected.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: _kSubtext)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _showSnack(ctx, 'Cache cleared successfully');
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: _kGreen,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10)),
-            ),
-            child: const Text('Clear', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
     );
   }
 
@@ -882,200 +712,6 @@ class _InfoSheet extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-// ─── Change password bottom sheet ────────────────────────────────────────────
-class _ChangePasswordSheet extends StatefulWidget {
-  const _ChangePasswordSheet();
-
-  @override
-  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
-}
-
-class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
-  final _formKey = GlobalKey<FormState>();
-  final _currentCtrl = TextEditingController();
-  final _newCtrl = TextEditingController();
-  final _confirmCtrl = TextEditingController();
-  bool _obscureCurrent = true;
-  bool _obscureNew = true;
-  bool _obscureConfirm = true;
-  bool _loading = false;
-
-  static const _kGreen = Color(0xFF1B7A45);
-
-  @override
-  void dispose() {
-    _currentCtrl.dispose();
-    _newCtrl.dispose();
-    _confirmCtrl.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _loading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    if (!mounted) return;
-    setState(() => _loading = false);
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Row(children: [
-          Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
-          SizedBox(width: 10),
-          Text('Password updated successfully.'),
-        ]),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: _kGreen,
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE0E0E0),
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              const Text('Change Password',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: Color(0xFF1A1F36))),
-              const SizedBox(height: 20),
-              _passField('Current Password', _currentCtrl, _obscureCurrent,
-                  () => setState(() => _obscureCurrent = !_obscureCurrent),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? 'Enter current password' : null),
-              const SizedBox(height: 14),
-              _passField('New Password', _newCtrl, _obscureNew,
-                  () => setState(() => _obscureNew = !_obscureNew),
-                  validator: (v) {
-                if (v == null || v.isEmpty) return 'Enter new password';
-                if (v.length < 8) return 'At least 8 characters';
-                return null;
-              }),
-              const SizedBox(height: 14),
-              _passField('Confirm New Password', _confirmCtrl, _obscureConfirm,
-                  () => setState(() => _obscureConfirm = !_obscureConfirm),
-                  validator: (v) {
-                if (v == null || v.isEmpty) return 'Confirm your password';
-                if (v != _newCtrl.text) return 'Passwords do not match';
-                return null;
-              }),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : _save,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _kGreen,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                    elevation: 0,
-                  ),
-                  child: _loading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
-                        )
-                      : const Text('Update Password',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 15)),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _passField(String label, TextEditingController ctrl, bool obscure,
-      VoidCallback toggleObscure,
-      {String? Function(String?)? validator}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label,
-            style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: Color(0xFF374151))),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: ctrl,
-          obscureText: obscure,
-          validator: validator,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF1A1F36)),
-          decoration: InputDecoration(
-            filled: true,
-            fillColor: const Color(0xFFF6F8FA),
-            hintText: '••••••••',
-            hintStyle: const TextStyle(color: Color(0xFF9CA3AF)),
-            contentPadding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            suffixIcon: IconButton(
-              icon: Icon(
-                obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                color: const Color(0xFF9CA3AF),
-                size: 20,
-              ),
-              onPressed: toggleObscure,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFE3E8EE)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: _kGreen, width: 1.5),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: Color(0xFFEF4444)),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide:
-                  const BorderSide(color: Color(0xFFEF4444), width: 1.5),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

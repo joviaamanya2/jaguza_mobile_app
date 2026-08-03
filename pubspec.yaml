@@ -66,8 +66,8 @@ dependencies:
   
   # Utilities
 
-  connectivity_plus: ^5.0.1
-  flutter_native_splash: ^2.3.0
+  connectivity_plus: ^6.1.4
+  flutter_native_splash: ^2.4.5
   
   # Push Notifications
   firebase_core: ^4.1.0

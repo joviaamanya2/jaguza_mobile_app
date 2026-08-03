@@ -2,7 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
-
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
 
@@ -19,7 +18,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   // Sample cart items
   final List<CartItem> _cartItems = [];
 
-  // Sample products with image paths
+  // Sample products with market-based prices
   final List<Product> _products = [
     Product(
       id: '1',
@@ -93,17 +92,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     ),
     Product(
       id: '6',
-      name: 'Organic Vegetables',
-      category: 'Crops',
+      name: 'Organic Pig Feed',
+      category: 'Feed',
       price: 15000,
-      unit: 'per basket',
+      unit: 'per 25kg bag',
       seller: 'Green Harvest Farm',
       location: 'Entebbe',
       rating: 4.8,
-      imageAsset: 'assets/vegetables.png',
-      imageUrl: 'https://organicstockfeed.com/product-range/organic-pig-feed/',
+      imageAsset: 'assets/feed.png',
+      imageUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&h=300&fit=crop',
       inStock: 30,
-      description: 'Organic feeds for pigs',
+      description: 'Organic feed for pigs',
     ),
     Product(
       id: '7',
@@ -138,7 +137,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   // User uploaded products
   final List<Product> _userProducts = [];
 
-  // Sample nearby markets
+  // Sample markets with location-based pricing
   final List<Market> _nearbyMarkets = [
     Market(
       name: 'Kampala Livestock Market',
@@ -147,6 +146,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       rating: 4.2,
       activeHours: '6:00 AM - 6:00 PM',
       products: ['Cattle', 'Goats', 'Sheep', 'Poultry'],
+      priceRange: 'Premium',
+      averagePrice: 'UGX 2,800,000',
     ),
     Market(
       name: 'Wandegeya Farm Products Market',
@@ -155,6 +156,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       rating: 4.5,
       activeHours: '7:00 AM - 7:00 PM',
       products: ['Vegetables', 'Fruits', 'Dairy', 'Grains'],
+      priceRange: 'Mid-Range',
+      averagePrice: 'UGX 1,200,000',
     ),
     Market(
       name: 'Jinja Livestock Trading Center',
@@ -163,6 +166,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       rating: 4.0,
       activeHours: '5:30 AM - 5:30 PM',
       products: ['Cattle', 'Pigs', 'Poultry', 'Feed'],
+      priceRange: 'Standard',
+      averagePrice: 'UGX 2,100,000',
+    ),
+    Market(
+      name: 'Mbarara Cattle Market',
+      location: 'Mbarara Town',
+      distance: '12.0 km',
+      rating: 4.3,
+      activeHours: '6:00 AM - 5:00 PM',
+      products: ['Cattle', 'Goats', 'Sheep', 'Dairy'],
+      priceRange: 'Standard',
+      averagePrice: 'UGX 2,500,000',
     ),
   ];
 
@@ -296,7 +311,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  TAB BAR
+  // ============= TAB BAR =============
   Widget _buildTabBar() {
     final tabs = [
       {'icon': Icons.storefront_rounded, 'label': 'Products'},
@@ -352,7 +367,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  SEARCH BAR
+  // ============= SEARCH BAR =============
   Widget _buildSearchBar() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -386,7 +401,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  CATEGORY CHIPS
+  // ============= CATEGORY CHIPS =============
   Widget _buildCategoryChips() {
     final categories = ['All', 'Cattle', 'Poultry', 'Goats', 'Pigs', 'Dairy', 'Feed', 'Crops'];
     
@@ -426,7 +441,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  PRODUCTS LIST
+  // ============= PRODUCTS LIST =============
   Widget _buildProductsList() {
     final products = _filteredProducts;
     
@@ -560,11 +575,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   children: [
                     Icon(Icons.location_on_rounded, size: 12, color: Colors.grey[400]),
                     const SizedBox(width: 2),
-                    Text(
-                      product.location,
-                      style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                    Expanded(
+                      child: Text(
+                        product.location,
+                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    const Spacer(),
+                    const SizedBox(width: 4),
                     Icon(Icons.star_rounded, size: 12, color: Colors.amber[600]),
                     Text(
                       product.rating.toString(),
@@ -584,11 +602,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      product.unit,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[500],
+                    Expanded(
+                      child: Text(
+                        product.unit,
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[500],
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                   ],
@@ -631,17 +652,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  ANIMAL PRICES
+  // ============= ANIMAL PRICES =============
   Widget _buildAnimalPrices() {
     final priceData = [
-      {'animal': 'Friesian Heifer', 'price': '2,500,000 - 3,500,000', 'unit': 'per animal', 'trend': 'up'},
-      {'animal': 'Broiler Chicken', 'price': '25,000 - 30,000', 'unit': 'per bird', 'trend': 'stable'},
-      {'animal': 'Local Goat', 'price': '150,000 - 250,000', 'unit': 'per goat', 'trend': 'up'},
-      {'animal': 'Weaner Pig', 'price': '100,000 - 150,000', 'unit': 'per piglet', 'trend': 'down'},
-      {'animal': 'Layer (Point of Lay)', 'price': '20,000 - 25,000', 'unit': 'per bird', 'trend': 'stable'},
-      {'animal': 'Fresh Milk', 'price': '2,500 - 3,500', 'unit': 'per litre', 'trend': 'up'},
-      {'animal': 'Sheep (Mature)', 'price': '120,000 - 180,000', 'unit': 'per sheep', 'trend': 'stable'},
-      {'animal': 'Rabbit (Breeder)', 'price': '30,000 - 50,000', 'unit': 'per rabbit', 'trend': 'up'},
+      {'animal': 'Friesian Heifer', 'price': '2,500,000 - 3,500,000', 'unit': 'per animal', 'trend': 'up', 'market': 'Kampala'},
+      {'animal': 'Broiler Chicken', 'price': '25,000 - 30,000', 'unit': 'per bird', 'trend': 'stable', 'market': 'Wakiso'},
+      {'animal': 'Local Goat', 'price': '150,000 - 250,000', 'unit': 'per goat', 'trend': 'up', 'market': 'Mbarara'},
+      {'animal': 'Weaner Pig', 'price': '100,000 - 150,000', 'unit': 'per piglet', 'trend': 'down', 'market': 'Jinja'},
+      {'animal': 'Layer (Point of Lay)', 'price': '20,000 - 25,000', 'unit': 'per bird', 'trend': 'stable', 'market': 'Kampala'},
+      {'animal': 'Fresh Milk', 'price': '2,500 - 3,500', 'unit': 'per litre', 'trend': 'up', 'market': 'Mbarara'},
+      {'animal': 'Sheep (Mature)', 'price': '120,000 - 180,000', 'unit': 'per sheep', 'trend': 'stable', 'market': 'Gulu'},
+      {'animal': 'Rabbit (Breeder)', 'price': '30,000 - 50,000', 'unit': 'per rabbit', 'trend': 'up', 'market': 'Entebbe'},
     ];
 
     return SingleChildScrollView(
@@ -663,13 +684,50 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 const SizedBox(width: 8),
                 const Expanded(
                   child: Text(
-                    'Prices are based on current market trends and may vary by location.',
+                    'Prices are based on current market trends at major trading centers.',
                     style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w500),
                   ),
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 16),
+          
+          // Market Selector
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE8E8E8)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.location_on_rounded, color: Color(0xFF2E7D32), size: 20),
+                const SizedBox(width: 8),
+                const Text(
+                  'Market: ',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF1A1F36),
+                  ),
+                ),
+                const Expanded(
+                  child: Text(
+                    'Kampala Central Market',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down_rounded, color: Colors.grey[400]),
+              ],
+            ),
+          ),
+          
           const SizedBox(height: 16),
           ...priceData.map((data) => _buildPriceCard(data)),
         ],
@@ -729,7 +787,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  data['unit']!,
+                  '${data['unit']!} • ${data['market']}',
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.grey[500],
@@ -744,15 +802,29 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               Text(
                 'UGX ${data['price']}',
                 style: const TextStyle(
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: Color(0xFF2E7D32),
                 ),
               ),
-              Icon(
-                trendIcon,
-                size: 16,
-                color: trendColor,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    trendIcon,
+                    size: 14,
+                    color: trendColor,
+                  ),
+                  const SizedBox(width: 2),
+                  Text(
+                    data['trend'] == 'up' ? 'Rising' : data['trend'] == 'down' ? 'Falling' : 'Stable',
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w500,
+                      color: trendColor,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -761,7 +833,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  NEARBY MARKETS
+  // ============= NEARBY MARKETS =============
   Widget _buildNearbyMarkets() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
@@ -808,7 +880,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     Text(
                       market.name,
                       style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: Color(0xFF1A1F36),
                       ),
@@ -818,11 +890,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       children: [
                         Icon(Icons.location_on_rounded, size: 12, color: Colors.grey[400]),
                         const SizedBox(width: 3),
-                        Text(
-                          market.location,
-                          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                        Expanded(
+                          child: Text(
+                            market.location,
+                            style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 8),
                         Icon(Icons.timer_rounded, size: 12, color: Colors.grey[400]),
                         const SizedBox(width: 3),
                         Text(
@@ -883,14 +958,32 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             children: [
               Icon(Icons.access_time_rounded, size: 12, color: Colors.grey[400]),
               const SizedBox(width: 4),
-              Text(
-                market.activeHours,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[500],
+              Expanded(
+                child: Text(
+                  market.activeHours,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.grey[500],
+                  ),
                 ),
               ),
-              const Spacer(),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.blue.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  market.priceRange!,
+                  style: TextStyle(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.blue[700],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: () {},
                 icon: const Icon(Icons.directions_rounded, size: 16),
@@ -913,123 +1006,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  SOLD PRODUCTS
-  Widget _buildSoldProducts() {
-    if (_soldProducts.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.sell_rounded,
-        title: 'No Sales Yet',
-        subtitle: 'Your sold products will appear here',
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-      child: ListView.separated(
-        physics: const BouncingScrollPhysics(),
-        itemCount: _soldProducts.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _buildSoldCard(_soldProducts[index]),
-      ),
-    );
-  }
-
-  Widget _buildSoldCard(SoldProduct product) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2E7D32).withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(
-                  Icons.sell_rounded,
-                  size: 20,
-                  color: Color(0xFF2E7D32),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.name,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A1F36),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      '${product.quantity} units - ${product.buyer}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: product.status == 'Completed'
-                      ? Colors.green.withOpacity(0.1)
-                      : Colors.orange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  product.status,
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: product.status == 'Completed' ? Colors.green[700] : Colors.orange[700],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Text(
-                'Total: UGX ${_formatPrice(product.total)}',
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF2E7D32),
-                ),
-              ),
-              const Spacer(),
-              Text(
-                product.date,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[500],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  //  SELL PRODUCT DIALOG WITH IMAGE UPLOAD
+  // ============= SELL PRODUCT DIALOG =============
   void _showSellProductDialog(BuildContext context) {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
@@ -1112,7 +1089,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   const SizedBox(height: 12),
                   
                   DropdownButtonFormField<String>(
-                    initialValue: selectedCategory,
+                    value: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category *',
                       border: OutlineInputBorder(),
@@ -1238,7 +1215,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  CART DIALOG
+  // ============= CART DIALOG =============
   void _showCartDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -1429,7 +1406,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  //  HELPERS
+  // ============= HELPERS =============
   void _addToCart(Product product) {
     setState(() {
       final existing = _cartItems.where((item) => item.name == product.name).firstOrNull;
@@ -1526,7 +1503,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 }
 
-//  MODELS
+// ============= MODELS =============
 class Product {
   final String id;
   final String name;
@@ -1580,6 +1557,8 @@ class Market {
   final double rating;
   final String activeHours;
   final List<String> products;
+  final String? priceRange;
+  final String? averagePrice;
 
   Market({
     required this.name,
@@ -1588,6 +1567,8 @@ class Market {
     required this.rating,
     required this.activeHours,
     required this.products,
+    this.priceRange,
+    this.averagePrice,
   });
 }
 
