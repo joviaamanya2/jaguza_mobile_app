@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:jaguza_app/models/user.dart';
+import 'package:jaguza_app/services/api_service.dart';
 
 class MyFarmScreen extends StatefulWidget {
   const MyFarmScreen({super.key});
@@ -10,33 +12,110 @@ class MyFarmScreen extends StatefulWidget {
 }
 
 class _MyFarmScreenState extends State<MyFarmScreen> {
-  // Sample farm data - In real app, this would come from a database
-  final List<Farm> _farms = [
-    Farm(
-      id: '1',
-      name: 'Green Valley Farm',
-      location: 'Wakiso, Uganda',
-      established: '2018',
-      size: '50 acres',
-      owner: 'John Mukasa',
-      animals: [
-        AnimalCategory('Cattle', 45, 'assets/cattle.png'),
-        AnimalCategory('Goats', 30, 'assets/goat.png'),
-        AnimalCategory('Poultry', 200, 'assets/poultry.png'),
-        AnimalCategory('Pigs', 15, 'assets/pig.png'),
-      ],
-      workers: [
-        Worker('Peter Okello', 'Farm Manager', '+256 772 123 456'),
-        Worker('Sarah Namukasa', 'Animal Health Specialist', '+256 775 234 567'),
-        Worker('James Muwonge', 'Farm Attendant', '+256 782 345 678'),
-      ],
-      coordinates: '0.3136° N, 32.5811° E',
-      description: 'A modern mixed farm specializing in dairy and poultry production.',
-      facilities: ['Barn', 'Milking Parlor', 'Poultry House', 'Store'],
-    ),
-  ];
-
+  final List<Farm> _farms = [];
   int _selectedFarmIndex = 0;
+  bool _isLoading = true;
+  User? _currentUser;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCurrentUser().then((_) => _loadFarms());
+  }
+
+  Future<void> _loadFarms() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final apiService = ApiService();
+      final response = await apiService.getFarms();
+      final loadedFarms = <Farm>[];
+
+      if (response is List) {
+        for (final item in response) {
+          if (item is Map) {
+            final farmData = Map<String, dynamic>.from(item);
+            final farm = Farm.fromJson(farmData);
+            final farmOwnerId = farmData['user_id'] ?? farmData['owner_id'];
+            final currentUserId = _currentUser?.id;
+
+            if (currentUserId != null && farmOwnerId != null) {
+              if (farmOwnerId.toString() == currentUserId.toString()) {
+                loadedFarms.add(farm);
+              }
+            } else if (farm.owner.isNotEmpty) {
+              loadedFarms.add(farm);
+            }
+          }
+        }
+      }
+
+      if (!mounted) return;
+
+      setState(() {
+        _farms
+          ..clear()
+          ..addAll(loadedFarms);
+        _isLoading = false;
+        if (_farms.isNotEmpty) {
+          _selectedFarmIndex = 0;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to load farms from the server: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _loadCurrentUser() async {
+    try {
+      final response = await ApiService().get('users/profile/');
+      if (response is Map) {
+        setState(() {
+          _currentUser = User.fromJson(Map<String, dynamic>.from(response));
+        });
+      }
+    } catch (_) {
+      setState(() {
+        _currentUser = null;
+      });
+    }
+  }
+
+  Future<void> _saveFarms() async {
+    if (_farms.isEmpty) return;
+
+    final farm = _farms[_selectedFarmIndex];
+
+    try {
+      final farmId = int.tryParse(farm.id);
+      if (farmId != null) {
+        await ApiService().updateFarm(farmId, farm.toApiPayload());
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Farm synced locally, but the server update failed: $e',
+          ),
+          backgroundColor: Colors.orange,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +154,9 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           const SizedBox(width: 12),
         ],
       ),
-      body: _farms.isEmpty
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _farms.isEmpty
           ? _buildEmptyState()
           : _buildFarmContent(),
     );
@@ -112,10 +193,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             const SizedBox(height: 8),
             Text(
               'Get started by creating your first farm',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -125,7 +203,10 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF2E7D32),
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -140,32 +221,32 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   void _navigateToCreateFarm(BuildContext context) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => const CreateFarmScreen(),
-      ),
-    ).then((result) {
+      MaterialPageRoute(builder: (context) => const CreateFarmScreen()),
+    ).then((result) async {
       if (result != null && result is Farm) {
+        if (!mounted) return;
         setState(() {
           _farms.add(result);
           _selectedFarmIndex = _farms.length - 1;
         });
+        await _saveFarms();
       }
     });
   }
 
   Widget _buildFarmContent() {
     final farm = _farms[_selectedFarmIndex];
-    
+
     return Column(
       children: [
         // Farm Selector
         _buildFarmSelector(),
-        
+
         // Farm Overview Card
         _buildFarmOverviewCard(farm),
-        
+
         const SizedBox(height: 16),
-        
+
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
@@ -174,9 +255,9 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               children: [
                 // Animal Categories
                 _buildAnimalSection(farm),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Workers Section
                 _buildWorkersSection(farm),
               ],
@@ -189,7 +270,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
 
   Widget _buildFarmSelector() {
     if (_farms.length <= 1) return const SizedBox.shrink();
-    
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: SingleChildScrollView(
@@ -199,7 +280,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             final index = entry.key;
             final farm = entry.value;
             final isSelected = _selectedFarmIndex == index;
-            
+
             return GestureDetector(
               onTap: () {
                 setState(() {
@@ -208,12 +289,17 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               },
               child: Container(
                 margin: const EdgeInsets.only(right: 10),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                    color: isSelected
+                        ? const Color(0xFF2E7D32)
+                        : Colors.grey[300]!,
                   ),
                 ),
                 child: Row(
@@ -230,7 +316,9 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.grey[700],
                         fontSize: 13,
-                        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                        fontWeight: isSelected
+                            ? FontWeight.w600
+                            : FontWeight.w500,
                       ),
                     ),
                   ],
@@ -264,6 +352,28 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
       ),
       child: Column(
         children: [
+          if (farm.imagePath != null && farm.imagePath!.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                File(farm.imagePath!),
+                height: 140,
+                width: double.infinity,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  height: 140,
+                  color: Colors.white24,
+                  child: const Center(
+                    child: Icon(
+                      Icons.image_not_supported_rounded,
+                      color: Colors.white70,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Row(
             children: [
               Container(
@@ -294,7 +404,11 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded, color: Colors.white70, size: 14),
+                        Icon(
+                          Icons.location_on_rounded,
+                          color: Colors.white70,
+                          size: 14,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -312,7 +426,11 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(Icons.gps_fixed_rounded, color: Colors.white70, size: 12),
+                          Icon(
+                            Icons.gps_fixed_rounded,
+                            color: Colors.white70,
+                            size: 12,
+                          ),
                           const SizedBox(width: 4),
                           Text(
                             farm.coordinates!,
@@ -328,7 +446,10 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
@@ -348,9 +469,21 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _statItem('Total Animals', _getTotalAnimals(farm).toString(), Icons.pets_rounded),
-              _statItem('Workers', farm.workers.length.toString(), Icons.people_rounded),
-              _statItem('Categories', farm.animals.length.toString(), Icons.category_rounded),
+              _statItem(
+                'Total Animals',
+                _getTotalAnimals(farm).toString(),
+                Icons.pets_rounded,
+              ),
+              _statItem(
+                'Workers',
+                farm.workers.length.toString(),
+                Icons.people_rounded,
+              ),
+              _statItem(
+                'Categories',
+                farm.animals.length.toString(),
+                Icons.category_rounded,
+              ),
             ],
           ),
         ],
@@ -378,10 +511,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
         const SizedBox(height: 2),
         Text(
           label,
-          style: const TextStyle(
-            color: Colors.white70,
-            fontSize: 11,
-          ),
+          style: const TextStyle(color: Colors.white70, fontSize: 11),
         ),
       ],
     );
@@ -431,27 +561,34 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                     elevation: 0,
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          
+
           const Divider(height: 1, color: Color(0xFFE8E8E8)),
-          
+
           // Animal List
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             padding: EdgeInsets.zero,
             itemCount: farm.animals.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE8E8E8)),
+            separatorBuilder: (_, __) =>
+                const Divider(height: 1, color: Color(0xFFE8E8E8)),
             itemBuilder: (context, index) {
               final animal = farm.animals[index];
               return _buildAnimalTile(animal);
@@ -507,11 +644,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Icon(
-            Icons.chevron_right_rounded,
-            color: Colors.grey[400],
-            size: 20,
-          ),
+          Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
         ],
       ),
     );
@@ -580,20 +713,26 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                     elevation: 0,
-                    textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+                    textStyle: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
-          
+
           const Divider(height: 1, color: Color(0xFFE8E8E8)),
-          
+
           // Worker List
           farm.workers.isEmpty
               ? Padding(
@@ -601,10 +740,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   child: Center(
                     child: Text(
                       'No workers registered yet',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
                     ),
                   ),
                 )
@@ -613,7 +749,8 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   physics: const NeverScrollableScrollPhysics(),
                   padding: EdgeInsets.zero,
                   itemCount: farm.workers.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1, color: Color(0xFFE8E8E8)),
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, color: Color(0xFFE8E8E8)),
                   itemBuilder: (context, index) {
                     final worker = farm.workers[index];
                     return _buildWorkerTile(worker);
@@ -667,31 +804,25 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                     const SizedBox(width: 4),
                     Text(
                       worker.role,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
                     const SizedBox(width: 12),
-                    Icon(Icons.phone_rounded, color: Colors.grey[400], size: 12),
+                    Icon(
+                      Icons.phone_rounded,
+                      color: Colors.grey[400],
+                      size: 12,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       worker.phone,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          Icon(
-            Icons.more_vert_rounded,
-            color: Colors.grey[400],
-            size: 20,
-          ),
+          Icon(Icons.more_vert_rounded, color: Colors.grey[400], size: 20),
         ],
       ),
     );
@@ -713,9 +844,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -733,10 +862,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             const SizedBox(width: 10),
             const Text(
               'Add Animals',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -749,21 +875,19 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                 labelText: 'Animal Type *',
                 border: OutlineInputBorder(),
               ),
-              items: const [
-                'Cattle',
-                'Goats',
-                'Sheep',
-                'Pigs',
-                'Poultry',
-                'Fish',
-                'Rabbits',
-                'Other'
-              ].map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(type),
-                );
-              }).toList(),
+              items:
+                  const [
+                    'Cattle',
+                    'Goats',
+                    'Sheep',
+                    'Pigs',
+                    'Poultry',
+                    'Fish',
+                    'Rabbits',
+                    'Other',
+                  ].map((type) {
+                    return DropdownMenuItem(value: type, child: Text(type));
+                  }).toList(),
               onChanged: (value) {
                 selectedType = value ?? 'Cattle';
               },
@@ -783,35 +907,33 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (countController.text.isNotEmpty) {
                 final count = int.tryParse(countController.text) ?? 0;
                 if (count > 0) {
                   setState(() {
                     final farm = _farms[_selectedFarmIndex];
-                    final existing = farm.animals
-                        .firstWhere((a) => a.name == selectedType,
-                            orElse: () => AnimalCategory(selectedType, 0, ''));
-                    
+                    final existing = farm.animals.firstWhere(
+                      (a) => a.name == selectedType,
+                      orElse: () => AnimalCategory(selectedType, 0, ''),
+                    );
+
                     if (existing.name.isNotEmpty) {
                       // Update existing category
                       existing.count += count;
                     } else {
                       // Add new category
-                      farm.animals.add(
-                        AnimalCategory(selectedType, count, ''),
-                      );
+                      farm.animals.add(AnimalCategory(selectedType, count, ''));
                     }
                   });
-                  
+
+                  await _saveFarms();
+                  if (!mounted) return;
                   Navigator.pop(context);
-                  
+
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text('Animals added successfully'),
@@ -841,9 +963,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
       context: context,
       barrierDismissible: true,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -861,10 +981,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             const SizedBox(width: 10),
             const Text(
               'Add Worker',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
             ),
           ],
         ),
@@ -903,13 +1020,10 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey[600]),
-            ),
+            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               if (nameController.text.isNotEmpty &&
                   roleController.text.isNotEmpty &&
                   phoneController.text.isNotEmpty) {
@@ -922,9 +1036,11 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                     ),
                   );
                 });
-                
+
+                await _saveFarms();
+                if (!mounted) return;
                 Navigator.pop(context);
-                
+
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Worker added successfully'),
@@ -961,11 +1077,11 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
   final _ownerController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _coordinatesController = TextEditingController();
-  
+
   final List<String> _selectedFacilities = [];
   File? _farmImage;
   final ImagePicker _picker = ImagePicker();
-  
+
   final List<String> _availableFacilities = [
     'Barn',
     'Milking Parlor',
@@ -1025,13 +1141,16 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
             children: [
               // Farm Image
               _buildImageSection(),
-              
+
               const SizedBox(height: 20),
-              
+
               // Basic Information
-              _buildSectionHeader(Icons.info_outline_rounded, 'Basic Information'),
+              _buildSectionHeader(
+                Icons.info_outline_rounded,
+                'Basic Information',
+              ),
               const SizedBox(height: 12),
-              
+
               _buildTextField(
                 controller: _nameController,
                 label: 'Farm Name *',
@@ -1044,9 +1163,9 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildTextField(
                 controller: _ownerController,
                 label: 'Owner Name *',
@@ -1059,13 +1178,16 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Location Section
-              _buildSectionHeader(Icons.location_on_rounded, 'Location Details'),
+              _buildSectionHeader(
+                Icons.location_on_rounded,
+                'Location Details',
+              ),
               const SizedBox(height: 12),
-              
+
               _buildTextField(
                 controller: _locationController,
                 label: 'Physical Location *',
@@ -1078,22 +1200,22 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildTextField(
                 controller: _coordinatesController,
                 label: 'GPS Coordinates',
                 hint: 'e.g., 0.3136° N, 32.5811° E',
                 icon: Icons.gps_fixed_rounded,
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Farm Details
               _buildSectionHeader(Icons.agriculture_rounded, 'Farm Details'),
               const SizedBox(height: 12),
-              
+
               _buildTextField(
                 controller: _sizeController,
                 label: 'Farm Size *',
@@ -1106,9 +1228,9 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               _buildTextField(
                 controller: _descriptionController,
                 label: 'Description',
@@ -1116,13 +1238,16 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                 icon: Icons.description_rounded,
                 maxLines: 4,
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Facilities
-              _buildSectionHeader(Icons.business_center_rounded, 'Farm Facilities'),
+              _buildSectionHeader(
+                Icons.business_center_rounded,
+                'Farm Facilities',
+              ),
               const SizedBox(height: 12),
-              
+
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
@@ -1158,16 +1283,18 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                       selectedColor: const Color(0xFF2E7D32),
                       shape: StadiumBorder(
                         side: BorderSide(
-                          color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                          color: isSelected
+                              ? const Color(0xFF2E7D32)
+                              : Colors.grey[300]!,
                         ),
                       ),
                     );
                   }).toList(),
                 ),
               ),
-              
+
               const SizedBox(height: 24),
-              
+
               // Submit Button
               SizedBox(
                 width: double.infinity,
@@ -1184,14 +1311,11 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                   ),
                   child: const Text(
                     'Create Farm',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: 40),
             ],
           ),
@@ -1230,10 +1354,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
               const Spacer(),
               Text(
                 'Optional',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[500],
-                ),
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
               ),
             ],
           ),
@@ -1291,11 +1412,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
             color: const Color(0xFF2E7D32).withOpacity(0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: const Color(0xFF2E7D32),
-          ),
+          child: Icon(icon, size: 16, color: const Color(0xFF2E7D32)),
         ),
         const SizedBox(width: 10),
         Text(
@@ -1331,20 +1448,13 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: Colors.grey[400],
-          ),
+          hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
           labelStyle: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
             color: Color(0xFF1A1F36),
           ),
-          prefixIcon: Icon(
-            icon,
-            size: 20,
-            color: const Color(0xFF2E7D32),
-          ),
+          prefixIcon: Icon(icon, size: 20, color: const Color(0xFF2E7D32)),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
@@ -1353,7 +1463,10 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
             borderRadius: BorderRadius.circular(14),
             borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
           ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
         ),
       ),
     );
@@ -1367,7 +1480,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
         maxHeight: 800,
         imageQuality: 80,
       );
-      
+
       if (image != null) {
         setState(() {
           _farmImage = File(image.path);
@@ -1378,28 +1491,50 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
     }
   }
 
-  void _saveFarm() {
-    if (_formKey.currentState!.validate()) {
-      final newFarm = Farm(
-        id: DateTime.now().toString(),
-        name: _nameController.text,
-        location: _locationController.text,
-        established: DateTime.now().year.toString(),
-        size: _sizeController.text,
-        owner: _ownerController.text,
-        animals: [],
-        workers: [],
-        coordinates: _coordinatesController.text.isNotEmpty ? _coordinatesController.text : null,
-        description: _descriptionController.text.isNotEmpty ? _descriptionController.text : null,
-        facilities: _selectedFacilities.isNotEmpty ? _selectedFacilities : null,
-      );
-      
-      Navigator.pop(context, newFarm);
-      
+  Future<void> _saveFarm() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final newFarm = Farm(
+      id: DateTime.now().toString(),
+      name: _nameController.text,
+      location: _locationController.text,
+      established: DateTime.now().year.toString(),
+      size: _sizeController.text,
+      owner: _ownerController.text,
+      animals: [],
+      workers: [],
+      coordinates: _coordinatesController.text.isNotEmpty
+          ? _coordinatesController.text
+          : null,
+      description: _descriptionController.text.isNotEmpty
+          ? _descriptionController.text
+          : null,
+      facilities: _selectedFacilities.isNotEmpty ? _selectedFacilities : null,
+      imagePath: _farmImage?.path,
+    );
+
+    try {
+      final response = await ApiService().createFarm(newFarm.toApiPayload());
+      final createdFarm = response is Map
+          ? Farm.fromJson(Map<String, dynamic>.from(response))
+          : newFarm;
+
+      if (!mounted) return;
+
+      Navigator.pop(context, createdFarm);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Farm created successfully!'),
           backgroundColor: Color(0xFF2E7D32),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Farm could not be saved: $e'),
+          backgroundColor: Colors.red,
         ),
       );
     }
@@ -1430,6 +1565,7 @@ class Farm {
   final String? coordinates;
   final String? description;
   final List<String>? facilities;
+  final String? imagePath;
 
   Farm({
     required this.id,
@@ -1443,7 +1579,96 @@ class Farm {
     this.coordinates,
     this.description,
     this.facilities,
+    this.imagePath,
   });
+
+  factory Farm.fromJson(Map<String, dynamic> json) {
+    return Farm(
+      id: json['id']?.toString() ?? '',
+      name: json['name'] ?? json['farm_name'] ?? '',
+      location: json['location'] ?? json['farm_location'] ?? '',
+      established:
+          json['established_year']?.toString() ??
+          json['established']?.toString() ??
+          '',
+      size: json['size'] ?? '',
+      owner: json['owner_name'] ?? json['farm_owner'] ?? json['owner'] ?? '',
+      animals: (json['animals'] as List<dynamic>? ?? [])
+          .map(
+            (animal) => AnimalCategory(
+              animal['name'] ?? '',
+              int.tryParse(animal['count'].toString()) ?? 0,
+              animal['imagePath'] ?? '',
+            ),
+          )
+          .toList(),
+      workers: (json['workers'] as List<dynamic>? ?? [])
+          .map(
+            (worker) => Worker(
+              worker['name'] ?? '',
+              worker['role'] ?? '',
+              worker['phone'] ?? '',
+            ),
+          )
+          .toList(),
+      coordinates: json['coordinates'],
+      description: json['description'],
+      facilities: (json['facilities'] as List<dynamic>? ?? [])
+          .map((f) => f.toString())
+          .toList(),
+      imagePath:
+          json['imagePath'] ??
+          json['image'] ??
+          json['image_url'] ??
+          json['image_path'],
+    );
+  }
+
+  Map<String, dynamic> toApiPayload() {
+    return {
+      'name': name,
+      'location': location,
+      'owner_name': owner,
+      'size': size,
+      'description': description,
+      'established_year': established,
+      'coordinates': coordinates,
+      'facilities': facilities ?? [],
+    };
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'location': location,
+      'established': established,
+      'size': size,
+      'owner': owner,
+      'animals': animals
+          .map(
+            (animal) => {
+              'name': animal.name,
+              'count': animal.count,
+              'imagePath': animal.imagePath,
+            },
+          )
+          .toList(),
+      'workers': workers
+          .map(
+            (worker) => {
+              'name': worker.name,
+              'role': worker.role,
+              'phone': worker.phone,
+            },
+          )
+          .toList(),
+      'coordinates': coordinates,
+      'description': description,
+      'facilities': facilities,
+      'imagePath': imagePath,
+    };
+  }
 }
 
 class AnimalCategory {

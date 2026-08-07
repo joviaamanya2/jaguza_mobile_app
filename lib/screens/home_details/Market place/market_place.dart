@@ -477,6 +477,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // Product Image
           Stack(
@@ -559,6 +560,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             padding: const EdgeInsets.all(10),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   product.name,
@@ -571,38 +573,53 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 4),
+                // Fixed: Row with proper constraints
                 Row(
                   children: [
-                    Icon(Icons.location_on_rounded, size: 12, color: Colors.grey[400]),
-                    const SizedBox(width: 2),
                     Expanded(
-                      child: Text(
-                        product.location,
-                        style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                        overflow: TextOverflow.ellipsis,
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_on_rounded, size: 12, color: Colors.grey[400]),
+                          const SizedBox(width: 2),
+                          Expanded(
+                            child: Text(
+                              product.location,
+                              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Icon(Icons.star_rounded, size: 12, color: Colors.amber[600]),
-                    Text(
-                      product.rating.toString(),
-                      style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                    Row(
+                      children: [
+                        Icon(Icons.star_rounded, size: 12, color: Colors.amber[600]),
+                        Text(
+                          product.rating.toString(),
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey[700]),
+                        ),
+                      ],
                     ),
                   ],
                 ),
                 const SizedBox(height: 6),
+                // Fixed: Row with proper constraints
                 Row(
                   children: [
-                    Text(
-                      'UGX ${_formatPrice(product.price)}',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                        color: Color(0xFF2E7D32),
+                    Flexible(
+                      child: Text(
+                        'UGX ${_formatPrice(product.price)}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF2E7D32),
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Expanded(
+                    Flexible(
                       child: Text(
                         product.unit,
                         style: TextStyle(
@@ -612,23 +629,27 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    const Spacer(),
                   ],
                 ),
                 const SizedBox(height: 6),
+                // Fixed: Row with proper constraints
                 Row(
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: product.inStock > 0 ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        product.inStock > 0 ? '${product.inStock} in stock' : 'Out of stock',
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontWeight: FontWeight.w600,
-                          color: product.inStock > 0 ? Colors.green[700] : Colors.red[700],
+                    Flexible(
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: product.inStock > 0 ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          product.inStock > 0 ? '${product.inStock} in stock' : 'Out of stock',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w600,
+                            color: product.inStock > 0 ? Colors.green[700] : Colors.red[700],
+                          ),
                         ),
                       ),
                     ),

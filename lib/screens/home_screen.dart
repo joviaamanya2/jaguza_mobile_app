@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:jaguza_app/services/api_service.dart';
 import 'package:jaguza_app/screens/home_details/Decision%20support/decison_support.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
 import 'package:jaguza_app/screens/home_details/Gestation%20tracker/gestation_tracker.dart';
@@ -83,34 +85,24 @@ class _MainShellState extends State<MainShell> {
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: _buildBottomNav(),
       drawer: _buildDrawer(),
     );
   }
 
-  // Website launcher method for the drawer
   void _launchWebsite(String url) async {
     try {
-      // Ensure the URL has a scheme
       String fullUrl = url;
       if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
         fullUrl = 'https://$fullUrl';
       }
-      
+
       final Uri uri = Uri.parse(fullUrl);
-      
-      // Check if the URL can be launched
       final bool canLaunch = await canLaunchUrl(uri);
-      
+
       if (canLaunch) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -134,365 +126,335 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildDrawer() {
-  return Drawer(
-    backgroundColor: Colors.white,
-    child: Column(
-      children: [
-        // Drawer Header - Green section with Jaguza
-        Container(
-          padding: const EdgeInsets.fromLTRB(24, 48, 24, 20),
-          width: double.infinity,
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF2E7D32),
-                Color(0xFF1B5E20),
+    return Drawer(
+      backgroundColor: Colors.white,
+      child: Column(
+        children: [
+          // Drawer Header - Solid Green
+          Container(
+            padding: const EdgeInsets.fromLTRB(24, 48, 24, 20),
+            width: double.infinity,
+            color: const Color(0xFF2E7D32), // Solid color, no gradient
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                  ),
+                  child: const Icon(
+                    Icons.agriculture_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Jaguza',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Livestock Management',
+                      style: TextStyle(
+                        color: Color(0xFF81C784),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.white.withOpacity(0.3)),
-                ),
-                child: const Icon(
-                  Icons.agriculture_rounded,
-                  color: Colors.white,
-                  size: 28,
-                ),
-              ),
-              const SizedBox(width: 14),
-              const Column(
+          // Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Jaguza',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  _buildDrawerSection(
+                    title: 'Farm Expenses',
+                    icon: Icons.payments_outlined,
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const Divider(color: Colors.grey, height: 1),
+                  _buildDrawerItem(
+                    icon: Icons.add_rounded,
+                    title: 'Feed',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.help_outline_rounded,
+                    title: '? Vetenary Help',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.medical_services_rounded,
+                    title: 'Labour',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.people_outline_rounded,
+                    title: 'Equipment and Housing',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  const Divider(color: Colors.grey, height: 16),
+                  _buildDrawerSection(
+                    title: 'Account',
+                    icon: Icons.account_circle_outlined,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileTab()),
+                      );
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.person_outline_rounded,
+                    title: 'Manage Profile',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfileTab()),
+                      );
+                    },
+                  ),
+                  const Divider(color: Colors.grey, height: 16),
+                  _buildDrawerSection(
+                    title: 'Communicate',
+                    icon: Icons.chat_outlined,
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.lightbulb_outline_rounded,
+                    title: 'Tips and Suggestions',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.share_outlined,
+                    title: 'Share JAGUZA',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showShareDialog(context);
+                    },
+                  ),
+                  const Divider(color: Colors.grey, height: 16),
+                  _buildDrawerSection(
+                    title: 'Others',
+                    icon: Icons.more_horiz_rounded,
+                    onTap: () {},
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.handshake_outlined,
+                    title: 'Our Partners/About',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.public_outlined,
+                    title: 'Visit our Website',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _launchWebsite('https://jaguzalivestock.com');
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.privacy_tip_outlined,
+                    title: 'Privacy Policy',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.info_outline_rounded,
+                    title: 'About App',
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.logout_outlined,
+                    title: 'Logout',
+                    onTap: () {
+                      Navigator.pop(context);
+                      _showLogoutDialog(context);
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      'Version 2.0.0',
+                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
                     ),
                   ),
-                  Text(
-                    'Livestock Management',
-                    style: TextStyle(
-                      color: Color(0xFF81C784),
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
-            ],
-          ),
-        ),
-        // Scrollable content - White background with black text
-        Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Farm Expenses Section
-                _buildDrawerSection(
-                  title: 'Farm Expenses',
-                  icon: Icons.payments_outlined,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Farm Expenses screen
-                  },
-                ),
-                const Divider(color: Colors.grey, height: 1),
-                // Main Features
-                _buildDrawerItem(
-                  icon: Icons.add_rounded,
-                  title: 'Feed',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Add Milk screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.help_outline_rounded,
-                  title: '? Vetenary Help',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Help/Expert screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.medical_services_rounded,
-                  title: 'Labour',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Doctor Chat screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.people_outline_rounded,
-                  title: 'Equipment and Housing',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Extension Workers screen
-                  },
-                ),
-                const Divider(color: Colors.grey, height: 16),
-                // Account Section
-                _buildDrawerSection(
-                  title: 'Account',
-                  icon: Icons.account_circle_outlined,
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfileTab()),
-                    );
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.person_outline_rounded,
-                  title: 'Manage Profile',
-                  onTap: () {
-                    Navigator.pop(context);
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const ProfileTab()),
-                    );
-                  },
-                ),
-                const Divider(color: Colors.grey, height: 16),
-                // Communicate Section
-                _buildDrawerSection(
-                  title: 'Communicate',
-                  icon: Icons.chat_outlined,
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Communicate screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.lightbulb_outline_rounded,
-                  title: 'Tips and Suggestions',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Tips screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.share_outlined,
-                  title: 'Share JAGUZA',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showShareDialog(context);
-                  },
-                ),
-                
-                const Divider(color: Colors.grey, height: 16),
-                // Others Section
-                _buildDrawerSection(
-                  title: 'Others',
-                  icon: Icons.more_horiz_rounded,
-                  onTap: () {
-                    // Collapsible section
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.handshake_outlined,
-                  title: 'Our Partners/About',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Partners/About screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.public_outlined,
-                  title: 'Visit our Website',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _launchWebsite('https://jaguzalivestock.com');
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.privacy_tip_outlined,
-                  title: 'Privacy Policy',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to Privacy Policy screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.info_outline_rounded,
-                  title: 'About App',
-                  onTap: () {
-                    Navigator.pop(context);
-                    // Navigate to About App screen
-                  },
-                ),
-                _buildDrawerItem(
-                  icon: Icons.logout_outlined,
-                  title: 'Logout',
-                  onTap: () {
-                    Navigator.pop(context);
-                    _showLogoutDialog(context);
-                  },
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: Text(
-                    'Version 2.0.0',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 11,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-              ],
             ),
           ),
-        ),
-      ],
-    ),
-  );
-}
+        ],
+      ),
+    );
+  }
 
-Widget _buildDrawerSection({required String title, required IconData icon, required VoidCallback onTap}) {
-  return Container(
-    color: const Color(0xFFF5F5F5),
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-    child: Row(
-      children: [
-        Icon(icon, color: const Color(0xFF2E7D32), size: 18),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
+  Widget _buildDrawerSection({
+    required String title,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      color: const Color(0xFFF5F5F5),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      child: Row(
+        children: [
+          Icon(icon, color: const Color(0xFF2E7D32), size: 18),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Color(0xFF1A1F36),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.grey[700], size: 20),
+      title: Text(
+        title,
+        style: const TextStyle(
+          color: Color(0xFF1A1F36),
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      trailing: const Icon(
+        Icons.chevron_right_rounded,
+        color: Color(0xFF2E7D32),
+        size: 18,
+      ),
+      onTap: onTap,
+      dense: true,
+      hoverColor: const Color(0xFF2E7D32).withOpacity(0.05),
+      splashColor: const Color(0xFF2E7D32).withOpacity(0.1),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Logout',
+          style: TextStyle(
             color: Color(0xFF1A1F36),
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            letterSpacing: 0.5,
+            fontWeight: FontWeight.bold,
           ),
         ),
-      ],
-    ),
-  );
-}
+        content: const Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: Colors.grey),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
+            child: const Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
 
-Widget _buildDrawerItem({
-  required IconData icon,
-  required String title,
-  required VoidCallback onTap,
-}) {
-  return ListTile(
-    leading: Icon(
-      icon,
-      color: Colors.grey[700],
-      size: 20,
-    ),
-    title: Text(
-      title,
-      style: const TextStyle(
-        color: Color(0xFF1A1F36),
-        fontSize: 13,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    trailing: const Icon(
-      Icons.chevron_right_rounded,
-      color: Color(0xFF2E7D32),
-      size: 18,
-    ),
-    onTap: onTap,
-    dense: true,
-    hoverColor: const Color(0xFF2E7D32).withOpacity(0.05),
-    splashColor: const Color(0xFF2E7D32).withOpacity(0.1),
-  );
-}
-
-void _showLogoutDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      title: const Text(
-        'Logout',
-        style: TextStyle(color: Color(0xFF1A1F36), fontWeight: FontWeight.bold),
-      ),
-      content: const Text(
-        'Are you sure you want to logout?',
-        style: TextStyle(color: Colors.grey),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: Colors.grey),
+  void _showShareDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.white,
+        title: const Text(
+          'Share JAGUZA',
+          style: TextStyle(
+            color: Color(0xFF1A1F36),
+            fontWeight: FontWeight.bold,
           ),
         ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            // Perform logout action
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.red[700],
-          ),
-          child: const Text('Logout'),
+        content: const Text(
+          'Share the Jaguza app with your fellow farmers!',
+          style: TextStyle(color: Colors.grey),
         ),
-      ],
-    ),
-  );
-}
-
-void _showShareDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      backgroundColor: Colors.white,
-      title: const Text(
-        'Share JAGUZA',
-        style: TextStyle(color: Color(0xFF1A1F36), fontWeight: FontWeight.bold),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF2E7D32),
+            ),
+            child: const Text('Share'),
+          ),
+        ],
       ),
-      content: const Text(
-        'Share the Jaguza app with your fellow farmers!',
-        style: TextStyle(color: Colors.grey),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text(
-            'Cancel',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            // Implement share functionality
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2E7D32),
-          ),
-          child: const Text('Share'),
-        ),
-      ],
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildBottomNav() {
     final items = [
       _NavData(Icons.home_outlined, Icons.home_rounded, 'Home'),
       _NavData(Icons.explore_outlined, Icons.explore_rounded, 'Explore'),
-      _NavData(Icons.chat_bubble_outline_rounded, Icons.chat_bubble_rounded, 'AI Chat'),
+      _NavData(
+        Icons.chat_bubble_outline_rounded,
+        Icons.chat_bubble_rounded,
+        'AI Chat',
+      ),
       _NavData(Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
     ];
 
@@ -511,7 +473,10 @@ void _showShareDialog(BuildContext context) {
                 onTap: () => _switchTab(i),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: active
                         ? const Color(0xFF1A1F36).withOpacity(0.08)
@@ -560,7 +525,8 @@ class _NavData {
   const _NavData(this.icon, this.activeIcon, this.label);
 }
 
-// HomeTab - Clean version without overlay
+// HomeTab
+// HomeTab - Clean version with plain color cards, no icons, no farm registration
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
 
@@ -605,7 +571,7 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _buildAppBar() {
     return Container(
-      color: const Color.fromARGB(255, 3, 112, 51),
+      color: const Color(0xFF2E7D32),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
@@ -664,7 +630,9 @@ class _HomeTabState extends State<HomeTab> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-            color: color, borderRadius: BorderRadius.circular(12)),
+          color: color,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
@@ -702,11 +670,7 @@ class _HomeTabState extends State<HomeTab> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        decoration: BoxDecoration(
-          color: const Color(0xFFF57C00),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: const Color(0xFFBF360C).withOpacity(0.25)),
-        ),
+        color: const Color(0xFFF57C00),
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -720,8 +684,11 @@ class _HomeTabState extends State<HomeTab> {
                     color: const Color(0xFFBF360C),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Icon(Icons.question_answer_rounded,
-                      color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.question_answer_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 10),
                 const Text(
@@ -770,86 +737,64 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _buildFeatureGrid() {
-    final gridFeatures = [
+    final features = [
       FeatureItem(
-        icon: Icons.report_problem_rounded,
         title: 'Report\nSickness',
-        color: const Color(0xFF2E7D32),
-        bgLight: const Color(0xFFB8E986),
+        color: const Color(0xFF66BB6A),
         screen: const ReportSicknessScreen(),
       ),
       FeatureItem(
-        icon: Icons.medical_information_rounded,
         title: 'Diagnosis',
-        color: const Color(0xFF4FC3F7),
-        bgLight: const Color(0xFFD0E9FF),
+        color: const Color(0xFF90A4AE),
         screen: const DiagnosisScreen(),
       ),
       FeatureItem(
-        icon: Icons.local_hospital_rounded,
         title: 'Veterinary\nDoctors',
-        color: const Color(0xFF2E7D32),
-        bgLight: const Color(0xFFB8E986),
+        color: const Color(0xFF66BB6A),
         screen: const VeterinaryDoctorsScreen(),
       ),
       FeatureItem(
-        icon: Icons.article_rounded,
         title: 'Disease\nInformation',
         color: const Color(0xFF90A4AE),
-        bgLight: const Color(0xFFCFD8DC),
         screen: const AnimalDiseasesScreen(),
       ),
       FeatureItem(
-        icon: Icons.agriculture_rounded,
         title: 'My\nFarm',
-        color: const Color(0xFF2E7D32),
-        bgLight: const Color(0xFFB8E986),
+        color: const Color(0xFF66BB6A),
         screen: const MyFarmScreen(),
       ),
       FeatureItem(
-        icon: Icons.storefront_rounded,
         title: 'Market\nPlace',
-        color: const Color(0xFF4FC3F7),
-        bgLight: const Color(0xFFD0E9FF),
+        color: const Color(0xFF90A4AE),
         screen: const MarketplaceScreen(),
       ),
       FeatureItem(
-        icon: Icons.calendar_today_rounded,
         title: 'Gestation\nTracker',
-        color: const Color(0xFF2E7D32),
-        bgLight: const Color(0xFFB8E986),
+        color: const Color(0xFF66BB6A),
         screen: const GestationTrackerScreen(),
       ),
       FeatureItem(
-        icon: Icons.cloud_queue_rounded,
         title: 'Weather\nUpdates',
-        color: const Color(0xFF4FC3F7),
-        bgLight: const Color(0xFFD0E9FF),
+        color: const Color(0xFF81D4FA),
         screen: const WeatherUpdatesScreen(),
       ),
       FeatureItem(
-        icon: Icons.analytics_rounded,
         title: 'Decision\nSupport',
-        color: const Color(0xFF2E7D32),
-        bgLight: const Color(0xFFB8E986),
+        color: const Color(0xFF66BB6A),
         screen: const DecisionSupportScreen(),
       ),
     ];
 
     final rowFeatures = [
       FeatureItem(
-        icon: Icons.public_rounded,
         title: 'Visit our\nWebsite',
-        color: const Color(0xFF4FC3F7),
-        bgLight: const Color(0xFFD0E9FF),
+        color: const Color(0xFF4DD0E1),
         isWebsite: true,
         url: 'https://jaguzafarm.com/',
       ),
       FeatureItem(
-        icon: Icons.play_circle_fill_rounded,
         title: 'Video',
         color: const Color(0xFF90A4AE),
-        bgLight: const Color(0xFFCFD8DC),
         screen: const VideoScreen(),
       ),
     ];
@@ -867,9 +812,9 @@ class _HomeTabState extends State<HomeTab> {
               mainAxisSpacing: 12,
               childAspectRatio: 0.82,
             ),
-            itemCount: gridFeatures.length,
+            itemCount: features.length,
             itemBuilder: (context, index) {
-              return _FeatureCard(item: gridFeatures[index]);
+              return _FeatureCard(item: features[index]);
             },
           ),
           const SizedBox(height: 12),
@@ -884,7 +829,6 @@ class _HomeTabState extends State<HomeTab> {
       ),
     );
   }
-  
 
   Widget _buildAdvertiseBanner() {
     return Padding(
@@ -895,15 +839,20 @@ class _HomeTabState extends State<HomeTab> {
         onDismissed: (_) => _dismissAd(),
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.only(left: 20, top: 14, bottom: 14, right: 8),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B5E20).withOpacity(0.08),
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFF2E7D32).withOpacity(0.15)),
+          padding: const EdgeInsets.only(
+            left: 20,
+            top: 14,
+            bottom: 14,
+            right: 8,
           ),
+          color: const Color(0xFF2E7D32).withOpacity(0.08),
           child: Row(
             children: [
-              const Icon(Icons.campaign_rounded, color: Color(0xFF2E7D32), size: 22),
+              const Icon(
+                Icons.campaign_rounded,
+                color: Color(0xFF2E7D32),
+                size: 22,
+              ),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
@@ -916,14 +865,16 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFF2E7D32),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: GestureDetector(
                   onTap: () {
-                    // Navigate to the Advert screen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -931,19 +882,12 @@ class _HomeTabState extends State<HomeTab> {
                       ),
                     );
                   },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Text(
-                      'Learn More',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
+                  child: const Text(
+                    'Learn More',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -958,7 +902,11 @@ class _HomeTabState extends State<HomeTab> {
                     color: const Color(0xFF2E7D32).withOpacity(0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(Icons.close_rounded, color: Color(0xFF2E7D32), size: 16),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    color: Color(0xFF2E7D32),
+                    size: 16,
+                  ),
                 ),
               ),
             ],
@@ -989,47 +937,44 @@ class _FeatureCardState extends State<_FeatureCard> {
       onTapUp: (_) => setState(() => _pressed = false),
       onTapCancel: () => setState(() => _pressed = false),
       onTap: () {
-        // Check if it's a website link
         if (widget.item.isWebsite && widget.item.url != null) {
           _launchWebsite(context, widget.item.url!);
-        } 
-        // Otherwise navigate to the screen
-        else if (widget.item.screen != null) {
+        } else if (widget.item.screen != null) {
           Navigator.push(
-            context, 
-            MaterialPageRoute(builder: (context) => widget.item.screen!)
+            context,
+            MaterialPageRoute(builder: (context) => widget.item.screen!),
           );
         }
       },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        transform: _pressed ? (Matrix4.identity()..scale(0.94)) : Matrix4.identity(),
+        transform: _pressed
+            ? (Matrix4.identity()..scale(0.94))
+            : Matrix4.identity(),
         decoration: BoxDecoration(
-          color: widget.item.bgLight.withOpacity(0.35),
+          color: widget.item.color,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: widget.item.bgLight.withOpacity(0.9),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Icon(widget.item.icon, color: widget.item.color, size: 24),
-            ),
-            const SizedBox(height: 10),
+            // No icon, just plain color card
+            const SizedBox(height: 4),
             Text(
               widget.item.title,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                fontSize: 11.5,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.black,
+                color: Colors.white,
                 height: 1.3,
               ),
             ),
@@ -1041,22 +986,16 @@ class _FeatureCardState extends State<_FeatureCard> {
 
   void _launchWebsite(BuildContext context, String url) async {
     try {
-      // Ensure the URL has a scheme
       String fullUrl = url;
       if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
         fullUrl = 'https://$fullUrl';
       }
-      
+
       final Uri uri = Uri.parse(fullUrl);
-      
-      // Check if the URL can be launched
       final bool canLaunch = await canLaunchUrl(uri);
-      
+
       if (canLaunch) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1080,69 +1019,19 @@ class _FeatureCardState extends State<_FeatureCard> {
   }
 }
 
-// DATA MODELS
-
+// Updated FeatureItem - removed icon property
 class FeatureItem {
-  final IconData icon;
   final String title;
   final Color color;
-  final Color bgLight;
   final Widget? screen;
   final bool isWebsite;
   final String? url;
 
   const FeatureItem({
-    required this.icon,
     required this.title,
     required this.color,
-    required this.bgLight,
     this.screen,
     this.isWebsite = false,
     this.url,
-  });
-}
-
-class ChatMessage {
-  final String text;
-  final String time;
-  final bool isUser;
-  const ChatMessage({required this.text, required this.time, required this.isUser});
-}
-
-class FeedPost {
-  final String author;
-  final String authorInitials;
-  final Color authorColor;
-  final bool isVerified;
-  final String location;
-  final String timeAgo;
-  final String dateTime;
-  final String category;
-  final IconData categoryIcon;
-  final Color categoryColor;
-  final Color imageGradientStart;
-  final Color imageGradientEnd;
-  final String title;
-  final String excerpt;
-  final int likes;
-  final int comments;
-
-  const FeedPost({
-    required this.author,
-    required this.authorInitials,
-    required this.authorColor,
-    required this.isVerified,
-    required this.location,
-    required this.timeAgo,
-    required this.dateTime,
-    required this.category,
-    required this.categoryIcon,
-    required this.categoryColor,
-    required this.imageGradientStart,
-    required this.imageGradientEnd,
-    required this.title,
-    required this.excerpt,
-    required this.likes,
-    required this.comments,
   });
 }
