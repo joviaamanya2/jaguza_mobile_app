@@ -73,6 +73,7 @@ class _MainShellState extends State<MainShell> {
     ExploreScreen(),
     AIChatTab(),
     SettingsScreen(),
+    ProfileTab(),
   ];
 
   void _switchTab(int index) {
@@ -227,18 +228,7 @@ class _MainShellState extends State<MainShell> {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const ProfileTab()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.person_outline_rounded,
-                    title: 'Manage Profile',
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ProfileTab()),
+                        MaterialPageRoute(builder: (_) => ProfileTab()),
                       );
                     },
                   ),
@@ -610,7 +600,7 @@ class _HomeTabState extends State<HomeTab> {
             icon: Icons.person_outline_rounded,
             onTap: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ProfileTab()),
+              MaterialPageRoute(builder: (_) => ProfileTab()),
             ),
             color: const Color(0xFF2E7D32),
           ),
@@ -999,7 +989,7 @@ class _FeatureCardState extends State<_FeatureCard> {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
+            SnackBar(
               content: Text('Could not open website. Please try again.'),
               backgroundColor: Colors.red,
             ),

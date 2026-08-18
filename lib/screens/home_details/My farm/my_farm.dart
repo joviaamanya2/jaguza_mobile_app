@@ -582,18 +582,28 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           const Divider(height: 1, color: Color(0xFFE8E8E8)),
 
           // Animal List
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            padding: EdgeInsets.zero,
-            itemCount: farm.animals.length,
-            separatorBuilder: (_, __) =>
-                const Divider(height: 1, color: Color(0xFFE8E8E8)),
-            itemBuilder: (context, index) {
-              final animal = farm.animals[index];
-              return _buildAnimalTile(animal);
-            },
-          ),
+          farm.animals.isEmpty
+              ? Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Center(
+                    child: Text(
+                      'No animals registered yet',
+                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                    ),
+                  ),
+                )
+              : ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  padding: EdgeInsets.zero,
+                  itemCount: farm.animals.length,
+                  separatorBuilder: (_, __) =>
+                      const Divider(height: 1, color: Color(0xFFE8E8E8)),
+                  itemBuilder: (context, index) {
+                    final animal = farm.animals[index];
+                    return _buildAnimalTile(animal);
+                  },
+                ),
         ],
       ),
     );
@@ -870,7 +880,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             DropdownButtonFormField<String>(
-              initialValue: selectedType,
+              value: selectedType,
               decoration: const InputDecoration(
                 labelText: 'Animal Type *',
                 border: OutlineInputBorder(),
@@ -914,32 +924,65 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               if (countController.text.isNotEmpty) {
                 final count = int.tryParse(countController.text) ?? 0;
                 if (count > 0) {
-                  setState(() {
+                  try {
+                    // Create animals in the backend
                     final farm = _farms[_selectedFarmIndex];
-                    final existing = farm.animals.firstWhere(
-                      (a) => a.name == selectedType,
-                      orElse: () => AnimalCategory(selectedType, 0, ''),
-                    );
+                    final farmId = int.tryParse(farm.id);
 
-                    if (existing.name.isNotEmpty) {
-                      // Update existing category
-                      existing.count += count;
-                    } else {
-                      // Add new category
-                      farm.animals.add(AnimalCategory(selectedType, count, ''));
+                    if (farmId != null) {
+                      // Create animal record in backend for each count
+                      for (int i = 0; i < count; i++) {
+                        await ApiService().createAnimal({
+                          'identification_number':
+                              '${selectedType.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}_$i',
+                          'type': selectedType,
+                          'breed': 'Unknown',
+                          'gender': 'Unknown',
+                          'age': 0,
+                          'health_status': 'healthy',
+                          'farm_id': farmId,
+                        });
+                      }
                     }
-                  });
 
-                  await _saveFarms();
-                  if (!mounted) return;
-                  Navigator.pop(context);
+                    setState(() {
+                      final farm = _farms[_selectedFarmIndex];
+                      final existing = farm.animals.firstWhere(
+                        (a) => a.name == selectedType,
+                        orElse: () => AnimalCategory(selectedType, 0, ''),
+                      );
 
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Animals added successfully'),
-                      backgroundColor: Color(0xFF2E7D32),
-                    ),
-                  );
+                      if (existing.name.isNotEmpty) {
+                        // Update existing category
+                        existing.count += count;
+                      } else {
+                        // Add new category
+                        farm.animals.add(
+                          AnimalCategory(selectedType, count, ''),
+                        );
+                      }
+                    });
+
+                    if (!mounted) return;
+                    Navigator.pop(context);
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Animals added successfully and registered in dashboard!',
+                        ),
+                        backgroundColor: Color(0xFF2E7D32),
+                      ),
+                    );
+                  } catch (e) {
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Failed to add animals: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
                 }
               }
             },
@@ -954,6 +997,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
     );
   }
 
+  // FIXED: Removed duplicate code and extra closing brackets
   void _showAddWorkerDialog(BuildContext context) {
     final nameController = TextEditingController();
     final roleController = TextEditingController();
@@ -1027,26 +1071,50 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               if (nameController.text.isNotEmpty &&
                   roleController.text.isNotEmpty &&
                   phoneController.text.isNotEmpty) {
-                setState(() {
-                  _farms[_selectedFarmIndex].workers.add(
-                    Worker(
-                      nameController.text,
-                      roleController.text,
-                      phoneController.text,
+                try {
+                  // Create worker in the backend
+                  final farm = _farms[_selectedFarmIndex];
+                  final farmId = int.tryParse(farm.id);
+
+                  if (farmId != null) {
+                    await ApiService().createWorker({
+                      'farm_id': farmId,
+                      'name': nameController.text,
+                      'role': roleController.text,
+                      'phone': phoneController.text,
+                    });
+                  }
+
+                  setState(() {
+                    _farms[_selectedFarmIndex].workers.add(
+                      Worker(
+                        nameController.text,
+                        roleController.text,
+                        phoneController.text,
+                      ),
+                    );
+                  });
+
+                  if (!mounted) return;
+                  Navigator.pop(context);
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Worker added successfully and registered in dashboard!',
+                      ),
+                      backgroundColor: Color(0xFF2E7D32),
                     ),
                   );
-                });
-
-                await _saveFarms();
-                if (!mounted) return;
-                Navigator.pop(context);
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Worker added successfully'),
-                    backgroundColor: Color(0xFF2E7D32),
-                  ),
-                );
+                } catch (e) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to add worker: $e'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             style: ElevatedButton.styleFrom(
@@ -1514,7 +1582,10 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
     );
 
     try {
-      final response = await ApiService().createFarm(newFarm.toApiPayload());
+      final response = await ApiService().createFarm(
+        newFarm.toApiPayload(),
+        imageFile: _farmImage,
+      );
       final createdFarm = response is Map
           ? Farm.fromJson(Map<String, dynamic>.from(response))
           : newFarm;
@@ -1525,7 +1596,9 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Farm created successfully!'),
+          content: Text(
+            'Farm created successfully and registered in dashboard!',
+          ),
           backgroundColor: Color(0xFF2E7D32),
         ),
       );
@@ -1593,15 +1666,9 @@ class Farm {
           '',
       size: json['size'] ?? '',
       owner: json['owner_name'] ?? json['farm_owner'] ?? json['owner'] ?? '',
-      animals: (json['animals'] as List<dynamic>? ?? [])
-          .map(
-            (animal) => AnimalCategory(
-              animal['name'] ?? '',
-              int.tryParse(animal['count'].toString()) ?? 0,
-              animal['imagePath'] ?? '',
-            ),
-          )
-          .toList(),
+      animals: Farm._groupAnimalsByType(
+        json['animals'] as List<dynamic>? ?? [],
+      ),
       workers: (json['workers'] as List<dynamic>? ?? [])
           .map(
             (worker) => Worker(
@@ -1622,6 +1689,30 @@ class Farm {
           json['image_url'] ??
           json['image_path'],
     );
+  }
+
+  static List<AnimalCategory> _groupAnimalsByType(List<dynamic> animals) {
+    final Map<String, int> groupedAnimals = {};
+
+    for (final animal in animals) {
+      if (animal is Map) {
+        // Handle both format: direct count field or individual animal records
+        if (animal['count'] != null) {
+          // Format: { name: 'Cattle', count: 5 }
+          final name = animal['name'] ?? animal['type'] ?? 'Unknown';
+          final count = int.tryParse(animal['count'].toString()) ?? 0;
+          groupedAnimals[name] = (groupedAnimals[name] ?? 0) + count;
+        } else if (animal['type'] != null) {
+          // Format: individual animal records from backend
+          final type = animal['type'] as String;
+          groupedAnimals[type] = (groupedAnimals[type] ?? 0) + 1;
+        }
+      }
+    }
+
+    return groupedAnimals.entries
+        .map((entry) => AnimalCategory(entry.key, entry.value, ''))
+        .toList();
   }
 
   Map<String, dynamic> toApiPayload() {

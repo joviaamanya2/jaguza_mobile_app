@@ -135,7 +135,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           Row(
             children: [
               _headerIcon(Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +149,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
                       ),
                     ),
                     const SizedBox(height: 2),
-                    const Text(
+                       Text(
                       'Veterinary Doctors',
                       style: TextStyle(
                         color: Colors.white,
