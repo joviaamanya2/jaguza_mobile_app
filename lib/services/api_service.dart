@@ -147,7 +147,7 @@ class ApiService {
     }
   }
 
-  // Login to local server - THIS IS WHAT YOU NEED TO USE
+  // Login to local server
   Future<Map<String, dynamic>> loginLocal(String email, String password) async {
     try {
       print('🔧 Logging in to LOCAL server: ${_localApi}login');
@@ -164,7 +164,6 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          // Extract token - handle different response formats
           String token =
               data['data']['token'] ??
               data['data']['access_token'] ??
@@ -175,7 +174,6 @@ class ApiService {
             return {'success': false, 'error': 'No token received from server'};
           }
 
-          // Save token with local mode flag
           await saveLocalTokens(
             token,
             data['data']['refresh_token'] ??
@@ -283,7 +281,6 @@ class ApiService {
       print('📥 GET Response Status: ${response.statusCode}');
 
       if (response.statusCode == 401) {
-        // Token is invalid for this server
         if (_isLocalMode) {
           await clearTokens();
           throw Exception(
@@ -473,6 +470,103 @@ class ApiService {
 
   // ========== MULTIPART FILE UPLOAD ==========
 
+  Future<dynamic> postMultipart(
+    String endpoint,
+    Map<String, dynamic> data,
+    File? file,
+  ) async {
+    await loadTokens();
+
+    String token = _getToken() ?? '';
+    String baseUrlToUse = _getBaseUrl();
+    String fullUrl = '$baseUrlToUse$endpoint';
+
+    print('📡 POST (Multipart) Request: $fullUrl');
+    print('📍 Mode: ${_isLocalMode ? "LOCAL" : "PRODUCTION"}');
+    print('🔑 Token exists: ${token.isNotEmpty}');
+    print('📦 Data: $data');
+    print('📁 File: ${file?.path}');
+
+    if (token.isEmpty) {
+      throw Exception(
+        'Not authenticated. Please login to ${_isLocalMode ? "local" : "production"} server first.',
+      );
+    }
+
+    try {
+      var request = http.MultipartRequest('POST', Uri.parse(fullUrl));
+
+      // Add authorization header
+      request.headers['Authorization'] = 'Bearer $token';
+      request.headers['Accept'] = 'application/json';
+
+      // Add all form fields
+      data.forEach((key, value) {
+        if (value != null) {
+          if (value is List) {
+            for (int i = 0; i < value.length; i++) {
+              request.fields['$key[$i]'] = value[i].toString();
+            }
+          } else {
+            request.fields[key] = value.toString();
+          }
+        }
+      });
+
+      // Add file if provided
+      if (file != null && file.existsSync()) {
+        request.files.add(
+          await http.MultipartFile.fromPath('image', file.path),
+        );
+      }
+
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      print('📥 POST (Multipart) Response Status: ${response.statusCode}');
+      print('📥 POST (Multipart) Response Body: $responseBody');
+
+      if (response.statusCode == 401) {
+        if (_isLocalMode) {
+          await clearTokens();
+          throw Exception(
+            'Local session expired. Please login to local server again.',
+          );
+        } else {
+          await clearTokens();
+          throw Exception('Production session expired. Please login again.');
+        }
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final result = json.decode(responseBody);
+        return result['data'] ?? result;
+      } else {
+        try {
+          final error = json.decode(responseBody);
+          if (response.statusCode == 422) {
+            String errorMessage = 'Validation failed: ';
+            if (error['errors'] != null) {
+              final errors = error['errors'] as Map<String, dynamic>;
+              errorMessage += errors.values.map((e) => e.join(', ')).join('; ');
+            } else if (error['message'] != null) {
+              errorMessage = error['message'];
+            }
+            throw Exception(errorMessage);
+          }
+          throw Exception(error['message'] ?? 'Request failed');
+        } catch (e) {
+          throw Exception(
+            'Upload failed: ${response.statusCode} - $responseBody',
+          );
+        }
+      }
+    } catch (e) {
+      print('❌ POST (Multipart) Error: $e');
+      rethrow;
+    }
+  }
+
   Future<dynamic> postWithFile(
     String endpoint,
     Map<String, dynamic> data,
@@ -508,7 +602,6 @@ class ApiService {
       data.forEach((key, value) {
         if (value != null) {
           if (value is List) {
-            // Handle list fields (like facilities) - add each item with index
             for (int i = 0; i < value.length; i++) {
               request.fields['$key[$i]'] = value[i].toString();
             }
@@ -591,8 +684,20 @@ class ApiService {
     return response['data'] ?? [];
   }
 
-  Future<Map<String, dynamic>> createAnimal(Map<String, dynamic> data) async {
-    return await post('animals', data);
+  // SINGLE createAnimal method - FIXED
+  Future<dynamic> createAnimal(Map<String, dynamic> data) async {
+    try {
+      // Normalize type to lowercase for backend compatibility
+      if (data.containsKey('type')) {
+        data['type'] = data['type'].toString().toLowerCase();
+      }
+      
+      final response = await post('animals', data);
+      return response;
+    } catch (e) {
+      print('❌ Failed to create animal: $e');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> updateAnimal(
@@ -664,14 +769,19 @@ class ApiService {
     return response['data'] ?? [];
   }
 
-  Future<Map<String, dynamic>> createFarm(
+  Future<dynamic> createFarm(
     Map<String, dynamic> data, {
     File? imageFile,
   }) async {
-    if (imageFile != null && imageFile.existsSync()) {
-      return await postWithFile('farms', data, 'image', imageFile);
-    } else {
-      return await post('farms', data);
+    try {
+      if (imageFile != null && imageFile.existsSync()) {
+        return await postWithFile('farms', data, 'image', imageFile);
+      } else {
+        return await post('farms', data);
+      }
+    } catch (e) {
+      print('❌ Failed to create farm: $e');
+      rethrow;
     }
   }
 
@@ -704,8 +814,15 @@ class ApiService {
     return response is List ? response : response['data'] ?? [];
   }
 
-  Future<Map<String, dynamic>> createWorker(Map<String, dynamic> data) async {
-    return await post('workers', data);
+  // SINGLE createWorker method - FIXED
+  Future<dynamic> createWorker(Map<String, dynamic> data) async {
+    try {
+      final response = await post('workers', data);
+      return response;
+    } catch (e) {
+      print('❌ Failed to create worker: $e');
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> updateWorker(

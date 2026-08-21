@@ -252,6 +252,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ),
         actions: [
           Stack(
+            clipBehavior: Clip.none,
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart_outlined, size: 24),
@@ -259,8 +260,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               ),
               if (_cartItems.isNotEmpty)
                 Positioned(
-                  right: 4,
-                  top: 4,
+                  right: 8,
+                  top: 8,
                   child: Container(
                     width: 18,
                     height: 18,
@@ -460,7 +461,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 0.75,
+        childAspectRatio: 0.65,
       ),
       itemCount: products.length,
       itemBuilder: (context, index) => _buildProductCard(products[index]),
@@ -480,23 +481,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         mainAxisSize: MainAxisSize.min,
         children: [
           // Product Image
-          Stack(
-            children: [
-              Container(
-                height: 120,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2E7D32).withOpacity(0.06),
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: product.imageFile != null
+          Container(
+            height: 100,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E7D32).withOpacity(0.06),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+            ),
+            child: Stack(
+              children: [
+                product.imageFile != null
                     ? ClipRRect(
                         borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
                         child: Image.file(
                           product.imageFile!,
                           fit: BoxFit.cover,
                           width: double.infinity,
-                          height: 120,
+                          height: 100,
                         ),
                       )
                     : product.imageUrl != null
@@ -506,12 +507,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                               product.imageUrl!,
                               fit: BoxFit.cover,
                               width: double.infinity,
-                              height: 120,
+                              height: 100,
                               errorBuilder: (context, error, stackTrace) {
                                 return Center(
                                   child: Icon(
                                     _getProductIcon(product.category),
-                                    size: 48,
+                                    size: 40,
                                     color: const Color(0xFF2E7D32).withOpacity(0.3),
                                   ),
                                 );
@@ -521,43 +522,43 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                         : Center(
                             child: Icon(
                               _getProductIcon(product.category),
-                              size: 48,
+                              size: 40,
                               color: const Color(0xFF2E7D32).withOpacity(0.3),
                             ),
                           ),
-              ),
-              // Available/Sold Badge at Top Right
-              Positioned(
-                top: 8,
-                right: 8,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: isAvailable ? Colors.green : Colors.red,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                // Available/Sold Badge at Top Right
+                Positioned(
+                  top: 6,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isAvailable ? Colors.green : Colors.red,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Text(
+                      isAvailable ? 'In Stock' : 'Sold',
+                      style: const TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
                       ),
-                    ],
-                  ),
-                  child: Text(
-                    isAvailable ? 'Available' : 'Sold',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white,
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
           
           Padding(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -565,53 +566,44 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 Text(
                   product.name,
                   style: const TextStyle(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                     color: Color(0xFF1A1F36),
                   ),
-                  maxLines: 2,
+                  maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 4),
-                // Fixed: Row with proper constraints
+                const SizedBox(height: 2),
+                // Location and Rating Row
                 Row(
                   children: [
+                    Icon(Icons.location_on_rounded, size: 10, color: Colors.grey[400]),
+                    const SizedBox(width: 2),
                     Expanded(
-                      child: Row(
-                        children: [
-                          Icon(Icons.location_on_rounded, size: 12, color: Colors.grey[400]),
-                          const SizedBox(width: 2),
-                          Expanded(
-                            child: Text(
-                              product.location,
-                              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                        ],
+                      child: Text(
+                        product.location,
+                        style: TextStyle(fontSize: 9, color: Colors.grey[500]),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.star_rounded, size: 12, color: Colors.amber[600]),
-                        Text(
-                          product.rating.toString(),
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Colors.grey[700]),
-                        ),
-                      ],
+                    Icon(Icons.star_rounded, size: 10, color: Colors.amber[600]),
+                    Text(
+                      product.rating.toString(),
+                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Colors.grey[700]),
                     ),
                   ],
                 ),
-                const SizedBox(height: 6),
-                // Fixed: Row with proper constraints
+                const SizedBox(height: 4),
+                // Price Row
                 Row(
                   children: [
                     Flexible(
+                      flex: 2,
                       child: Text(
                         'UGX ${_formatPrice(product.price)}',
                         style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: 12,
                           fontWeight: FontWeight.w700,
                           color: Color(0xFF2E7D32),
                         ),
@@ -620,33 +612,33 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ),
                     const SizedBox(width: 4),
                     Flexible(
+                      flex: 1,
                       child: Text(
                         product.unit,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: 8,
                           color: Colors.grey[500],
                         ),
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const Spacer(),
                   ],
                 ),
-                const SizedBox(height: 6),
-                // Fixed: Row with proper constraints
+                const SizedBox(height: 4),
+                // Stock and Cart Row
                 Row(
                   children: [
                     Flexible(
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
                           color: product.inStock > 0 ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
+                          borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
                           product.inStock > 0 ? '${product.inStock} in stock' : 'Out of stock',
                           style: TextStyle(
-                            fontSize: 9,
+                            fontSize: 8,
                             fontWeight: FontWeight.w600,
                             color: product.inStock > 0 ? Colors.green[700] : Colors.red[700],
                           ),
@@ -654,14 +646,20 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       ),
                     ),
                     const Spacer(),
-                    IconButton(
-                      onPressed: product.inStock > 0
-                          ? () => _addToCart(product)
-                          : null,
-                      icon: const Icon(Icons.shopping_cart_outlined, size: 18),
-                      color: const Color(0xFF2E7D32),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: product.inStock > 0 ? const Color(0xFF2E7D32) : Colors.grey[300],
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: IconButton(
+                        onPressed: product.inStock > 0
+                            ? () => _addToCart(product)
+                            : null,
+                        icon: const Icon(Icons.shopping_cart_outlined, size: 14),
+                        color: Colors.white,
+                        padding: const EdgeInsets.all(4),
+                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      ),
                     ),
                   ],
                 ),
