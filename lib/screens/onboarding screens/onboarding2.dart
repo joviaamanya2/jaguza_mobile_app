@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../auth_screens/login_screen.dart';
+import '../../services/app_localizations.dart';
 
 class OnboardingScreen2 extends StatefulWidget {
   const OnboardingScreen2({super.key});
@@ -49,8 +50,8 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 500),
@@ -80,10 +81,10 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
-                          'Skip',
+                        child: Text(
+                          context.tr('Skip'),
                           style: TextStyle(
-                            color: Color(0xFF2E7D32),
+                            color: scheme.primary,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -95,73 +96,50 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
 
                 const Spacer(flex: 2),
 
-                // Illustration icon card - Animal being treated (SHADOW REMOVED)
+                // Custom Image Container
                 Container(
                   width: 200,
                   height: 200,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F8E9),
+                    color: scheme.primaryContainer,
                     borderRadius: BorderRadius.circular(40),
-                    // boxShadow removed
                   ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      // Animal body (cow/animal silhouette)
-                      const Icon(
-                        Icons.pets_rounded,
-                        size: 70,
-                        color: Color(0xFF2E7D32),
-                      ),
-                      // Stethoscope or treatment icon overlay (SHADOW REMOVED)
-                      Positioned(
-                        bottom: 35,
-                        right: 35,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2E7D32),
-                            shape: BoxShape.circle,
-                            // boxShadow removed
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(40),
+                    child: Image.asset(
+                      'lib/assets/images/image.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        // Fallback if image doesn't load
+                        return Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.pets_rounded,
+                                size: 70,
+                                color: scheme.primary,
+                              ),
+                              const SizedBox(height: 8),
+
+                            ],
                           ),
-                          child: const Icon(
-                            Icons.medical_services_rounded,
-                            color: Colors.white,
-                            size: 24,
-                          ),
-                        ),
-                      ),
-                      // Small cross or pulse indicator
-                      Positioned(
-                        top: 30,
-                        right: 30,
-                        child: Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2E7D32).withOpacity(0.1),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.favorite_rounded,
-                            color: Color(0xFF2E7D32),
-                            size: 14,
-                          ),
-                        ),
-                      ),
-                    ],
+                        );
+                      },
+                    ),
                   ),
                 ),
 
                 const SizedBox(height: 48),
 
                 // Title
-                const Text(
-                  'Monitor Animal Health',
+                Text(
+                  context.tr('Monitor Animal Health'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 27,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A1A),
+                    color: scheme.onSurface,
                     height: 1.2,
                   ),
                 ),
@@ -169,12 +147,12 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
                 const SizedBox(height: 14),
 
                 // Subtitle
-                const Text(
-                  'Catch health issues early with alerts and\nvitals tracking for every animal.',
+                Text(
+                  context.tr('Catch health issues early with alerts and\nvitals tracking for every animal.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Color(0xFF888888),
+                    color: scheme.onSurfaceVariant,
                     height: 1.6,
                   ),
                 ),
@@ -192,15 +170,15 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
                             horizontal: 4, vertical: 8),
                         minimumSize: Size.zero,
                       ),
-                      icon: const Icon(
+                      icon: Icon(
                         Icons.arrow_back_ios_rounded,
                         size: 16,
-                        color: Color(0xFFAAAAAA),
+                        color: scheme.onSurfaceVariant,
                       ),
-                      label: const Text(
-                        'Back',
+                      label: Text(
+                        context.tr('Back'),
                         style: TextStyle(
-                          color: Color(0xFFAAAAAA),
+                          color: scheme.onSurfaceVariant,
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                         ),
@@ -209,7 +187,7 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
 
                     const Spacer(),
 
-                    // Get Started button (SHADOW REMOVED)
+                    // Get Started button
                     GestureDetector(
                       onTapDown: (_) => _btnController.reverse(),
                       onTapUp: (_) {
@@ -224,12 +202,11 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
                           height: 54,
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(16),
-                            color: const Color(0xFF2E7D32),
-                            // boxShadow removed
+                            color: scheme.primary,
                           ),
-                          child: const Center(
+                            child: Center(
                             child: Text(
-                              'Get Started',
+                              context.tr('Get Started'),
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 15,
@@ -254,12 +231,13 @@ class _OnboardingScreen2State extends State<OnboardingScreen2>
   }
 
   Widget _buildDot(bool isActive) {
+    final scheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       width: isActive ? 28 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFF2E7D32) : const Color(0xFFDDE8E3),
+        color: isActive ? scheme.primary : scheme.outlineVariant,
         borderRadius: BorderRadius.circular(4),
       ),
     );

@@ -1,61 +1,56 @@
 class User {
   final int id;
-  final String username;
+  final String name;
   final String email;
-  final String firstName;
-  final String lastName;
-  final String? fullName;
-  final String? phoneNumber;
   final String role;
+  final String? phoneNumber;
   final String? farmName;
   final String? profileImage;
   final bool isVerified;
-  final DateTime dateJoined;
-  
+  final bool isActive;
+  final DateTime? createdAt;
+
   User({
     required this.id,
-    required this.username,
+    required this.name,
     required this.email,
-    required this.firstName,
-    required this.lastName,
-    this.fullName,
-    this.phoneNumber,
     required this.role,
+    this.phoneNumber,
     this.farmName,
     this.profileImage,
     required this.isVerified,
-    required this.dateJoined,
+    required this.isActive,
+    this.createdAt,
   });
-  
+
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id'],
-      username: json['username'],
-      email: json['email'],
-      firstName: json['first_name'] ?? '',
-      lastName: json['last_name'] ?? '',
-      fullName: json['full_name'],
-      phoneNumber: json['phone_number'],
+      id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}') ?? 0,
+      name: json['name'] ?? '',
+      email: json['email'] ?? '',
       role: json['role'] ?? 'farmer',
+      phoneNumber: json['phone_number'],
       farmName: json['farm_name'],
       profileImage: json['profile_image'],
       isVerified: json['is_verified'] ?? false,
-      dateJoined: DateTime.parse(json['date_joined']),
+      isActive: json['is_active'] ?? true,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'username': username,
+      'name': name,
       'email': email,
-      'first_name': firstName,
-      'last_name': lastName,
-      'phone_number': phoneNumber,
       'role': role,
+      'phone_number': phoneNumber,
       'farm_name': farmName,
       'profile_image': profileImage,
       'is_verified': isVerified,
+      'is_active': isActive,
     };
   }
 }

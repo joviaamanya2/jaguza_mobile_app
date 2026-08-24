@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:jaguza_app/services/api_service.dart';
 
 class DiagnosisScreen extends StatefulWidget {
   const DiagnosisScreen({super.key});
@@ -10,10 +11,11 @@ class DiagnosisScreen extends StatefulWidget {
 
 class _DiagnosisScreenState extends State<DiagnosisScreen> {
   final _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
+  final TextEditingController _customSymptomsController = TextEditingController();
   
   String _selectedAnimalType = 'Cattle';
   String _selectedPrimarySymptom = 'Fever';
-  String _selectedOtherSymptoms = 'Select additional symptoms';
   bool _isAnalyzing = false;
   bool _showResults = false;
   
@@ -27,12 +29,6 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     'Fever', 'Loss of Appetite', 'Diarrhea', 'Coughing', 'Lethargy',
     'Weight Loss', 'Skin Lesions', 'Difficulty Breathing', 'Swelling',
     'Discharge', 'Vomiting', 'Lameness'
-  ];
-
-  final List<String> _otherSymptoms = [
-    'Fever', 'Loss of Appetite', 'Diarrhea', 'Coughing', 'Lethargy',
-    'Weight Loss', 'Skin Lesions', 'Difficulty Breathing', 'Swelling',
-    'Discharge', 'Vomiting', 'Lameness', 'Abortion', 'Sudden Death'
   ];
 
   final List<Map<String, dynamic>> _possibleDiseases = [
@@ -139,19 +135,22 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   };
 
   @override
+  void dispose() {
+    _customSymptomsController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
         title: const Text(
           'Disease Diagnosis',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
           ),
         ),
         leading: IconButton(
@@ -217,18 +216,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
               
               const SizedBox(height: 14),
               
-              _buildDropdownField(
-                label: 'Other Symptoms',
-                hint: 'Select additional symptoms observed',
-                value: _selectedOtherSymptoms == 'Select additional symptoms' ? null : _selectedOtherSymptoms,
-                items: _otherSymptoms,
-                icon: Icons.list_alt_rounded,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedOtherSymptoms = value ?? 'Select additional symptoms';
-                  });
-                },
-              ),
+              _buildCustomSymptomsField(),
               
               const SizedBox(height: 24),
               
@@ -237,25 +225,25 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                 child: ElevatedButton(
                   onPressed: _isAnalyzing ? null : _analyzeSymptoms,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
+                    backgroundColor: scheme.primary,
+                    foregroundColor: scheme.onPrimary,
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
-                    disabledBackgroundColor: Colors.grey[300],
+                    disabledBackgroundColor: scheme.surfaceContainerHighest,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       if (_isAnalyzing) ...[
-                        const SizedBox(
+                        SizedBox(
                           width: 20,
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            color: Colors.white,
+                            color: scheme.onPrimary,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -291,23 +279,24 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   }
 
   Widget _buildSectionHeader(String title) {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           width: 3,
           height: 18,
           decoration: BoxDecoration(
-            color: const Color(0xFF2E7D32),
+            color: scheme.primary,
             borderRadius: BorderRadius.circular(2),
           ),
         ),
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
           ),
         ),
       ],
@@ -323,22 +312,34 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     required ValueChanged<String?> onChanged,
     String? Function(String?)? validator,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
-      ),
-      child: DropdownButtonFormField<String>(
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: scheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            color: scheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: scheme.outlineVariant),
+          ),
+          child: DropdownButtonFormField<String>(
         value: value,
         hint: Text(
           hint,
-          style: TextStyle(color: Colors.grey[400], fontSize: 13),
+          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
         ),
         decoration: InputDecoration(
-          labelText: label,
           prefixIcon: icon != null
-              ? Icon(icon, size: 20, color: Colors.grey[500])
+              ? Icon(icon, size: 20, color: scheme.onSurfaceVariant)
               : null,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -354,14 +355,14 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1),
+            borderSide: BorderSide(color: scheme.error, width: 1),
           ),
           focusedErrorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.red, width: 1.5),
+            borderSide: BorderSide(color: scheme.error, width: 1.5),
           ),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: scheme.surface,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
             vertical: 14,
@@ -372,8 +373,8 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
             value: item,
             child: Text(
               item,
-              style: const TextStyle(
-                color: Color(0xFF1A1F36),
+              style: TextStyle(
+                color: scheme.onSurface,
                 fontSize: 14,
               ),
             ),
@@ -382,41 +383,76 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
         onChanged: onChanged,
         validator: validator,
         isExpanded: true,
-        icon: Icon(Icons.arrow_drop_down_rounded, color: Colors.grey[500]),
-        dropdownColor: Colors.white,
-        style: const TextStyle(color: Color(0xFF1A1F36), fontSize: 14),
+        icon: Icon(Icons.arrow_drop_down_rounded, color: scheme.onSurfaceVariant),
+        dropdownColor: scheme.surface,
+        style: TextStyle(color: scheme.onSurface, fontSize: 14),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCustomSymptomsField() {
+    final scheme = Theme.of(context).colorScheme;
+    return TextFormField(
+      controller: _customSymptomsController,
+      minLines: 2,
+      maxLines: 4,
+      textCapitalization: TextCapitalization.sentences,
+      decoration: InputDecoration(
+        labelText: 'Describe other symptoms (optional)',
+        hintText: 'For example: nasal discharge, weakness, or unusual behavior',
+        hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+        prefixIcon: Icon(Icons.edit_note_rounded, color: scheme.onSurfaceVariant),
+        filled: true,
+        fillColor: scheme.surface,
+        alignLabelWithHint: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.outlineVariant),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
+        ),
       ),
     );
   }
 
   Widget _buildDiagnosisResults() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Color(0xFF2E7D32),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(14)),
+            decoration: BoxDecoration(
+              color: scheme.primary,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(14)),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.auto_awesome_rounded,
-                  color: Colors.white,
+                  color: scheme.onPrimary,
                   size: 20,
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Diagnosis Results',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: scheme.onPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                   ),
@@ -425,13 +461,13 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: scheme.onPrimary.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     '${_diagnosisResults!['matches'] ?? 0} matches',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: scheme.onPrimary,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                     ),
@@ -477,7 +513,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
             itemBuilder: (context, index) {
               final disease = _diagnosisResults!['diseases'][index];
               return GestureDetector(
-                onTap: () => _navigateToDiseaseDetail(disease['name']),
+                onTap: () => _navigateToDiseaseDetail(disease),
                 child: _buildDiseaseCard(disease),
               );
             },
@@ -490,7 +526,11 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   }
 
   Widget _buildDiseaseCard(Map<String, dynamic> disease) {
-    final match = disease['match'] as int;
+    final scheme = Theme.of(context).colorScheme;
+    final match = (disease['match'] as num?)?.round() ?? 0;
+    final diseaseColor = disease['color'] is Color
+        ? disease['color'] as Color
+        : _colorForSeverity(disease['severity']?.toString());
     Color matchColor;
     if (match >= 75) {
       matchColor = Colors.red;
@@ -502,9 +542,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       padding: const EdgeInsets.all(12),
       child: Column(
@@ -516,7 +556,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                 width: 3,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: disease['color'] as Color,
+                  color: diseaseColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -530,17 +570,17 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         Expanded(
                           child: Text(
                             disease['name'],
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 14,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1F36),
+                              color: scheme.onSurface,
                             ),
                           ),
                         ),
                         Icon(
                           Icons.chevron_right_rounded,
                           size: 18,
-                          color: Colors.grey[400],
+                          color: scheme.onSurfaceVariant,
                         ),
                       ],
                     ),
@@ -549,7 +589,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                       disease['description'],
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: scheme.onSurfaceVariant,
                       ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
@@ -560,9 +600,9 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: matchColor.withOpacity(0.1),
+                  color: matchColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: matchColor.withOpacity(0.3)),
+                  border: Border.all(color: matchColor.withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   '$match%',
@@ -579,23 +619,23 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
           Container(
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: scheme.surface,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[200]!),
+              border: Border.all(color: scheme.outlineVariant),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
                   children: [
-                    Icon(Icons.medical_services_rounded, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.medical_services_rounded, size: 14, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 6),
                     Text(
                       'Treatment: ',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                     Expanded(
@@ -603,7 +643,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         disease['treatment'],
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey[600],
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ),
@@ -612,20 +652,20 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(Icons.warning_rounded, size: 14, color: Colors.grey[600]),
+                    Icon(Icons.warning_rounded, size: 14, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 6),
                     Text(
                       'Severity: ',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: Colors.grey[700],
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                       decoration: BoxDecoration(
-                        color: disease['color'].withOpacity(0.1),
+                        color: diseaseColor.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -633,7 +673,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w600,
-                          color: disease['color'],
+                        color: diseaseColor,
                         ),
                       ),
                     ),
@@ -647,78 +687,72 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     );
   }
 
-  void _navigateToDiseaseDetail(String diseaseName) {
-    final details = _diseaseDetails[diseaseName];
-    if (details != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DiseaseDetailScreen(
-            diseaseName: diseaseName,
-            details: details,
-          ),
-        ),
-      );
+  Color _colorForSeverity(String? severity) {
+    switch (severity?.toLowerCase()) {
+      case 'critical':
+      case 'high':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      default:
+        return Colors.blueGrey;
     }
   }
 
-  void _analyzeSymptoms() {
-    if (_formKey.currentState!.validate()) {
-      setState(() {
-        _isAnalyzing = true;
-        _showResults = false;
-      });
+  void _navigateToDiseaseDetail(Map<String, dynamic> disease) {
+    final diseaseName = disease['name']?.toString() ?? 'Disease';
+    final details = <String, dynamic>{
+      ...?_diseaseDetails[diseaseName],
+      'description': disease['description'] ?? disease['symptoms'] ?? '',
+      'symptoms': disease['symptoms'] ?? '',
+      'prevention': disease['prevention'] ?? 'Consult a veterinarian.',
+      'treatment': disease['treatment'] ?? 'Consult a veterinarian.',
+    };
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DiseaseDetailScreen(
+          diseaseName: diseaseName,
+          details: details,
+        ),
+      ),
+    );
+  }
 
-      Future.delayed(const Duration(seconds: 2), () {
-        final List<Map<String, dynamic>> results = [];
-        final primarySymptom = _selectedPrimarySymptom.toLowerCase();
-        
-        var sortedDiseases = List<Map<String, dynamic>>.from(_possibleDiseases);
-        sortedDiseases.sort((a, b) {
-          int aMatches = 0;
-          int bMatches = 0;
-          
-          if (a['name'].toLowerCase().contains(primarySymptom) || 
-              a['description'].toLowerCase().contains(primarySymptom)) {
-            aMatches += 15;
-          }
-          if (b['name'].toLowerCase().contains(primarySymptom) || 
-              b['description'].toLowerCase().contains(primarySymptom)) {
-            bMatches += 15;
-          }
-          
-          int aScore = a['match'] + aMatches;
-          int bScore = b['match'] + bMatches;
-          
-          aScore = aScore > 100 ? 100 : aScore;
-          bScore = bScore > 100 ? 100 : bScore;
-          
-          a['match'] = aScore;
-          b['match'] = bScore;
-          
-          return bScore.compareTo(aScore);
-        });
-        
-        results.addAll(sortedDiseases.take(3));
-        
-        setState(() {
-          _isAnalyzing = false;
-          _showResults = true;
-          _diagnosisResults = {
-            'diseases': results,
-            'matches': results.length,
-          };
-        });
-        
-        // Auto-scroll to results after a short delay
-        Future.delayed(const Duration(milliseconds: 300), () {
-          Scrollable.ensureVisible(
-            context,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        });
+  Future<void> _analyzeSymptoms() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isAnalyzing = true;
+      _showResults = false;
+    });
+
+    final symptoms = <String>[
+      _selectedPrimarySymptom,
+      if (_customSymptomsController.text.trim().isNotEmpty)
+        _customSymptomsController.text.trim(),
+    ];
+
+    try {
+      final results = await _apiService.diagnoseSymptoms(
+        animalType: _selectedAnimalType,
+        symptoms: symptoms,
+      );
+      if (!mounted) return;
+      setState(() {
+        _isAnalyzing = false;
+        _showResults = true;
+        _diagnosisResults = results;
       });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _isAnalyzing = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not analyze symptoms: $error'),
+          backgroundColor: Colors.red[700],
+        ),
+      );
     }
   }
 }
@@ -738,11 +772,9 @@ class DiseaseDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1F36),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -753,7 +785,6 @@ class DiseaseDetailScreen extends StatelessWidget {
           style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
           ),
         ),
       ),
@@ -767,61 +798,65 @@ class DiseaseDetailScreen extends StatelessWidget {
                 children: [
                   // Description
                   _buildDetailSection(
+                    scheme,
                     'Description',
                     details['description'],
                     Icons.description_rounded,
-                    const Color(0xFF2E7D32),
+                    scheme.primary,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Symptoms
                   _buildDetailSection(
+                    scheme,
                     'Symptoms',
                     details['symptoms'],
                     Icons.medical_information_rounded,
                     Colors.red,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Prevention
                   _buildDetailSection(
+                    scheme,
                     'Prevention',
                     details['prevention'],
                     Icons.shield_rounded,
                     Colors.blue,
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Treatment
                   _buildDetailSection(
+                    scheme,
                     'Treatment',
                     details['treatment'],
                     Icons.medical_services_rounded,
-                    const Color(0xFF2E7D32),
+                    scheme.primary,
                   ),
-                  
+
                   const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
-          
+
           // Contact Banner at bottom
-          _buildContactBanner(),
+          _buildContactBanner(scheme),
         ],
       ),
     );
   }
 
-  Widget _buildDetailSection(String title, String content, IconData icon, Color color) {
+  Widget _buildDetailSection(ColorScheme scheme, String title, String content, IconData icon, Color color) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -829,10 +864,10 @@ class DiseaseDetailScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.05),
+              color: color.withValues(alpha: 0.05),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
               border: Border(
-                bottom: BorderSide(color: const Color(0xFFE8E8E8)),
+                bottom: BorderSide(color: scheme.outlineVariant),
               ),
             ),
             child: Row(
@@ -854,9 +889,9 @@ class DiseaseDetailScreen extends StatelessWidget {
             padding: const EdgeInsets.all(14),
             child: Text(
               content,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Color(0xFF424242),
+                color: scheme.onSurfaceVariant,
                 height: 1.6,
               ),
             ),
@@ -866,14 +901,14 @@ class DiseaseDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildContactBanner() {
+  Widget _buildContactBanner(ColorScheme scheme) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 12,
             offset: const Offset(0, -4),
           ),
@@ -888,12 +923,12 @@ class DiseaseDetailScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.1),
+                    color: scheme.primary.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.medical_services_rounded,
-                    color: Color(0xFF2E7D32),
+                    color: scheme.primary,
                     size: 20,
                   ),
                 ),
@@ -902,19 +937,19 @@ class DiseaseDetailScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'Need expert advice?',
                         style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A1F36),
+                          color: scheme.onSurface,
                         ),
                       ),
                       Text(
                         'Contact a veterinarian directly',
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey[500],
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -938,9 +973,9 @@ class DiseaseDetailScreen extends StatelessWidget {
                           size: 18,
                         ),
                         const SizedBox(width: 4),
-                        Text(
+                        const Text(
                           'Chat',
-                          style: const TextStyle(
+                          style: TextStyle(
                             color: Colors.white,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -957,21 +992,21 @@ class DiseaseDetailScreen extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32),
+                      color: scheme.primary,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.call_rounded,
-                          color: Colors.white,
+                          color: scheme.onPrimary,
                           size: 18,
                         ),
                         const SizedBox(width: 4),
                         Text(
                           'Call',
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: scheme.onPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),

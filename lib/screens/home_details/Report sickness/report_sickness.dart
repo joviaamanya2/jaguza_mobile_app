@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
-import 'package:permission_handler/permission_handler.dart';
 import '../../../services/api_service.dart';
 
 class ReportSicknessScreen extends StatefulWidget {
@@ -40,13 +39,12 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     'Sheep',
     'Pig',
     'Chicken',
-    'Rabbit',
+    'Ruminants',
     'Other'
   ];
   
   final List<String> _severityLevels = [
     'Mild',
-    'Moderate',
     'Severe',
   ];
   
@@ -81,18 +79,13 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     }
     
     try {
-      final PermissionStatus status = await Permission.photos.request();
-      if (status.isGranted) {
-        final List<XFile>? images = await _picker.pickMultiImage(
+      final List<XFile> images = await _picker.pickMultiImage(
           limit: maxImages - _images.length,
         );
-        if (images != null && images.isNotEmpty) {
-          setState(() {
-            _images.addAll(images);
-          });
-        }
-      } else {
-        _showSnackBar('Permission denied to access photos');
+      if (images.isNotEmpty) {
+        setState(() {
+          _images.addAll(images);
+        });
       }
     } catch (e) {
       _showSnackBar('Error picking images: $e');
@@ -106,18 +99,13 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     }
     
     try {
-      final PermissionStatus status = await Permission.camera.request();
-      if (status.isGranted) {
-        final XFile? video = await _picker.pickVideo(
+      final XFile? video = await _picker.pickVideo(
           source: ImageSource.gallery,
         );
-        if (video != null) {
-          setState(() {
-            _videos.add(video);
-          });
-        }
-      } else {
-        _showSnackBar('Permission denied to access camera');
+      if (video != null) {
+        setState(() {
+          _videos.add(video);
+        });
       }
     } catch (e) {
       _showSnackBar('Error picking video: $e');
@@ -126,19 +114,14 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
 
   Future<void> _pickAudio() async {
     try {
-      final PermissionStatus status = await Permission.microphone.request();
-      if (status.isGranted) {
-        FilePickerResult? result = await FilePicker.platform.pickFiles(
+      final FilePickerResult? result = await FilePicker.platform.pickFiles(
           type: FileType.audio,
           allowMultiple: false,
         );
-        if (result != null && result.files.single.path != null) {
-          setState(() {
-            _audioFile = XFile(result.files.single.path!);
-          });
-        }
-      } else {
-        _showSnackBar('Permission denied to access microphone');
+      if (result != null && result.files.single.path != null) {
+        setState(() {
+          _audioFile = XFile(result.files.single.path!);
+        });
       }
     } catch (e) {
       _showSnackBar('Error picking audio: $e');
@@ -167,7 +150,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: Theme.of(context).colorScheme.error,
       ),
     );
   }
@@ -195,12 +178,15 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
         'symptom_other': _otherSymptomsController.text.trim().isNotEmpty
             ? _otherSymptomsController.text.trim()
             : null,
-        // Fix: Use the selected severity directly without converting to lowercase
-        // or ensure it matches what the API expects
         'severity_level': _selectedSeverity,
       };
 
-      await _apiService.createReport(data);
+      await _apiService.createReportWithMedia(
+        data,
+        images: _images.map<File>((image) => File(image.path)).toList(),
+        videos: _videos.map<File>((video) => File(video.path)).toList(),
+        audio: _audioFile == null ? null : File(_audioFile!.path),
+      );
 
       // Reset form after successful submission
       setState(() {
@@ -227,30 +213,30 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   }
 
   void _showSuccessDialog() {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
         ),
-        title: const Row(
+        title: Row(
           children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 32),
-            SizedBox(width: 12),
+            Icon(Icons.check_circle, color: scheme.primary, size: 32),
+            const SizedBox(width: 12),
             Text(
               'Report Submitted',
               style: TextStyle(
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
                 fontWeight: FontWeight.bold,
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Your sickness report has been submitted successfully. A veterinary expert will review it and get back to you shortly.',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
@@ -259,9 +245,9 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
               // Navigate back to previous screen
               Navigator.pop(context);
             },
-            child: const Text(
+            child: Text(
               'Done',
-              style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold),
+              style: TextStyle(color: scheme.primary, fontWeight: FontWeight.bold),
             ),
           ),
         ],
@@ -271,21 +257,20 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        backgroundColor: Colors.white,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Report Sickness',
           style: TextStyle(
-            color: Color(0xFF1A1F36),
+            color: scheme.onPrimary,
             fontWeight: FontWeight.bold,
             fontSize: 20,
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_rounded, color: Color(0xFF1A1F36)),
+          icon: Icon(Icons.arrow_back_ios_rounded, color: scheme.onPrimary),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -386,8 +371,8 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
               child: ElevatedButton(
                 onPressed: _isSubmitting ? null : _submitReport,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
-                  foregroundColor: Colors.white,
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  foregroundColor: Theme.of(context).colorScheme.onPrimary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -427,43 +412,57 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     required void Function(String?) onChanged,
     required String? Function(String?) validator,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontWeight: FontWeight.w600,
             fontSize: 14,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.grey[300]!),
+        DropdownButtonFormField<String>(
+          value: value,
+          hint: Text(
+            hint,
+            style: TextStyle(color: scheme.onSurfaceVariant),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: DropdownButtonFormField<String>(
-            value: value,
-            hint: Text(
-              hint,
-              style: TextStyle(color: Colors.grey[400]),
+          isExpanded: true,
+          items: items.map((item) {
+            return DropdownMenuItem<String>(
+              value: item,
+              child: Text(item, overflow: TextOverflow.ellipsis),
+            );
+          }).toList(),
+          onChanged: onChanged,
+          validator: validator,
+          decoration: InputDecoration(
+            filled: true,
+            fillColor: Theme.of(context).cardColor,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: scheme.outlineVariant),
             ),
-            isExpanded: true,
-            items: items.map((item) {
-              return DropdownMenuItem<String>(
-                value: item,
-                child: Text(item),
-              );
-            }).toList(),
-            onChanged: onChanged,
-            validator: validator,
-            decoration: const InputDecoration(
-              border: InputBorder.none,
-              contentPadding: EdgeInsets.symmetric(horizontal: 8),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: scheme.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: scheme.primary, width: 1.5),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: scheme.error),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10),
+              borderSide: BorderSide(color: scheme.error, width: 1.5),
             ),
           ),
         ),
@@ -478,6 +477,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     int maxLines = 1,
     bool isRequired = false,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -485,18 +485,18 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
           children: [
             Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             if (isRequired) ...[
               const SizedBox(width: 4),
-              const Text(
+              Text(
                 '*',
                 style: TextStyle(
-                  color: Colors.red,
+                  color: scheme.error,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -509,20 +509,20 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
           maxLines: maxLines,
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey[400]),
+            hintStyle: TextStyle(color: scheme.onSurfaceVariant),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: Theme.of(context).cardColor,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide(color: scheme.outlineVariant),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: BorderSide(color: Colors.grey[300]!),
+              borderSide: BorderSide(color: scheme.outlineVariant),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
-              borderSide: const BorderSide(color: Color(0xFF2E7D32)),
+              borderSide: BorderSide(color: scheme.primary),
             ),
           ),
           validator: isRequired ? (value) {
@@ -537,22 +537,23 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   }
 
   Widget _buildMediaUploadSection() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Add Media (Optional)',
             style: TextStyle(
               fontWeight: FontWeight.w600,
               fontSize: 16,
-              color: Color(0xFF1A1F36),
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 4),
@@ -560,7 +561,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
             'Upload images, videos, or audio to help with diagnosis',
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: scheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 16),
@@ -587,6 +588,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   }
 
   Widget _buildImageSection() {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -595,10 +597,10 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
           children: [
             Text(
               'Images (${_images.length}/$maxImages)',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             if (_images.length < maxImages)
@@ -607,7 +609,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                 icon: const Icon(Icons.add_photo_alternate_rounded, size: 18),
                 label: const Text('Add Images'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: scheme.primary,
                 ),
               ),
           ],
@@ -642,7 +644,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                         onTap: () => _removeImage(index),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
+                            color: Colors.black.withValues(alpha: 0.6),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -663,6 +665,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   }
 
   Widget _buildVideoSection() {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -671,10 +674,10 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
           children: [
             Text(
               'Videos (${_videos.length}/$maxVideos)',
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             if (_videos.length < maxVideos)
@@ -683,7 +686,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                 icon: const Icon(Icons.video_library_rounded, size: 18),
                 label: const Text('Add Video'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: scheme.primary,
                 ),
               ),
           ],
@@ -704,15 +707,15 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                       width: 120,
                       height: 80,
                       decoration: BoxDecoration(
-                        color: Colors.grey[200],
+                        color: Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.play_circle_fill_rounded,
-                            color: Color(0xFF2E7D32),
+                            color: Theme.of(context).colorScheme.primary,
                             size: 32,
                           ),
                           const SizedBox(height: 4),
@@ -720,7 +723,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                             _videos[index].path.split('/').last,
                             style: TextStyle(
                               fontSize: 10,
-                              color: Colors.grey[600],
+                              color: Theme.of(context).colorScheme.onSurfaceVariant,
                             ),
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -734,7 +737,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                         onTap: () => _removeVideo(index),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.6),
+                            color: Colors.black.withValues(alpha: 0.6),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -755,18 +758,19 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   }
 
   Widget _buildAudioSection() {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text(
+            Text(
               'Audio Recording',
               style: TextStyle(
                 fontWeight: FontWeight.w500,
                 fontSize: 14,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             if (_audioFile == null)
@@ -775,7 +779,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                 icon: const Icon(Icons.audio_file_rounded, size: 18),
                 label: const Text('Add Audio'),
                 style: TextButton.styleFrom(
-                  foregroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: scheme.primary,
                 ),
               ),
           ],
@@ -785,14 +789,14 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.grey[100],
+              color: scheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.audio_file_rounded,
-                  color: Color(0xFF2E7D32),
+                  color: scheme.primary,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -801,16 +805,16 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
                     _audioFile!.path.split('/').last,
                     style: TextStyle(
                       fontSize: 13,
-                      color: Colors.grey[700],
+                      color: scheme.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 IconButton(
                   onPressed: _removeAudio,
-                  icon: const Icon(
+                  icon: Icon(
                     Icons.close_rounded,
-                    color: Colors.red,
+                    color: scheme.error,
                     size: 20,
                   ),
                   padding: EdgeInsets.zero,

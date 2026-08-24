@@ -5,18 +5,34 @@ class NaganaDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final headingStyle = TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w800,
+      color: scheme.onSurface,
+      height: 1.3,
+    );
+    final labelStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      color: scheme.primary,
+      letterSpacing: 1.2,
+    );
+    final bodyStyle = TextStyle(
+      fontSize: 15,
+      color: scheme.onSurfaceVariant,
+      height: 1.6,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Nagana',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.black87,
+            color: scheme.onPrimary,
           ),
         ),
         leading: IconButton(
@@ -35,167 +51,122 @@ class NaganaDetail extends StatelessWidget {
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(60),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.bedtime_rounded,
                   size: 60,
-                  color: Color(0xFF2E7D32),
+                  color: scheme.primary,
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Title
-            const Text(
-              'Nagana (Sleeping Sickness)',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-                height: 1.3,
-              ),
-            ),
-            
+            Text('Nagana (Sleeping Sickness)', style: headingStyle),
+
             const SizedBox(height: 24),
-            
+
             // Section Label
-            const Text(
-              'DESCRIPTION',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2E7D32),
-                letterSpacing: 1.2,
-              ),
-            ),
-            
+            Text('DESCRIPTION', style: labelStyle),
+
             const SizedBox(height: 12),
-            
+
             // Body Text
-            const Text(
+            Text(
               'Nagana, also known as animal trypanosomiasis, is a parasitic disease caused by protozoan parasites of the genus Trypanosoma. It primarily affects livestock and is a major constraint on agricultural production in sub-Saharan Africa.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 16),
-            
-            const Text(
+
+            Text(
               'The disease is transmitted biologically by the bite of the tsetse fly. Once injected into the animal\'s bloodstream, the parasites multiply and spread, leading to severe systemic damage.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 16),
-            
-            const Text(
+
+            Text(
               'Infected animals exhibit intermittent fever, severe anemia, progressive weight loss, and extreme lethargy—hence the name "sleeping sickness." If left untreated, the condition is usually fatal.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 32),
-            
-            // Simple plain info row without shadows
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.pets_rounded,
-                    color: Color(0xFF2E7D32),
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Most Common In',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Cattle, sheep, goats, and pigs',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+
+            // Simple plain info rows without shadows
+            _InfoRow(
+              scheme: scheme,
+              icon: Icons.pets_rounded,
+              label: 'Most Common In',
+              value: 'Cattle, sheep, goats, and pigs',
             ),
-            
+
             const SizedBox(height: 12),
-            
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.bug_report_rounded,
-                    color: Color(0xFF2E7D32),
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Transmitted By',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Tsetse fly (Glossina species)',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+
+            _InfoRow(
+              scheme: scheme,
+              icon: Icons.bug_report_rounded,
+              label: 'Transmitted By',
+              value: 'Tsetse fly (Glossina species)',
             ),
 
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final ColorScheme scheme;
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.scheme,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: scheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/services/api_service.dart';
 import 'package:jaguza_app/screens/home_details/Decision%20support/decison_support.dart';
@@ -19,41 +17,6 @@ import '../screens/home_details/Disease Information/disease_diagnosis.dart';
 import '../screens/home_details/Market place/market_place.dart';
 import '../screens/home_details/Settings/settings_screen.dart';
 import './home_details/advertisement.dart';
-
-void main() {
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-  );
-  runApp(const JaguzaApp());
-}
-
-class JaguzaApp extends StatelessWidget {
-  const JaguzaApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Jaguza',
-      theme: ThemeData(
-        primarySwatch: Colors.green,
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF133B24),
-        canvasColor: const Color(0xFF133B24),
-        cardColor: const Color(0xFF1E4E31),
-        colorScheme: ColorScheme.fromSeed(
-          brightness: Brightness.dark,
-          seedColor: const Color(0xFF2E7D32),
-          primary: const Color(0xFF2E7D32),
-          secondary: const Color(0xFF81C784),
-          surface: const Color(0xFF1E4E31),
-          background: const Color(0xFF133B24),
-        ),
-      ),
-      home: const MainShell(),
-    );
-  }
-}
 
 // NAVIGATION SHELL
 
@@ -93,6 +56,7 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _launchWebsite(String url) async {
+    final errorColor = Theme.of(context).colorScheme.error;
     try {
       String fullUrl = url;
       if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
@@ -107,9 +71,9 @@ class _MainShellState extends State<MainShell> {
       } else {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Could not open website. Please try again.'),
-              backgroundColor: Colors.red,
+            SnackBar(
+              content: const Text('Could not open website. Please try again.'),
+              backgroundColor: errorColor,
             ),
           );
         }
@@ -119,7 +83,7 @@ class _MainShellState extends State<MainShell> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: errorColor,
           ),
         );
       }
@@ -127,24 +91,26 @@ class _MainShellState extends State<MainShell> {
   }
 
   Widget _buildDrawer() {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Drawer(
-      backgroundColor: Colors.white,
+      backgroundColor: theme.cardColor,
       child: Column(
         children: [
           // Drawer Header - Solid Green
           Container(
             padding: const EdgeInsets.fromLTRB(24, 48, 24, 20),
             width: double.infinity,
-            color: const Color(0xFF2E7D32), // Solid color, no gradient
+            color: scheme.primary, // Solid color, no gradient
             child: Row(
               children: [
                 Container(
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
+                    color: Colors.white.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.white.withOpacity(0.3)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
                   ),
                   child: const Icon(
                     Icons.agriculture_rounded,
@@ -191,7 +157,7 @@ class _MainShellState extends State<MainShell> {
                       Navigator.pop(context);
                     },
                   ),
-                  const Divider(color: Colors.grey, height: 1),
+                  Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 1),
                   _buildDrawerItem(
                     icon: Icons.add_rounded,
                     title: 'Feed',
@@ -201,7 +167,7 @@ class _MainShellState extends State<MainShell> {
                   ),
                   _buildDrawerItem(
                     icon: Icons.help_outline_rounded,
-                    title: '? Vetenary Help',
+                    title: 'Veterinary Help',
                     onTap: () {
                       Navigator.pop(context);
                     },
@@ -220,7 +186,7 @@ class _MainShellState extends State<MainShell> {
                       Navigator.pop(context);
                     },
                   ),
-                  const Divider(color: Colors.grey, height: 16),
+                  Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 16),
                   _buildDrawerSection(
                     title: 'Account',
                     icon: Icons.account_circle_outlined,
@@ -232,7 +198,7 @@ class _MainShellState extends State<MainShell> {
                       );
                     },
                   ),
-                  const Divider(color: Colors.grey, height: 16),
+                  Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 16),
                   _buildDrawerSection(
                     title: 'Communicate',
                     icon: Icons.chat_outlined,
@@ -255,7 +221,7 @@ class _MainShellState extends State<MainShell> {
                       _showShareDialog(context);
                     },
                   ),
-                  const Divider(color: Colors.grey, height: 16),
+                  Divider(color: Theme.of(context).colorScheme.outlineVariant, height: 16),
                   _buildDrawerSection(
                     title: 'Others',
                     icon: Icons.more_horiz_rounded,
@@ -302,7 +268,7 @@ class _MainShellState extends State<MainShell> {
                   Center(
                     child: Text(
                       'Version 2.0.0',
-                      style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 11),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -320,17 +286,18 @@ class _MainShellState extends State<MainShell> {
     required IconData icon,
     required VoidCallback onTap,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFFF5F5F5),
+      color: scheme.surfaceContainerHighest,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Icon(icon, color: const Color(0xFF2E7D32), size: 18),
+          Icon(icon, color: scheme.primary, size: 18),
           const SizedBox(width: 12),
           Text(
             title,
-            style: const TextStyle(
-              color: Color(0xFF1A1F36),
+            style: TextStyle(
+              color: scheme.onSurface,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0.5,
@@ -346,54 +313,56 @@ class _MainShellState extends State<MainShell> {
     required String title,
     required VoidCallback onTap,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return ListTile(
-      leading: Icon(icon, color: Colors.grey[700], size: 20),
+      leading: Icon(icon, color: scheme.onSurfaceVariant, size: 20),
       title: Text(
         title,
-        style: const TextStyle(
-          color: Color(0xFF1A1F36),
+        style: TextStyle(
+          color: scheme.onSurface,
           fontSize: 13,
           fontWeight: FontWeight.w500,
         ),
       ),
-      trailing: const Icon(
+      trailing: Icon(
         Icons.chevron_right_rounded,
-        color: Color(0xFF2E7D32),
+        color: scheme.primary,
         size: 18,
       ),
       onTap: onTap,
       dense: true,
-      hoverColor: const Color(0xFF2E7D32).withOpacity(0.05),
-      splashColor: const Color(0xFF2E7D32).withOpacity(0.1),
+      hoverColor: scheme.primary.withValues(alpha: 0.05),
+      splashColor: scheme.primary.withValues(alpha: 0.1),
     );
   }
 
   void _showLogoutDialog(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
           'Logout',
           style: TextStyle(
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to logout?',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text('Cancel', style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red[700]),
+            style: ElevatedButton.styleFrom(backgroundColor: scheme.error),
             child: const Text('Logout'),
           ),
         ],
@@ -402,32 +371,33 @@ class _MainShellState extends State<MainShell> {
   }
 
   void _showShareDialog(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
-        title: const Text(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
           'Share JAGUZA',
           style: TextStyle(
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
-        content: const Text(
+        content: Text(
           'Share the Jaguza app with your fellow farmers!',
-          style: TextStyle(color: Colors.grey),
+          style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text('Cancel', style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
+              backgroundColor: scheme.primary,
             ),
             child: const Text('Share'),
           ),
@@ -448,8 +418,10 @@ class _MainShellState extends State<MainShell> {
       _NavData(Icons.settings_outlined, Icons.settings_rounded, 'Settings'),
     ];
 
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Container(
-      color: Colors.white,
+      color: theme.cardColor,
       child: SafeArea(
         top: false,
         child: Padding(
@@ -469,7 +441,7 @@ class _MainShellState extends State<MainShell> {
                   ),
                   decoration: BoxDecoration(
                     color: active
-                        ? const Color(0xFF1A1F36).withOpacity(0.08)
+                        ? scheme.onSurface.withValues(alpha: 0.08)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
                   ),
@@ -479,8 +451,8 @@ class _MainShellState extends State<MainShell> {
                       Icon(
                         active ? item.activeIcon : item.icon,
                         color: active
-                            ? const Color(0xFF1A1F36)
-                            : const Color(0xFF9E9E9E),
+                            ? scheme.onSurface
+                            : scheme.onSurfaceVariant,
                         size: 24,
                       ),
                       const SizedBox(height: 4),
@@ -492,8 +464,8 @@ class _MainShellState extends State<MainShell> {
                               ? FontWeight.w700
                               : FontWeight.w500,
                           color: active
-                              ? const Color(0xFF1A1F36)
-                              : const Color(0xFF9E9E9E),
+                              ? scheme.onSurface
+                              : scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -526,6 +498,53 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> {
   bool _showAd = true;
+  bool _isLoadingDashboardContent = true;
+  List<_DashboardContentItem> _dashboardContent = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardContent();
+  }
+
+  Future<void> _loadDashboardContent() async {
+    final content = <_DashboardContentItem>[];
+    try {
+      final resources = await ApiService().getDecisionSupport();
+      content.addAll(resources.whereType<Map>().take(4).map((item) {
+        final data = Map<String, dynamic>.from(item);
+        return _DashboardContentItem(
+          title: '${data['title'] ?? 'Farming resource'}',
+          subtitle: '${data['summary'] ?? data['content'] ?? 'Practical farming guidance'}',
+          icon: Icons.menu_book_rounded,
+          color: const Color(0xFF2E7D32),
+          screen: const DecisionSupportScreen(),
+        );
+      }));
+    } catch (e) {
+      debugPrint('Dashboard resources load error: $e');
+    }
+    try {
+      final videos = await ApiService().getVideos();
+      content.addAll(videos.whereType<Map>().where((item) => item['is_published'] != false).take(4).map((item) {
+        final data = Map<String, dynamic>.from(item);
+        return _DashboardContentItem(
+          title: '${data['title'] ?? 'Educational video'}',
+          subtitle: 'Watch the latest Jaguza farming video',
+          icon: Icons.play_circle_fill_rounded,
+          color: const Color(0xFF1565C0),
+          screen: const VideoScreen(),
+        );
+      }));
+    } catch (e) {
+      debugPrint('Dashboard videos load error: $e');
+    }
+    if (!mounted) return;
+    setState(() {
+      _dashboardContent = content;
+      _isLoadingDashboardContent = false;
+    });
+  }
 
   void _dismissAd() => setState(() => _showAd = false);
 
@@ -542,12 +561,18 @@ class _HomeTabState extends State<HomeTab> {
         child: Column(
           children: [
             _buildAppBar(),
-            const SizedBox(height: 12),
+            const SizedBox(height: 18),
             _buildGreetingSection(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 18),
+            _buildHealthAlertBanner(),
+            const SizedBox(height: 18),
             _buildAIQuestionBox(),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             _buildFeatureGrid(),
+            if (_isLoadingDashboardContent || _dashboardContent.isNotEmpty) ...[
+              const SizedBox(height: 24),
+              _buildDashboardContent(),
+            ],
             if (_showAd) ...[
               const SizedBox(height: 20),
               _buildAdvertiseBanner(),
@@ -560,9 +585,13 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _buildAppBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFF2E7D32),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: scheme.primary,
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(28)),
+      ),
+      padding: const EdgeInsets.fromLTRB(18, 14, 18, 22),
       child: Row(
         children: [
           GestureDetector(
@@ -574,7 +603,7 @@ class _HomeTabState extends State<HomeTab> {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(
@@ -586,14 +615,13 @@ class _HomeTabState extends State<HomeTab> {
           ),
           const SizedBox(width: 12),
           const Expanded(
-            child: Text(
-              'Jaguza',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.1,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Jaguza', style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 0.5)),
+                SizedBox(height: 2),
+                Text('Your farm, growing stronger', style: TextStyle(color: Color(0xFFD6F3E2), fontSize: 11, fontWeight: FontWeight.w500)),
+              ],
             ),
           ),
           _iconCircle(
@@ -602,7 +630,7 @@ class _HomeTabState extends State<HomeTab> {
               context,
               MaterialPageRoute(builder: (_) => ProfileTab()),
             ),
-            color: const Color(0xFF2E7D32),
+            color: scheme.primary,
           ),
         ],
       ),
@@ -629,26 +657,27 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _buildGreetingSection() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Hello, Farmer',
+            'Good morning, Farmer 👋',
             style: GoogleFonts.inter(
               fontSize: 14,
-              color: Colors.black,
+              color: scheme.onSurface,
               fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
-            'Manage your livestock with confidence.',
+          Text(
+            'What would you like to do today?',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 21,
               fontWeight: FontWeight.w700,
-              color: Colors.black,
+              color: scheme.onSurface,
             ),
           ),
         ],
@@ -656,11 +685,59 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
+  Widget _buildHealthAlertBanner() {
+    final scheme = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportSicknessScreen())),
+        child: Ink(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEAF7EF),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xFFBFE6CC)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(color: scheme.primary, borderRadius: BorderRadius.circular(14)),
+                child: const Icon(Icons.health_and_safety_rounded, color: Colors.white, size: 25),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Is an animal unwell?', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: Color(0xFF174D32))),
+                    SizedBox(height: 4),
+                    Text('Report symptoms and get help quickly', style: TextStyle(fontSize: 12, color: Color(0xFF47745B))),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios_rounded, size: 15, color: scheme.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildAIQuestionBox() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
-        color: const Color(0xFFF57C00),
+        // Deliberate orange accent for the AI box, distinct from the green
+        // design system — kept as a literal color.
+        decoration: BoxDecoration(
+          color: const Color(0xFFF57C00),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: [BoxShadow(color: const Color(0xFFF57C00).withValues(alpha: 0.22), blurRadius: 14, offset: const Offset(0, 6))],
+        ),
         padding: const EdgeInsets.all(18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -670,18 +747,15 @@ class _HomeTabState extends State<HomeTab> {
                 Container(
                   width: 36,
                   height: 36,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFBF360C),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(12)),
+                  child: Icon(
                     Icons.question_answer_rounded,
                     color: Colors.white,
                     size: 20,
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Ask Jaguza AI',
                   style: TextStyle(
                     color: Colors.white,
@@ -706,8 +780,8 @@ class _HomeTabState extends State<HomeTab> {
               child: ElevatedButton(
                 onPressed: _goToAIChat,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  foregroundColor: const Color(0xFFF57C00),
+                  backgroundColor: Theme.of(context).cardColor,
+                  foregroundColor: const Color(0xFFE65100),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -726,64 +800,136 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
+  Widget _buildDashboardContent() {
+    final scheme = Theme.of(context).colorScheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              const Expanded(
+                child: Text(
+                  'From the dashboard',
+                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExploreScreen())),
+                child: const Text('View all'),
+              ),
+            ],
+          ),
+        ),
+        if (_isLoadingDashboardContent)
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Center(child: CircularProgressIndicator(color: scheme.primary)),
+          )
+        else
+          SizedBox(
+            height: 142,
+            child: ListView.separated(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              scrollDirection: Axis.horizontal,
+              itemCount: _dashboardContent.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) {
+                final item = _dashboardContent[index];
+                return GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.screen)),
+                  child: Container(
+                    width: 230,
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: scheme.outlineVariant),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(color: item.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                          child: Icon(item.icon, color: item.color, size: 20),
+                        ),
+                        const SizedBox(height: 10),
+                        Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 4),
+                        Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+      ],
+    );
+  }
+
   Widget _buildFeatureGrid() {
     final features = [
       FeatureItem(
         title: 'Report\nSickness',
+        icon: Icons.assignment_late_outlined,
         color: const Color(0xFF66BB6A),
         screen: const ReportSicknessScreen(),
       ),
       FeatureItem(
         title: 'Diagnosis',
+        icon: Icons.biotech_outlined,
         color: const Color(0xFF90A4AE),
         screen: const DiagnosisScreen(),
       ),
       FeatureItem(
         title: 'Veterinary\nDoctors',
+        icon: Icons.medical_services_outlined,
         color: const Color(0xFF66BB6A),
         screen: const VeterinaryDoctorsScreen(),
       ),
       FeatureItem(
         title: 'Disease\nInformation',
+        icon: Icons.menu_book_outlined,
         color: const Color(0xFF90A4AE),
         screen: const AnimalDiseasesScreen(),
       ),
       FeatureItem(
         title: 'My\nFarm',
+        icon: Icons.agriculture_outlined,
         color: const Color(0xFF66BB6A),
         screen: const MyFarmScreen(),
       ),
       FeatureItem(
         title: 'Market\nPlace',
+        icon: Icons.storefront_outlined,
         color: const Color(0xFF90A4AE),
         screen: const MarketplaceScreen(),
       ),
       FeatureItem(
         title: 'Gestation\nTracker',
+        icon: Icons.monitor_heart_outlined,
         color: const Color(0xFF66BB6A),
         screen: const GestationTrackerScreen(),
       ),
       FeatureItem(
         title: 'Weather\nUpdates',
+        icon: Icons.wb_sunny_outlined,
         color: const Color(0xFF81D4FA),
         screen: const WeatherUpdatesScreen(),
       ),
       FeatureItem(
         title: 'Decision\nSupport',
+        icon: Icons.lightbulb_outline_rounded,
         color: const Color(0xFF66BB6A),
         screen: const DecisionSupportScreen(),
       ),
-    ];
-
-    final rowFeatures = [
-      FeatureItem(
-        title: 'Visit our\nWebsite',
-        color: const Color(0xFF4DD0E1),
-        isWebsite: true,
-        url: 'https://jaguzafarm.com/',
-      ),
       FeatureItem(
         title: 'Video',
+        icon: Icons.play_circle_outline_rounded,
         color: const Color(0xFF90A4AE),
         screen: const VideoScreen(),
       ),
@@ -797,23 +943,15 @@ class _HomeTabState extends State<HomeTab> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
+              crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.82,
+              childAspectRatio: 1.05,
             ),
             itemCount: features.length,
             itemBuilder: (context, index) {
               return _FeatureCard(item: features[index]);
             },
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _FeatureCard(item: rowFeatures[0])),
-              const SizedBox(width: 12),
-              Expanded(child: _FeatureCard(item: rowFeatures[1])),
-            ],
           ),
         ],
       ),
@@ -821,6 +959,7 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   Widget _buildAdvertiseBanner() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Dismissible(
@@ -835,20 +974,20 @@ class _HomeTabState extends State<HomeTab> {
             bottom: 14,
             right: 8,
           ),
-          color: const Color(0xFF2E7D32).withOpacity(0.08),
+          color: scheme.primary.withValues(alpha: 0.08),
           child: Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.campaign_rounded,
-                color: Color(0xFF2E7D32),
+                color: scheme.primary,
                 size: 22,
               ),
               const SizedBox(width: 10),
-              const Expanded(
+              Expanded(
                 child: Text(
                   'Advertise with Jaguza',
                   style: TextStyle(
-                    color: Color(0xFF1B5E20),
+                    color: scheme.primary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -860,7 +999,7 @@ class _HomeTabState extends State<HomeTab> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2E7D32),
+                  color: scheme.primary,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: GestureDetector(
@@ -872,10 +1011,10 @@ class _HomeTabState extends State<HomeTab> {
                       ),
                     );
                   },
-                  child: const Text(
+                  child: Text(
                     'Learn More',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: scheme.onPrimary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -889,12 +1028,12 @@ class _HomeTabState extends State<HomeTab> {
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.12),
+                    color: scheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.close_rounded,
-                    color: Color(0xFF2E7D32),
+                    color: scheme.primary,
                     size: 16,
                   ),
                 ),
@@ -922,6 +1061,7 @@ class _FeatureCardState extends State<_FeatureCard> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTapDown: (_) => setState(() => _pressed = true),
       onTapUp: (_) => setState(() => _pressed = false),
@@ -942,29 +1082,41 @@ class _FeatureCardState extends State<_FeatureCard> {
             ? (Matrix4.identity()..scale(0.94))
             : Matrix4.identity(),
         decoration: BoxDecoration(
-          color: widget.item.color,
-          borderRadius: BorderRadius.circular(14),
+          color: scheme.surface,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
+              color: Colors.black.withValues(alpha: 0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
             ),
           ],
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // No icon, just plain color card
-            const SizedBox(height: 4),
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: scheme.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(widget.item.icon, color: scheme.primary, size: 25),
+            ),
+            const SizedBox(height: 7),
             Text(
               widget.item.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Colors.white,
+                color: scheme.onSurface,
                 height: 1.3,
               ),
             ),
@@ -975,6 +1127,7 @@ class _FeatureCardState extends State<_FeatureCard> {
   }
 
   void _launchWebsite(BuildContext context, String url) async {
+    final errorColor = Theme.of(context).colorScheme.error;
     try {
       String fullUrl = url;
       if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
@@ -990,8 +1143,8 @@ class _FeatureCardState extends State<_FeatureCard> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Could not open website. Please try again.'),
-              backgroundColor: Colors.red,
+              content: const Text('Could not open website. Please try again.'),
+              backgroundColor: errorColor,
             ),
           );
         }
@@ -1001,7 +1154,7 @@ class _FeatureCardState extends State<_FeatureCard> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: errorColor,
           ),
         );
       }
@@ -1010,8 +1163,25 @@ class _FeatureCardState extends State<_FeatureCard> {
 }
 
 // Updated FeatureItem - removed icon property
+class _DashboardContentItem {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final Widget screen;
+
+  const _DashboardContentItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.screen,
+  });
+}
+
 class FeatureItem {
   final String title;
+  final IconData icon;
   final Color color;
   final Widget? screen;
   final bool isWebsite;
@@ -1019,6 +1189,7 @@ class FeatureItem {
 
   const FeatureItem({
     required this.title,
+    this.icon = Icons.apps_rounded,
     required this.color,
     this.screen,
     this.isWebsite = false,

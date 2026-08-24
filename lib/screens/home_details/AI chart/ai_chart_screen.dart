@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:jaguza_app/services/api_service.dart';
 
 class AIChatTab extends StatefulWidget {
   const AIChatTab({super.key});
@@ -14,6 +15,7 @@ class AIChatTab extends StatefulWidget {
 
 class _AIChatTabState extends State<AIChatTab> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _chatScrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   final List<FileAttachment> _attachments = [];
   bool _isLoading = false;
@@ -47,7 +49,37 @@ class _AIChatTabState extends State<AIChatTab> {
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
+    _messageController.addListener(_onMessageChanged);
     _initSpeech();
+    _loadChatHistory();
+  }
+
+  Future<void> _loadChatHistory() async {
+    try {
+      final history = await ApiService().getChatHistory();
+      final messages = history.whereType<Map>().map((raw) {
+        final message = Map<String, dynamic>.from(raw);
+        final timestamp = DateTime.tryParse(
+              '${message['created_at'] ?? message['timestamp'] ?? ''}',
+            ) ??
+            DateTime.now();
+        final sender = '${message['sender'] ?? ''}'.toLowerCase();
+        return ChatMessage(
+          text: '${message['message'] ?? message['text'] ?? ''}',
+          isUser: message['isUser'] == true || sender == 'user',
+          timestamp: timestamp,
+        );
+      }).where((message) => message.text.trim().isNotEmpty).toList();
+
+      if (!mounted) return;
+      setState(() {
+        _messages
+          ..clear()
+          ..addAll(messages);
+      });
+    } catch (e) {
+      debugPrint('Error loading chat history: $e');
+    }
   }
 
   Future<void> _initSpeech() async {
@@ -195,15 +227,32 @@ class _AIChatTabState extends State<AIChatTab> {
 
   @override
   void dispose() {
+    _messageController.removeListener(_onMessageChanged);
     _messageController.dispose();
+    _chatScrollController.dispose();
     _speech.stop();
     super.dispose();
+  }
+
+  void _onMessageChanged() {
+    // Rebuild the send button as soon as the user starts or clears a message.
+    if (mounted) setState(() {});
+  }
+
+  void _scrollToLatest() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_chatScrollController.hasClients) return;
+      _chatScrollController.animateTo(
+        _chatScrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: _buildAppBar(),
       body: Column(
         children: [
@@ -213,10 +262,14 @@ class _AIChatTabState extends State<AIChatTab> {
             child: _messages.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
+                    controller: _chatScrollController,
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     physics: const BouncingScrollPhysics(),
-                    itemCount: _messages.length,
+                    itemCount: _messages.length + (_isLoading ? 1 : 0),
                     itemBuilder: (context, index) {
+                      if (index == _messages.length) {
+                        return _buildTypingIndicator();
+                      }
                       return _buildMessageBubble(_messages[index]);
                     },
                   ),
@@ -229,13 +282,14 @@ class _AIChatTabState extends State<AIChatTab> {
   }
 
   Widget _buildAttachmentsBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: 50,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
         border: Border(
-          bottom: BorderSide(color: Colors.grey[200]!),
+          bottom: BorderSide(color: scheme.outlineVariant),
         ),
       ),
       child: ListView.separated(
@@ -247,9 +301,9 @@ class _AIChatTabState extends State<AIChatTab> {
           return Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: Theme.of(context).cardColor,
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey[300]!),
+              border: Border.all(color: scheme.outlineVariant),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -265,7 +319,7 @@ class _AIChatTabState extends State<AIChatTab> {
                     attachment.name,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[700],
+                      color: scheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                     overflow: TextOverflow.ellipsis,
@@ -276,7 +330,7 @@ class _AIChatTabState extends State<AIChatTab> {
                   onTap: () => _removeAttachment(index),
                   child: Icon(
                     Icons.close_rounded,
-                    color: Colors.grey[400],
+                    color: scheme.onSurfaceVariant,
                     size: 16,
                   ),
                 ),
@@ -308,14 +362,20 @@ class _AIChatTabState extends State<AIChatTab> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+    final scheme = Theme.of(context).colorScheme;
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
+          child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
           Container(
             padding: const EdgeInsets.all(28),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF3E0),
+            decoration: const BoxDecoration(
+              color: Color(0xFFFFF3E0),
               shape: BoxShape.circle,
             ),
             child: const Icon(
@@ -330,7 +390,7 @@ class _AIChatTabState extends State<AIChatTab> {
             style: GoogleFonts.inter(
               fontSize: 24,
               fontWeight: FontWeight.w700,
-              color: const Color(0xFF1A1F36),
+              color: scheme.onSurface,
               letterSpacing: -0.5,
             ),
           ),
@@ -339,7 +399,7 @@ class _AIChatTabState extends State<AIChatTab> {
             'Your intelligent farming assistant',
             style: TextStyle(
               fontSize: 16,
-              color: Colors.grey[600],
+              color: scheme.onSurfaceVariant,
               height: 1.5,
               fontWeight: FontWeight.w400,
             ),
@@ -366,7 +426,7 @@ class _AIChatTabState extends State<AIChatTab> {
             children: [
               Expanded(
                 child: Divider(
-                  color: Colors.grey[200],
+                  color: scheme.outlineVariant,
                   thickness: 1,
                   indent: 40,
                   endIndent: 16,
@@ -374,12 +434,12 @@ class _AIChatTabState extends State<AIChatTab> {
               ),
               Icon(
                 Icons.keyboard_arrow_down_rounded,
-                color: Colors.grey[400],
+                color: scheme.onSurfaceVariant,
                 size: 20,
               ),
               Expanded(
                 child: Divider(
-                  color: Colors.grey[200],
+                  color: scheme.outlineVariant,
                   thickness: 1,
                   indent: 16,
                   endIndent: 40,
@@ -389,23 +449,26 @@ class _AIChatTabState extends State<AIChatTab> {
           ),
           const SizedBox(height: 24),
           Text(
-            'Start typing your question below',
+            'Ask a question below to get started',
             style: TextStyle(
               fontSize: 13,
-              color: Colors.grey[500],
+              color: scheme.onSurfaceVariant,
               fontWeight: FontWeight.w400,
             ),
           ),
-        ],
+          ],
+        ),
+      ),
       ),
     );
   }
 
   PreferredSizeWidget _buildAppBar() {
+    final scheme = Theme.of(context).colorScheme;
     return AppBar(
-      backgroundColor: Colors.white,
       elevation: 0,
       title: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
             padding: const EdgeInsets.all(8),
@@ -420,101 +483,64 @@ class _AIChatTabState extends State<AIChatTab> {
             ),
           ),
           const SizedBox(width: 12),
-          Column(
+          Flexible(
+            child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Ask Jaguza AI',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onPrimary,
                 ),
               ),
               Text(
                 'Powered by AI',
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.grey[500],
+                  color: scheme.onPrimary.withValues(alpha: 0.7),
                   fontWeight: FontWeight.w500,
                 ),
               ),
             ],
           ),
+          ),
         ],
       ),
       actions: [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.grey[100],
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.language_rounded,
-                  color: Color(0xFFF57C00), size: 16),
-              const SizedBox(width: 4),
-              DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedLanguage,
-                  dropdownColor: Colors.white,
-                  style: const TextStyle(
-                      color: Color(0xFF1A1F36),
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600),
-                  icon: const Icon(Icons.arrow_drop_down_rounded,
-                      color: Colors.grey, size: 18),
-                  onChanged: (String? newValue) {
-                    if (newValue != null) {
-                      setState(() => _selectedLanguage = newValue);
-                    }
-                  },
-                  items: _languages.map((String language) {
-                    return DropdownMenuItem<String>(
-                      value: language,
-                      child: Text(language),
-                    );
-                  }).toList(),
-                ),
-              ),
-            ],
-          ),
+        PopupMenuButton<String>(
+          tooltip: 'Change language',
+          icon: Icon(Icons.language_rounded, color: scheme.onPrimary),
+          onSelected: (language) => setState(() => _selectedLanguage = language),
+          itemBuilder: (context) => _languages.map((language) => PopupMenuItem(
+            value: language,
+            child: Text(language),
+          )).toList(),
         ),
-        const SizedBox(width: 8),
-        TextButton.icon(
+        IconButton(
+          tooltip: 'Clear chat',
           onPressed: _messages.isEmpty ? null : _clearChat,
           icon: Icon(Icons.delete_outline_rounded,
-              color: _messages.isEmpty ? Colors.grey[400] : Colors.red.shade600, 
+              color: _messages.isEmpty ? scheme.onPrimary.withValues(alpha: 0.4) : scheme.error,
               size: 16),
-          label: Text(
-            'Clear',
-            style: TextStyle(
-              color: _messages.isEmpty ? Colors.grey[400] : Colors.red.shade600,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          style: TextButton.styleFrom(
-            padding: const EdgeInsets.symmetric(horizontal: 12),
-          ),
         ),
-        const SizedBox(width: 4),
       ],
     );
   }
 
   Widget _buildQuickQuestions() {
     if (_messages.isEmpty) return const SizedBox.shrink();
-    
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
         border: Border(
-          top: BorderSide(color: Colors.grey[200]!),
+          top: BorderSide(color: scheme.outlineVariant),
         ),
       ),
       child: SizedBox(
@@ -535,7 +561,7 @@ class _AIChatTabState extends State<AIChatTab> {
                   color: const Color(0xFFFFF3E0),
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: const Color(0xFFF57C00).withOpacity(0.15),
+                    color: const Color(0xFFF57C00).withValues(alpha: 0.15),
                   ),
                 ),
                 child: Text(
@@ -555,34 +581,38 @@ class _AIChatTabState extends State<AIChatTab> {
   }
 
   Widget _buildInputArea() {
+    final scheme = Theme.of(context).colorScheme;
+    final canSend = _messageController.text.trim().isNotEmpty ||
+        _attachments.isNotEmpty;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         border: Border(
-          top: BorderSide(color: Colors.grey[200]!),
+          top: BorderSide(color: scheme.outlineVariant),
         ),
       ),
       child: Column(
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // Attachment button
               Container(
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _attachments.isNotEmpty ? const Color(0xFFFFF3E0) : Colors.grey[100],
+                  color: _attachments.isNotEmpty ? const Color(0xFFFFF3E0) : scheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: _attachments.isNotEmpty 
-                      ? Border.all(color: const Color(0xFFF57C00).withOpacity(0.3))
+                  border: _attachments.isNotEmpty
+                      ? Border.all(color: const Color(0xFFF57C00).withValues(alpha: 0.3))
                       : null,
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
                   icon: Icon(
                     Icons.attach_file_rounded,
-                    color: _attachments.isNotEmpty ? const Color(0xFFF57C00) : Colors.grey[600],
+                    color: _attachments.isNotEmpty ? const Color(0xFFF57C00) : scheme.onSurfaceVariant,
                     size: 20,
                   ),
                   onPressed: _pickFile,
@@ -592,18 +622,21 @@ class _AIChatTabState extends State<AIChatTab> {
               Expanded(
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: scheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey[300]!),
+                    border: Border.all(color: scheme.outlineVariant),
                   ),
                   child: TextField(
                     controller: _messageController,
-                    style: const TextStyle(color: Color(0xFF1A1F36), fontSize: 14),
+                    minLines: 1,
+                    maxLines: 4,
+                    textInputAction: TextInputAction.newline,
+                    style: TextStyle(color: scheme.onSurface, fontSize: 14),
                     decoration: InputDecoration(
                       hintText: _isRecording ? 'Listening...' : 'Type your question...',
                       hintStyle: TextStyle(
-                        fontSize: 14, 
-                        color: _isRecording ? Colors.grey[700] : Colors.grey[500],
+                        fontSize: 14,
+                        color: scheme.onSurfaceVariant,
                       ),
                       contentPadding: const EdgeInsets.symmetric(
                           horizontal: 16, vertical: 10),
@@ -611,7 +644,7 @@ class _AIChatTabState extends State<AIChatTab> {
                       suffixIcon: IconButton(
                         icon: Icon(
                           _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                          color: _isRecording ? Colors.red : Colors.grey[500],
+                          color: _isRecording ? scheme.error : scheme.onSurfaceVariant,
                           size: 20,
                         ),
                         onPressed: _isRecording ? _stopListening : _startListening,
@@ -626,9 +659,9 @@ class _AIChatTabState extends State<AIChatTab> {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _messageController.text.isNotEmpty || _attachments.isNotEmpty
+                  color: canSend && !_isLoading
                       ? const Color(0xFFF57C00)
-                      : Colors.grey[300],
+                      : scheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: IconButton(
@@ -645,9 +678,10 @@ class _AIChatTabState extends State<AIChatTab> {
                         )
                       : const Icon(Icons.send_rounded,
                           color: Colors.white, size: 22),
-                  onPressed: (_messageController.text.isNotEmpty || _attachments.isNotEmpty) && !_isLoading
-                      ? _sendMessage
-                      : null,
+                  // Keep the hit target active; _sendMessage validates empty
+                  // input itself. This avoids the button becoming stuck when
+                  // the controller changes while the keyboard is open.
+                  onPressed: _isLoading ? null : _sendMessage,
                 ),
               ),
             ],
@@ -657,9 +691,9 @@ class _AIChatTabState extends State<AIChatTab> {
               margin: const EdgeInsets.only(top: 8),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: Colors.red.shade50,
+                color: scheme.error.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.shade200),
+                border: Border.all(color: scheme.error.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
@@ -668,7 +702,7 @@ class _AIChatTabState extends State<AIChatTab> {
                     height: 12,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      color: Colors.red,
+                      color: scheme.error,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -677,7 +711,7 @@ class _AIChatTabState extends State<AIChatTab> {
                       'Recording... Tap the mic button again to stop',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.red.shade700,
+                        color: scheme.error,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -691,6 +725,7 @@ class _AIChatTabState extends State<AIChatTab> {
   }
 
   Widget _buildMessageBubble(ChatMessage message) {
+    final scheme = Theme.of(context).colorScheme;
     final isUser = message.isUser;
 
     return Padding(
@@ -721,14 +756,12 @@ class _AIChatTabState extends State<AIChatTab> {
               padding:
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: isUser ? const Color(0xFFF57C00) : Colors.grey[100],
+                color: isUser ? const Color(0xFFF57C00) : scheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(18).copyWith(
-                  bottomLeft:
-                      isUser ? const Radius.circular(18) : const Radius.circular(4),
-                  bottomRight:
-                      isUser ? const Radius.circular(4) : const Radius.circular(18),
+                  bottomLeft: isUser ? const Radius.circular(18) : const Radius.circular(4),
+                  bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(18),
                 ),
-                border: isUser ? null : Border.all(color: Colors.grey[200]!),
+                border: isUser ? null : Border.all(color: scheme.outlineVariant),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -737,7 +770,7 @@ class _AIChatTabState extends State<AIChatTab> {
                     message.text,
                     style: TextStyle(
                       fontSize: 14,
-                      color: isUser ? Colors.white : const Color(0xFF1A1F36),
+                      color: isUser ? Colors.white : scheme.onSurface,
                       height: 1.6,
                     ),
                   ),
@@ -750,7 +783,7 @@ class _AIChatTabState extends State<AIChatTab> {
                         return Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isUser ? Colors.white.withOpacity(0.2) : Colors.grey[200],
+                            color: isUser ? Colors.white.withValues(alpha: 0.2) : scheme.surfaceContainerHigh,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Row(
@@ -758,7 +791,7 @@ class _AIChatTabState extends State<AIChatTab> {
                             children: [
                               Icon(
                                 _getFileIcon(attachment.extension),
-                                color: isUser ? Colors.white : Colors.grey[700],
+                                color: isUser ? Colors.white : scheme.onSurfaceVariant,
                                 size: 14,
                               ),
                               const SizedBox(width: 4),
@@ -766,7 +799,7 @@ class _AIChatTabState extends State<AIChatTab> {
                                 attachment.name,
                                 style: TextStyle(
                                   fontSize: 11,
-                                  color: isUser ? Colors.white : Colors.grey[700],
+                                  color: isUser ? Colors.white : scheme.onSurfaceVariant,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
@@ -781,7 +814,7 @@ class _AIChatTabState extends State<AIChatTab> {
                     _formatTime(message.timestamp),
                     style: TextStyle(
                       fontSize: 9,
-                      color: isUser ? Colors.white70 : Colors.grey[500],
+                      color: isUser ? Colors.white70 : scheme.onSurfaceVariant,
                       fontWeight: FontWeight.w400,
                     ),
                   ),
@@ -798,7 +831,7 @@ class _AIChatTabState extends State<AIChatTab> {
                 color: const Color(0xFFFFF3E0),
                 shape: BoxShape.circle,
                 border: Border.all(
-                    color: const Color(0xFFF57C00).withOpacity(0.3)),
+                    color: const Color(0xFFF57C00).withValues(alpha: 0.3)),
               ),
               child: Center(
                 child: Text(
@@ -817,7 +850,25 @@ class _AIChatTabState extends State<AIChatTab> {
     );
   }
 
-  void _sendMessage() {
+  Widget _buildTypingIndicator() {
+    final scheme = Theme.of(context).colorScheme;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(left: 44, bottom: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: scheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text('Jaguza AI is thinking…', style: TextStyle(
+          color: scheme.onSurfaceVariant, fontSize: 13,
+        )),
+      ),
+    );
+  }
+
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty && _attachments.isEmpty) return;
 
@@ -827,100 +878,87 @@ class _AIChatTabState extends State<AIChatTab> {
     }
 
     final attachments = List<FileAttachment>.from(_attachments);
+    final userMessage = ChatMessage(
+      text: text.isEmpty ? '📎 Sent ${attachments.length} file(s)' : text,
+      isUser: true,
+      timestamp: DateTime.now(),
+      attachments: attachments,
+    );
 
     setState(() {
-      _messages.add(ChatMessage(
-        text: text.isEmpty ? '📎 Sent ${attachments.length} file(s)' : text,
-        isUser: true,
-        timestamp: DateTime.now(),
-        attachments: attachments,
-      ));
+      _messages.add(userMessage);
       _messageController.clear();
       _attachments.clear();
       _isLoading = true;
     });
+    _scrollToLatest();
 
-    // Simulate AI response
-    Future.delayed(const Duration(seconds: 1), () {
+    try {
+      final result = await ApiService().sendChatMessage(
+        text.isEmpty ? 'Please help me with the attached farm file.' : text,
+        language: _selectedLanguage,
+      );
+      final rawReply = result['ai_response'] ?? result['response'] ?? result['message'];
+      final reply = rawReply is Map ? rawReply['message'] : rawReply;
+      final response = '${reply ?? ''}'.trim();
+      if (response.isEmpty) throw Exception('The AI returned an empty response.');
       if (!mounted) return;
-      
-      String response = _getAIResponse(text);
-      
-      // If there are attachments, acknowledge them
-      if (attachments.isNotEmpty) {
-        response = 'I received your file(s). ${attachments.length > 1 ? 'They have been' : 'It has been'} uploaded successfully. $response';
-      }
-      
+      setState(() {
+        _messages.add(ChatMessage(text: response, isUser: false, timestamp: DateTime.now()));
+        _isLoading = false;
+      });
+      _scrollToLatest();
+    } catch (e) {
+      if (!mounted) return;
       setState(() {
         _messages.add(ChatMessage(
-          text: response,
+          text: 'I could not reach Jaguza AI right now. Please try again.\n\n$e',
           isUser: false,
           timestamp: DateTime.now(),
         ));
         _isLoading = false;
       });
-    });
-  }
-
-  String _getAIResponse(String message) {
-    final lowerMsg = message.toLowerCase();
-
-    if (lowerMsg.contains('vaccine') || lowerMsg.contains('vaccination')) {
-      return 'Vaccination Schedule:\n\n• FMD — Every 6 months\n• LSD — Annually\n• De-worming — Every 3 months\n• Anthrax — Annually\n\nConsult your vet for local guidelines.';
+      _scrollToLatest();
     }
-    if (lowerMsg.contains('feed') ||
-        lowerMsg.contains('feeding') ||
-        lowerMsg.contains('nutrition')) {
-      return 'Feeding Tips:\n\n• Provide quality hay/silage daily\n• Supplement with concentrates\n• Offer mineral blocks\n• Clean water available 24/7';
-    }
-    if (lowerMsg.contains('breed') || lowerMsg.contains('breeding')) {
-      return 'Breeding Tips:\n\n• Select animals with superior traits\n• Monitor for heat detection\n• Keep detailed breeding records\n• Consider AI services';
-    }
-    if (lowerMsg.contains('health') ||
-        lowerMsg.contains('disease') ||
-        lowerMsg.contains('treat')) {
-      return 'Health Tips:\n\n• Observe animals daily\n• Isolate sick ones immediately\n• Keep housing clean\n• Maintain treatment logs\n\nConsult a vet for unusual symptoms.';
-    }
-    if (lowerMsg.contains('market') ||
-        lowerMsg.contains('price') ||
-        lowerMsg.contains('sell')) {
-      return 'Market Tips:\n\n• Check prices regularly\n• Sell in bulk for better rates\n• Join cooperatives for bargaining power\n• Build buyer relationships';
-    }
-
-    return 'I can help with:\n\n• Livestock health & feeding\n• Breeding practices\n• Vaccination schedules\n• Market prices\n• Crop management\n\nWhat would you like to know more about?';
   }
 
   void _clearChat() {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        title: const Text(
+        title: Text(
           'Clear Chat',
-          style: TextStyle(color: Color(0xFF1A1F36), fontWeight: FontWeight.bold),
+          style: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.bold),
         ),
-        content: const Text(
+        content: Text(
           'Are you sure you want to delete all messages? This cannot be undone.',
-          style: TextStyle(color: Colors.grey, fontSize: 13),
+          style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel',
-                style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
+            child: Text('Cancel',
+                style: TextStyle(color: scheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() {
-                _messages.clear();
-                _attachments.clear();
-              });
+              try {
+                await ApiService().clearChatHistory();
+                if (!mounted) return;
+                setState(() {
+                  _messages.clear();
+                  _attachments.clear();
+                });
+              } catch (e) {
+                if (mounted) _showSnackBar('Could not clear chat: $e');
+              }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade700,
-              foregroundColor: Colors.white,
+              backgroundColor: scheme.error,
+              foregroundColor: scheme.onError,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('Clear All'),
@@ -953,6 +991,15 @@ class ChatMessage {
     required this.timestamp,
     this.attachments,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'text': text,
+      'isUser': isUser,
+      'timestamp': timestamp.toIso8601String(),
+      'attachments': attachments?.map((a) => a.toJson()).toList(),
+    };
+  }
 }
 
 class FileAttachment {
@@ -967,4 +1014,12 @@ class FileAttachment {
     this.bytes,
     required this.extension,
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'size': size,
+      'extension': extension,
+    };
+  }
 }

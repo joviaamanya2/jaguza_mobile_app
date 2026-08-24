@@ -13,6 +13,9 @@ class LanguageService {
 
   static Locale get currentLocale => localeNotifier.value;
 
+  static List<Locale> get supportedLocales =>
+      getSupportedLanguages().map((language) => Locale(language['code']!)).toList();
+
   static Future<void> initialize() async {
     final languageCode = await getLanguageCode();
     localeNotifier.value = Locale(languageCode?.isNotEmpty == true
@@ -39,7 +42,7 @@ class LanguageService {
   }
 
   static Future<void> setLocale(String languageCode) async {
-    localeNotifier.value = Locale(languageCode);
+    await saveLanguage(languageCode, getLanguageNameFromCode(languageCode));
   }
 
   static Locale getCurrentLocale() {

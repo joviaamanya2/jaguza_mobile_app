@@ -70,8 +70,8 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Column(
         children: [
           // ── Header ─────────────────────────────────────────────────────────
@@ -89,9 +89,9 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                   // ── Single Card Container ──────────────────────────────────
                   Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: _kBorder),
+                      border: Border.all(color: scheme.outlineVariant),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.04),
@@ -143,11 +143,11 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: _kPrimary.withValues(alpha: 0.15)),
                             ),
-                            child: const Text(
+                            child: Text(
                               'Please read these Terms & Conditions carefully before creating an account or using the Jaguza Livestock app. By using our services, you agree to these terms.',
                               style: TextStyle(
                                 fontSize: 13,
-                                color: _kText,
+                                color: scheme.onSurface,
                                 height: 1.6,
                                 fontStyle: FontStyle.italic,
                               ),
@@ -249,12 +249,12 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                             Icon(Icons.contact_mail_outlined,
                                 color: _kPrimary, size: 20),
                             const SizedBox(width: 10),
-                            const Text(
+                            Text(
                               'Contact Information',
                               style: TextStyle(
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
-                                color: _kText,
+                                color: scheme.onSurface,
                               ),
                             ),
                           ],
@@ -264,7 +264,7 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                           'If you have any questions about these Terms and Conditions, please reach out to us:',
                           style: TextStyle(
                             fontSize: 13,
-                            color: _kSubtext,
+                            color: scheme.onSurfaceVariant,
                             height: 1.5,
                           ),
                         ),
@@ -296,7 +296,7 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                             'Scroll down to read all terms',
                             style: TextStyle(
                               fontSize: 12,
-                              color: _kSubtext,
+                              color: scheme.onSurfaceVariant,
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -323,7 +323,7 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
   Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: const Color.fromARGB(255, 8, 117, 8),
+      color: Theme.of(context).colorScheme.primary,
       child: SafeArea(
         bottom: false,
         child: Padding(
@@ -391,11 +391,12 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
     required IconData icon,
     required String body,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _kBorder),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
@@ -405,8 +406,8 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
             // Section header
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: const BoxDecoration(
-                border: Border(bottom: BorderSide(color: _kBorder, width: 1)),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: scheme.outlineVariant, width: 1)),
               ),
               child: Row(
                 children: [
@@ -425,10 +426,10 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                   Expanded(
                     child: Text(
                       '$number. $title',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: _kText,
+                        color: scheme.onSurface,
                         letterSpacing: 0.1,
                       ),
                     ),
@@ -442,9 +443,9 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
               child: Text(
                 body,
                 textAlign: TextAlign.justify,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: _kSubtext,
+                  color: scheme.onSurfaceVariant,
                   height: 1.6,
                 ),
               ),
@@ -456,6 +457,7 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
   }
 
   Widget _buildContactChip(IconData icon, String label) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(

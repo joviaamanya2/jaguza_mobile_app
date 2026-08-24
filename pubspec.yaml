@@ -115,6 +115,7 @@ flutter:
     - lib/assets/images/cattle.jpg
     - lib/assets/images/detail image/sheep/breeding in sheep.jpg
     - lib/assets/images/detail image/sheep/finances.jpg
+    - lib/assets/images/image.png
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

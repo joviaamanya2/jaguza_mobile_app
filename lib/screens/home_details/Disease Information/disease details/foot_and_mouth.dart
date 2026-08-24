@@ -5,18 +5,34 @@ class FootAndMouthDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final headingStyle = TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w800,
+      color: scheme.onSurface,
+      height: 1.3,
+    );
+    final labelStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      color: scheme.primary,
+      letterSpacing: 1.2,
+    );
+    final bodyStyle = TextStyle(
+      fontSize: 15,
+      color: scheme.onSurfaceVariant,
+      height: 1.6,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Foot-and-Mouth',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.black87,
+            color: scheme.onPrimary,
           ),
         ),
         leading: IconButton(
@@ -35,167 +51,122 @@ class FootAndMouthDetail extends StatelessWidget {
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(60),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.coronavirus_rounded,
                   size: 60,
-                  color: Color(0xFF2E7D32),
+                  color: scheme.primary,
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Title
-            const Text(
-              'Foot-and-Mouth Disease',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-                height: 1.3,
-              ),
-            ),
-            
+            Text('Foot-and-Mouth Disease', style: headingStyle),
+
             const SizedBox(height: 24),
-            
+
             // Section Label
-            const Text(
-              'DESCRIPTION',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2E7D32),
-                letterSpacing: 1.2,
-              ),
-            ),
-            
+            Text('DESCRIPTION', style: labelStyle),
+
             const SizedBox(height: 12),
-            
+
             // Body Text
-            const Text(
+            Text(
               'Foot-and-mouth disease (FMD) is a severe, highly contagious viral disease of livestock. It affects cattle, swine, sheep, goats, and other cloven-hoofed animals.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 16),
-            
-            const Text(
+
+            Text(
               'The disease spreads rapidly and is difficult to control. There are seven types of the FMD virus, which have similar symptoms but present differently. Immunity to one type does not protect against the others.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 16),
-            
-            const Text(
+
+            Text(
               'The incubation period is typically 20 to 50 hours. The virus can survive in lymph nodes and bone marrow, making it highly transmissible between herds.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Simple plain info row without shadows
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_rounded,
-                    color: Color(0xFF2E7D32),
-                    size: 20,
-                  ),
-                  const SizedBox(width: 12),
-                  const Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Incubation Period',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          '20 to 50 hours',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _InfoRow(
+              scheme: scheme,
+              icon: Icons.schedule_rounded,
+              label: 'Incubation Period',
+              value: '20 to 50 hours',
             ),
-            
+
             const SizedBox(height: 12),
-            
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.pets_rounded,
-                    color: Color(0xFF2E7D32),
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Affected Animals',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Cattle, swine, sheep, goats',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+
+            _InfoRow(
+              scheme: scheme,
+              icon: Icons.pets_rounded,
+              label: 'Affected Animals',
+              value: 'Cattle, swine, sheep, goats',
             ),
 
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final ColorScheme scheme;
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.scheme,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: scheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

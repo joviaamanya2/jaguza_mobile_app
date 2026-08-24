@@ -37,10 +37,12 @@ class Farm {
       owner: json['owner_name'] ?? json['farm_owner'] ?? json['owner'] ?? '',
       animals: Farm._groupAnimalsByType(json['animals'] as List<dynamic>? ?? []),
       workers: (json['workers'] as List<dynamic>? ?? [])
+          .whereType<Map>()
           .map((worker) => Worker(
-                worker['name'] ?? '',
-                worker['role'] ?? '',
-                worker['phone'] ?? '',
+                id: worker['id']?.toString(),
+                name: worker['name'] ?? '',
+                role: worker['role'] ?? '',
+                phone: worker['phone'] ?? worker['phone_number'] ?? '',
               ))
           .toList(),
       coordinates: json['coordinates'],
@@ -52,25 +54,63 @@ class Farm {
     );
   }
 
+  static String normalizeCategoryName(String raw) {
+    final lower = raw.trim().toLowerCase();
+    switch (lower) {
+      case 'cattle':
+      case 'cow':
+        return 'Cattle';
+      case 'goat':
+      case 'goats':
+        return 'Goats';
+      case 'sheep':
+        return 'Sheep';
+      case 'pig':
+      case 'pigs':
+        return 'Pigs';
+      case 'poultry':
+      case 'chicken':
+        return 'Poultry';
+      case 'rabbit':
+      case 'rabbits':
+        return 'Rabbits';
+      case 'fish':
+        return 'Fish';
+      case 'horse':
+      case 'horses':
+        return 'Horses';
+      default:
+        if (raw.isEmpty) return 'Other';
+        return raw[0].toUpperCase() + raw.substring(1);
+    }
+  }
+
   static List<AnimalCategory> _groupAnimalsByType(List<dynamic> animals) {
-    final Map<String, int> groupedAnimals = {};
+    final Map<String, AnimalCategory> groupedAnimals = {};
 
     for (final animal in animals) {
       if (animal is Map) {
         if (animal['count'] != null) {
-          final name = animal['name'] ?? animal['type'] ?? 'Unknown';
+          final name = normalizeCategoryName(animal['name'] ?? animal['type'] ?? 'Unknown');
           final count = int.tryParse(animal['count'].toString()) ?? 0;
-          groupedAnimals[name] = (groupedAnimals[name] ?? 0) + count;
+          final category = groupedAnimals.putIfAbsent(
+            name,
+            () => AnimalCategory(name, 0, '', ids: <String>[]),
+          );
+          category.count += count;
         } else if (animal['type'] != null) {
-          final type = animal['type'] as String;
-          groupedAnimals[type] = (groupedAnimals[type] ?? 0) + 1;
+          final type = normalizeCategoryName(animal['type'].toString());
+          final category = groupedAnimals.putIfAbsent(
+            type,
+            () => AnimalCategory(type, 0, '', ids: <String>[]),
+          );
+          category.count++;
+          if (animal['id'] != null) category.ids.add(animal['id'].toString());
         }
       }
     }
 
-    return groupedAnimals.entries
-        .map((entry) => AnimalCategory(entry.key, entry.value, ''))
-        .toList();
+    return groupedAnimals.values.toList();
   }
 
   Map<String, dynamic> toApiPayload() {
@@ -116,14 +156,17 @@ class AnimalCategory {
   final String name;
   int count;
   final String imagePath;
+  final List<String> ids;
 
-  AnimalCategory(this.name, this.count, this.imagePath);
+  AnimalCategory(this.name, this.count, this.imagePath, {List<String>? ids})
+      : ids = ids ?? <String>[];
 }
 
 class Worker {
+  final String? id;
   final String name;
   final String role;
   final String phone;
 
-  Worker(this.name, this.role, this.phone);
+  Worker({this.id, required this.name, required this.role, required this.phone});
 }

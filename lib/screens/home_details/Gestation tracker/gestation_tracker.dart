@@ -3417,17 +3417,13 @@ class _GestationTrackerScreenState extends State<GestationTrackerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
         title: const Text(
           'Pregnancy Tracker',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
           ),
         ),
         leading: IconButton(

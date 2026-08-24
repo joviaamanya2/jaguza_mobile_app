@@ -4,6 +4,17 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
+  // Defaults to the deployed production server. NOTE: production is
+  // currently out of sync with several fixes made against the local server
+  // (POST /workers route, marketplace schema, video categories, ad
+  // approval, animal/worker creation) - those won't work until production
+  // is redeployed. Pass --dart-define=USE_LOCAL_API=true to point at a
+  // local dev server instead.
+  static const bool _forceLocalApi = bool.fromEnvironment(
+    'USE_LOCAL_API',
+    defaultValue: false,
+  );
+
   // Production URLs
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
@@ -15,11 +26,19 @@ class ApiService {
   );
 
   // Local development URLs
-  static const String _localApi = 'http://127.0.0.1:8000/api/v1/';
-  static const String _localToken = 'http://127.0.0.1:8000/api/token/';
+  // Physical phones must use the computer's LAN IP, not 127.0.0.1.
+  // Override LOCAL_API_BASE_URL when the phone/network IP changes.
+  static const String _localApi = String.fromEnvironment(
+    'LOCAL_API_BASE_URL',
+    defaultValue: 'http://192.168.2.160:8000/api/v1/',
+  );
+  static const String _localToken = String.fromEnvironment(
+    'LOCAL_TOKEN_URL',
+    defaultValue: 'http://192.168.2.160:8000/api/token/',
+  );
 
-  // For Android emulator:
-  // static const String _localApi = 'http://10.0.2.2:8000/api/v1/';
+  // For an Android emulator use:
+  // --dart-define=LOCAL_API_BASE_URL=http://10.0.2.2:8000/api/v1/
 
   // Separate tokens for local and production
   String? _productionToken;
@@ -44,11 +63,18 @@ class ApiService {
     _productionToken = prefs.getString('production_token');
     _localTokenValue = prefs.getString('local_token');
     _refreshToken = prefs.getString('refresh_token');
-    _isLocalMode = prefs.getBool('is_local_mode') ?? false;
+    // The selected API is controlled by USE_LOCAL_API, so debug and release
+    // builds use the same server configuration.
+    _isLocalMode = _forceLocalApi;
 
     print('🔑 Mode: ${_isLocalMode ? "LOCAL" : "PRODUCTION"}');
-    print('🔑 Production Token: ${_productionToken?.substring(0, 20)}...');
-    print('🔑 Local Token: ${_localTokenValue?.substring(0, 20)}...');
+    print('🔑 Production Token: ${_tokenPreview(_productionToken)}');
+    print('🔑 Local Token: ${_tokenPreview(_localTokenValue)}');
+  }
+
+  String _tokenPreview(String? token) {
+    if (token == null || token.isEmpty) return 'none';
+    return '${token.substring(0, token.length < 20 ? token.length : 20)}...';
   }
 
   // Save production tokens
@@ -112,6 +138,10 @@ class ApiService {
 
   // Login to production server
   Future<Map<String, dynamic>> login(String email, String password) async {
+    if (_forceLocalApi) {
+      return loginLocal(email, password);
+    }
+
     try {
       print('🌐 Logging in to PRODUCTION server');
 
@@ -204,8 +234,10 @@ class ApiService {
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
+      await loadTokens();
+      final registrationBaseUrl = _getBaseUrl();
       final response = await http.post(
-        Uri.parse('${baseUrl}register'),
+        Uri.parse('${registrationBaseUrl}register'),
         headers: {'Content-Type': 'application/json'},
         body: json.encode(userData),
       );
@@ -213,10 +245,12 @@ class ApiService {
       if (response.statusCode == 201) {
         final data = json.decode(response.body);
         if (data['success'] == true) {
-          await saveProductionTokens(
-            data['data']['token'],
-            'refresh_token_placeholder',
-          );
+          final token = data['data']['token'];
+          if (_isLocalMode) {
+            await saveLocalTokens(token, 'refresh_token_placeholder');
+          } else {
+            await saveProductionTokens(token, 'refresh_token_placeholder');
+          }
           return {'success': true, 'data': data['data']};
         }
         return {
@@ -293,8 +327,11 @@ class ApiService {
       }
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['data'] ?? data;
+        final decoded = json.decode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return decoded['data'] ?? decoded;
+        }
+        return decoded;
       } else {
         final error = json.decode(response.body);
         throw Exception(error['message'] ?? 'Request failed');
@@ -350,10 +387,10 @@ class ApiService {
       }
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final result = json.decode(response.body);
+        final result = _decodeJsonResponse(response.body);
         return result['data'] ?? result;
       } else {
-        final error = json.decode(response.body);
+        final error = _decodeJsonResponse(response.body);
         if (response.statusCode == 422) {
           String errorMessage = 'Validation failed: ';
           if (error['errors'] != null) {
@@ -364,7 +401,11 @@ class ApiService {
           }
           throw Exception(errorMessage);
         }
-        throw Exception(error['message'] ?? 'Request failed');
+        throw Exception(
+          error['message'] ??
+              error['error'] ??
+              'Request failed (${response.statusCode}): ${response.body}',
+        );
       }
     } catch (e) {
       print('❌ POST Error: $e');
@@ -469,6 +510,80 @@ class ApiService {
   }
 
   // ========== MULTIPART FILE UPLOAD ==========
+
+  Future<Map<String, dynamic>> postMultipartFiles(
+    String endpoint,
+    Map<String, dynamic> data,
+    Map<String, List<File>> files,
+  ) async {
+    await loadTokens();
+
+    final token = _getToken() ?? '';
+    if (token.isEmpty) {
+      throw Exception(
+        'Not authenticated. Please login to ${_isLocalMode ? "local" : "production"} server first.',
+      );
+    }
+
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${_getBaseUrl()}$endpoint'),
+    )
+      ..headers['Authorization'] = 'Bearer $token'
+      ..headers['Accept'] = 'application/json';
+
+    data.forEach((key, value) {
+      if (value == null) return;
+      request.fields[key] = value is List ? json.encode(value) : value.toString();
+    });
+
+    for (final entry in files.entries) {
+      for (final file in entry.value) {
+        if (await file.exists()) {
+          request.files.add(await http.MultipartFile.fromPath(entry.key, file.path));
+        }
+      }
+    }
+
+    final response = await request.send();
+    final body = await response.stream.bytesToString();
+    dynamic decoded;
+    try {
+      decoded = json.decode(body);
+    } catch (_) {
+      decoded = null;
+    }
+
+    if (response.statusCode == 401) {
+      await clearTokens();
+      throw Exception('Session expired. Please login again.');
+    }
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      final message = decoded is Map<String, dynamic>
+          ? (decoded['message'] ?? decoded['errors'] ?? 'Upload failed')
+          : 'Upload failed (${response.statusCode})';
+      throw Exception(message.toString());
+    }
+
+    if (decoded is Map<String, dynamic>) {
+      final result = decoded['data'] ?? decoded;
+      return result is Map<String, dynamic>
+          ? result
+          : <String, dynamic>{'data': result};
+    }
+    throw Exception('The server returned an invalid upload response.');
+  }
+
+  Map<String, dynamic> _decodeJsonResponse(String body) {
+    try {
+      final decoded = json.decode(body);
+      return decoded is Map<String, dynamic>
+          ? decoded
+          : <String, dynamic>{'data': decoded};
+    } catch (_) {
+      return <String, dynamic>{'message': body.trim()};
+    }
+  }
 
   Future<dynamic> postMultipart(
     String endpoint,
@@ -680,24 +795,15 @@ class ApiService {
   // ========== ANIMALS API ==========
 
   Future<List<dynamic>> getAnimals() async {
-    final response = await get('animals');
-    return response['data'] ?? [];
+    return _extractList(await get('animals'));
   }
 
-  // SINGLE createAnimal method - FIXED
   Future<dynamic> createAnimal(Map<String, dynamic> data) async {
-    try {
-      // Normalize type to lowercase for backend compatibility
-      if (data.containsKey('type')) {
-        data['type'] = data['type'].toString().toLowerCase();
-      }
-      
-      final response = await post('animals', data);
-      return response;
-    } catch (e) {
-      print('❌ Failed to create animal: $e');
-      rethrow;
+    if (data.containsKey('type')) {
+      data['type'] = data['type'].toString().toLowerCase();
     }
+
+    return await post('animals', data);
   }
 
   Future<Map<String, dynamic>> updateAnimal(
@@ -716,8 +822,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getAnimalHealthHistory(int id) async {
-    final response = await get('animals/$id/health-history');
-    return response['data'] ?? [];
+    return _extractList(await get('animals/$id/health-history'));
   }
 
   Future<Map<String, dynamic>> getAnimalStats() async {
@@ -729,11 +834,30 @@ class ApiService {
 
   Future<List<dynamic>> getReports() async {
     final response = await get('reports');
-    return response['data'] ?? [];
+    if (response is List) return response;
+    if (response is Map<String, dynamic>) {
+      final reports = response['data'];
+      return reports is List ? reports : [];
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> createReport(Map<String, dynamic> data) async {
     return await post('reports', data);
+  }
+
+  Future<Map<String, dynamic>> createReportWithMedia(
+    Map<String, dynamic> data, {
+    List<File> images = const [],
+    List<File> videos = const [],
+    File? audio,
+  }) async {
+    final files = <String, List<File>>{
+      'images[]': images,
+      'videos[]': videos,
+      'audio': audio == null ? const [] : [audio],
+    };
+    return await postMultipartFiles('reports', data, files);
   }
 
   Future<Map<String, dynamic>> updateReport(
@@ -762,11 +886,15 @@ class ApiService {
     return response;
   }
 
+  Future<Map<String, dynamic>> getReport(int id) async {
+    final response = await get('reports/$id');
+    return response is Map<String, dynamic> ? response : <String, dynamic>{};
+  }
+
   // ========== FARMS API ==========
 
   Future<List<dynamic>> getFarms() async {
-    final response = await get('farms');
-    return response['data'] ?? [];
+    return _extractList(await get('farms'));
   }
 
   Future<dynamic> createFarm(
@@ -810,19 +938,11 @@ class ApiService {
 
   Future<List<dynamic>> getWorkers({int? farmId}) async {
     final endpoint = farmId != null ? 'workers?farm_id=$farmId' : 'workers';
-    final response = await get(endpoint);
-    return response is List ? response : response['data'] ?? [];
+    return _extractList(await get(endpoint));
   }
 
-  // SINGLE createWorker method - FIXED
   Future<dynamic> createWorker(Map<String, dynamic> data) async {
-    try {
-      final response = await post('workers', data);
-      return response;
-    } catch (e) {
-      print('❌ Failed to create worker: $e');
-      rethrow;
-    }
+    return await post('workers', data);
   }
 
   Future<Map<String, dynamic>> updateWorker(
@@ -840,7 +960,24 @@ class ApiService {
 
   Future<List<dynamic>> getDoctors() async {
     final response = await get('doctors');
-    return response['data'] ?? [];
+    return _extractList(response);
+  }
+
+  Future<List<dynamic>> getExtensionWorkers() async {
+    final response = await get('extension-workers');
+    return _extractList(response);
+  }
+
+  List<dynamic> _extractList(dynamic response) {
+    if (response is List) return response;
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      if (data is List) return data;
+      if (data is Map<String, dynamic> && data['data'] is List) {
+        return data['data'] as List<dynamic>;
+      }
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> createDoctor(Map<String, dynamic> data) async {
@@ -859,8 +996,68 @@ class ApiService {
   // ========== DISEASES API ==========
 
   Future<List<dynamic>> getDiseases() async {
-    final response = await get('diseases');
-    return response['data'] ?? [];
+    return _extractList(await get('diseases'));
+  }
+
+  Future<Map<String, dynamic>> diagnoseSymptoms({
+    required String animalType,
+    required List<String> symptoms,
+  }) async {
+    try {
+      final response = await post('diagnosis', {
+        'animal_type': animalType,
+        'symptoms': symptoms,
+      });
+      return response is Map<String, dynamic> ? response : <String, dynamic>{};
+    } catch (error) {
+      // Older deployments may not have the new /diagnosis route yet. The
+      // disease catalog is still backend data, so use it as a compatible
+      // fallback instead of showing a blank diagnosis screen.
+      final diseases = await getDiseases();
+      if (diseases.isEmpty) rethrow;
+      return _matchDiseaseCatalog(diseases, animalType, symptoms);
+    }
+  }
+
+  Map<String, dynamic> _matchDiseaseCatalog(
+    List<dynamic> diseases,
+    String animalType,
+    List<String> symptoms,
+  ) {
+    final animal = animalType.toLowerCase();
+    final normalizedSymptoms = symptoms.map((s) => s.toLowerCase()).toList();
+    final results = diseases.whereType<Map>().map((raw) {
+      final disease = Map<String, dynamic>.from(raw);
+      final text = '${disease['name'] ?? ''} ${disease['species_affected'] ?? ''} '
+          '${disease['symptoms'] ?? ''}'.toLowerCase();
+      final symptomMatches = normalizedSymptoms.where((symptom) {
+        return text.contains(symptom) ||
+            symptom.split(' ').where((word) => word.length > 3).any((word) => text.contains(word));
+      }).length;
+      final species = '${disease['species_affected'] ?? ''}'.toLowerCase();
+      final speciesMatches = species.contains(animal) ||
+          (animal == 'poultry' && (species.contains('chicken') || species.contains('bird')));
+      final score = normalizedSymptoms.isEmpty
+          ? 0
+          : ((symptomMatches / normalizedSymptoms.length) * 80).round() +
+              (speciesMatches ? 20 : 0);
+      return <String, dynamic>{
+        ...disease,
+        'match': score.clamp(0, 100).toInt(),
+        'severity': '${disease['severity'] ?? 'medium'}'.replaceFirstMapped(
+          RegExp(r'^.'),
+          (match) => match.group(0)!.toUpperCase(),
+        ),
+        'description': disease['symptoms'] ?? '',
+      };
+    }).where((disease) => (disease['match'] as int) > 0).toList()
+      ..sort((a, b) => (b['match'] as int).compareTo(a['match'] as int));
+
+    return {
+      'diseases': results.take(5).toList(),
+      'matches': results.length,
+      'message': 'Matches are based on symptoms from the backend disease catalog.',
+    };
   }
 
   Future<Map<String, dynamic>> createDisease(Map<String, dynamic> data) async {
@@ -871,12 +1068,19 @@ class ApiService {
 
   Future<List<dynamic>> getVideos() async {
     final response = await get('videos');
-    return response['data'] ?? [];
+    if (response is List) return response;
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      return data is List ? data : [];
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> getVideoCategories() async {
     final response = await get('videos/categories');
-    return response;
+    return response is Map<String, dynamic>
+        ? response
+        : <String, dynamic>{'data': response};
   }
 
   Future<void> incrementVideoViews(int id) async {
@@ -887,13 +1091,28 @@ class ApiService {
 
   Future<List<dynamic>> getAdvertisements() async {
     final response = await get('advertisements');
-    return response['data'] ?? [];
+    if (response is List) return response;
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      return data is List ? data : [];
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> createAdvertisement(
-    Map<String, dynamic> data,
-  ) async {
-    return await post('advertisements', data);
+    Map<String, dynamic> data, {
+    File? imageFile,
+    File? videoFile,
+  }) async {
+    dynamic response;
+    if (imageFile != null && imageFile.existsSync()) {
+      response = await postWithFile('advertisements', data, 'image_file', imageFile);
+    } else if (videoFile != null && videoFile.existsSync()) {
+      response = await postWithFile('advertisements', data, 'video_file', videoFile);
+    } else {
+      response = await post('advertisements', data);
+    }
+    return response is Map<String, dynamic> ? response : <String, dynamic>{};
   }
 
   Future<void> trackAdClick(int id) async {
@@ -904,11 +1123,22 @@ class ApiService {
 
   Future<List<dynamic>> getChatHistory() async {
     final response = await get('ai-chat/history');
-    return response['data'] ?? [];
+    if (response is List) return response;
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      return data is List ? data : [];
+    }
+    return [];
   }
 
-  Future<Map<String, dynamic>> sendChatMessage(String message) async {
-    return await post('ai-chat/send', {'message': message});
+  Future<Map<String, dynamic>> sendChatMessage(
+    String message, {
+    String? language,
+  }) async {
+    return await post('ai-chat/send', {
+      'message': message,
+      if (language != null) 'language': language,
+    });
   }
 
   Future<void> clearChatHistory() async {
@@ -922,17 +1152,24 @@ class ApiService {
   // ========== DECISION SUPPORT API ==========
 
   Future<List<dynamic>> getDecisionSupport({String? category}) async {
-    String url = 'decision-support';
+    String url = 'decision-support/resources';
     if (category != null) {
       url += '?category=$category';
     }
     final response = await get(url);
-    return response['data'] ?? [];
+    if (response is List) return response;
+    if (response is Map<String, dynamic>) {
+      final data = response['data'];
+      return data is List ? data : [];
+    }
+    return [];
   }
 
   Future<Map<String, dynamic>> getDecisionCategories() async {
     final response = await get('decision-support/categories');
-    return response;
+    return response is Map<String, dynamic>
+        ? response
+        : <String, dynamic>{'data': response};
   }
 
   Future<void> markDecisionHelpful(int id) async {
@@ -947,8 +1184,7 @@ class ApiService {
   }
 
   Future<List<dynamic>> getWeatherAdvisories() async {
-    final response = await get('weather/advisories');
-    return response['data'] ?? [];
+    return _extractList(await get('weather/advisories'));
   }
 
   // ========== SETTINGS API ==========
@@ -967,16 +1203,87 @@ class ApiService {
     return response;
   }
 
+  // ========== MARKETPLACE API ==========
+
+  Future<List<dynamic>> getMarketplaceListings() async {
+    return _extractList(await get('marketplace'));
+  }
+
+  Future<Map<String, dynamic>> createMarketplaceListing(
+    Map<String, dynamic> data,
+    {File? imageFile}
+  ) async {
+    final response = imageFile != null && imageFile.existsSync()
+        ? await postWithFile('marketplace', data, 'image', imageFile)
+        : await post('marketplace', data);
+    return response is Map<String, dynamic> ? response : <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> updateMarketplaceListing(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    return await put('marketplace/$id', data);
+  }
+
+  Future<void> deleteMarketplaceListing(int id) async {
+    await delete('marketplace/$id');
+  }
+
+  // ========== GESTATION AND VACCINATION API ==========
+
+  Future<List<dynamic>> getGestationRecords() async {
+    return _extractList(await get('gestation'));
+  }
+
+  Future<Map<String, dynamic>> createGestationRecord(
+    Map<String, dynamic> data,
+  ) async {
+    final response = await post('gestation', data);
+    return response is Map<String, dynamic> ? response : <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> updateGestationRecord(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    return await put('gestation/$id', data);
+  }
+
+  Future<void> deleteGestationRecord(int id) async {
+    await delete('gestation/$id');
+  }
+
+  Future<List<dynamic>> getVaccinationRecords() async {
+    return _extractList(await get('vaccinations'));
+  }
+
+  Future<Map<String, dynamic>> createVaccinationRecord(
+    Map<String, dynamic> data,
+  ) async {
+    final response = await post('vaccinations', data);
+    return response is Map<String, dynamic> ? response : <String, dynamic>{};
+  }
+
+  Future<Map<String, dynamic>> updateVaccinationRecord(
+    int id,
+    Map<String, dynamic> data,
+  ) async {
+    return await put('vaccinations/$id', data);
+  }
+
+  Future<void> deleteVaccinationRecord(int id) async {
+    await delete('vaccinations/$id');
+  }
+
   // ========== LANGUAGES API ==========
 
   Future<List<dynamic>> getLanguages() async {
-    final response = await get('languages');
-    return response['data'] ?? [];
+    return _extractList(await get('languages'));
   }
 
   Future<List<dynamic>> getActiveLanguages() async {
-    final response = await get('languages/active');
-    return response['data'] ?? [];
+    return _extractList(await get('languages/active'));
   }
 
   Future<void> setDefaultLanguage(int id) async {

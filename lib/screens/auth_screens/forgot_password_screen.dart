@@ -47,8 +47,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color(0xFF1E7B4E)),
         child: SafeArea(
@@ -65,19 +65,19 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text(
+                        Text(
                           'Forgot Password?',
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
-                            color: Color(0xFF1A1F36),
+                            color: scheme.onSurface,
                             letterSpacing: 0.6,
                           ),
                         ),
                         const SizedBox(height: 10),
-                        const Text(
+                        Text(
                           "No worries! Enter your email address or phone number and we'll send you a code to reset your password.",
-                          style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.5),
+                          style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5),
                         ),
                         const SizedBox(height: 32),
                         const _FieldLabel('Email or Phone Number'),
@@ -90,9 +90,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
                             }
                             return null;
                           },
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'you@example.com',
-                            prefixIcon: Icon(Icons.alternate_email_rounded, color: Color(0xFF6B7280), size: 22),
+                            prefixIcon: Icon(Icons.alternate_email_rounded, color: scheme.onSurfaceVariant, size: 22),
                           ),
                         ),
                         const SizedBox(height: 32),
@@ -133,7 +133,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.18),
+                    color: Colors.white.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
@@ -201,8 +201,8 @@ class _VerificationScreenState extends State<VerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color(0xFF1E7B4E)),
         child: SafeArea(
@@ -217,14 +217,14 @@ class _VerificationScreenState extends State<VerificationScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const Text(
+                      Text(
                         'Verification',
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Color(0xFF1A1F36)),
+                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: scheme.onSurface),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'Enter the 6-digit code sent to\n${widget.email}',
-                        style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.5),
+                        style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5),
                       ),
                       const SizedBox(height: 40),
                       Row(
@@ -241,7 +241,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                               keyboardType: TextInputType.number,
                               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                               inputFormatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(1)],
-                              decoration: _otpInputDecoration(),
+                              decoration: _otpInputDecoration(scheme),
                               onChanged: (value) {
                                 if (value.isNotEmpty && index < 5) {
                                   _focusNodes[index + 1].requestFocus();
@@ -259,9 +259,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
                         alignment: Alignment.center,
                         child: TextButton(
                           onPressed: () {}, // Add resend logic here
-                          child: const Text(
+                          child: Text(
                             "Didn't receive a code? Resend",
-                            style: TextStyle(color: Color(0xFF1E7B4E), fontWeight: FontWeight.w700, fontSize: 13),
+                            style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                         ),
                       ),
@@ -278,12 +278,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
     );
   }
 
-  InputDecoration _otpInputDecoration() {
+  InputDecoration _otpInputDecoration(ColorScheme scheme) {
     return InputDecoration(
       filled: true,
-      fillColor: const Color(0xFFF6F8FA),
-      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFFE3E8EE), width: 1)),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: Color(0xFF1E7B4E), width: 1.5)),
+      fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: scheme.outlineVariant, width: 1)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: scheme.primary, width: 1.5)),
     );
   }
 
@@ -309,7 +309,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(8)),
                   child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
                 ),
                 const SizedBox(width: 10),
@@ -358,8 +358,8 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color(0xFF1E7B4E)),
         child: SafeArea(
@@ -376,9 +376,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const Text('Create New Password', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: Color(0xFF1A1F36))),
+                        Text('Create New Password', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: scheme.onSurface)),
                         const SizedBox(height: 10),
-                        const Text('Your new password must be different from previously used passwords.', style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.5)),
+                        Text('Your new password must be different from previously used passwords.', style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5)),
                         const SizedBox(height: 32),
                         const _FieldLabel('New Password'),
                         TextFormField(
@@ -391,9 +391,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           },
                           decoration: InputDecoration(
                             hintText: '••••••••',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF6B7280), size: 22),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: scheme.onSurfaceVariant, size: 22),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: const Color(0xFF6B7280), size: 22),
+                              icon: Icon(_obscureNew ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: scheme.onSurfaceVariant, size: 22),
                               onPressed: () => setState(() => _obscureNew = !_obscureNew),
                             ),
                           ),
@@ -410,9 +410,9 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           },
                           decoration: InputDecoration(
                             hintText: '••••••••',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded, color: Color(0xFF6B7280), size: 22),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: scheme.onSurfaceVariant, size: 22),
                             suffixIcon: IconButton(
-                              icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: const Color(0xFF6B7280), size: 22),
+                              icon: Icon(_obscureConfirm ? Icons.visibility_off_outlined : Icons.visibility_outlined, color: scheme.onSurfaceVariant, size: 22),
                               onPressed: () => setState(() => _obscureConfirm = !_obscureConfirm),
                             ),
                           ),
@@ -453,7 +453,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                 const Spacer(),
                 Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.18), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.18), borderRadius: BorderRadius.circular(8)),
                   child: const Icon(Icons.question_answer_rounded, color: Colors.white, size: 18),
                 ),
                 const SizedBox(width: 10),
@@ -490,8 +490,8 @@ class SuccessScreen extends StatelessWidget {
       }
     });
 
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
@@ -501,28 +501,28 @@ class SuccessScreen extends StatelessWidget {
               Container(
                 width: 100,
                 height: 100,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE8F8EE),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(Icons.check_rounded, color: Color(0xFF1E7B4E), size: 60),
+                child: Icon(Icons.check_rounded, color: scheme.primary, size: 60),
               ),
               const SizedBox(height: 32),
-              const Text(
+              Text(
                 'Password Reset\nSuccessful!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                   height: 1.3,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
+              Text(
                 'Your password has been successfully reset. You can now use your new credentials to log in.',
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, color: Color(0xFF6B7280), height: 1.5),
+                style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5),
               ),
               const SizedBox(height: 40),
               _ActionBtn(
@@ -555,7 +555,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8, left: 4),
-      child: Text(text, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF374151))),
+      child: Text(text, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface)),
     );
   }
 }
@@ -595,7 +595,7 @@ class _AppLogo extends StatelessWidget {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 22, offset: const Offset(0, 12))],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 22, offset: const Offset(0, 12))],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),

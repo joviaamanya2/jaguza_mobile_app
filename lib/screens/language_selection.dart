@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import '../services/language_service.dart';
+import '../services/app_localizations.dart';
 
 class LanguageSelectionScreen extends StatefulWidget {
   const LanguageSelectionScreen({super.key});
@@ -156,7 +157,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: Theme.of(context).colorScheme.error,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -167,19 +168,19 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   Widget build(BuildContext context) {
     final double headerHeight = MediaQuery.of(context).size.height * 0.32;
 
+    final scheme = Theme.of(context).colorScheme;
+
     if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF8F9FA),
+      return Scaffold(
         body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1E7B4E)),
+            valueColor: AlwaysStoppedAnimation<Color>(scheme.primary),
           ),
         ),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FA),
       body: Column(
         children: [
           // 1. Top Background Image with Overlay
@@ -201,8 +202,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        Colors.black.withOpacity(0.1),
-                        Colors.black.withOpacity(0.6),
+                        Colors.black.withValues(alpha: 0.1),
+                        Colors.black.withValues(alpha: 0.6),
                       ],
                     ),
                   ),
@@ -232,7 +233,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.3),
+                        color: Colors.black.withValues(alpha: 0.3),
                         shape: BoxShape.circle,
                       ),
                       child: const Icon(
@@ -260,11 +261,11 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                     width: double.infinity,
                     padding: const EdgeInsets.all(24.0),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
+                          color: Colors.black.withValues(alpha: 0.04),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),
@@ -279,15 +280,15 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                               width: 4,
                               height: 24,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF1E7B4E),
+                                color: scheme.primary,
                                 borderRadius: BorderRadius.circular(2),
                               ),
                             ),
                             const SizedBox(width: 12),
-                            const Text(
-                              'Set App Language',
+                            Text(
+                              context.tr('Set App Language'),
                               style: TextStyle(
-                                color: Color(0xFF1E7B4E),
+                                color: scheme.primary,
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -295,10 +296,10 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                           ],
                         ),
                         const SizedBox(height: 28),
-                        const Text(
-                          'Language',
+                        Text(
+                          context.tr('Language'),
                           style: TextStyle(
-                            color: Color(0xFF6B7280),
+                            color: scheme.onSurfaceVariant,
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                           ),
@@ -307,14 +308,14 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           decoration: BoxDecoration(
-                            border: Border.all(color: const Color(0xFFE5E7EB)),
+                            border: Border.all(color: scheme.outlineVariant),
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: _selectedLanguage,
                               isExpanded: true,
-                              icon: const Icon(Icons.keyboard_arrow_down, color: Color(0xFF6B7280)),
+                              icon: Icon(Icons.keyboard_arrow_down, color: scheme.onSurfaceVariant),
                               onChanged: (String? newValue) {
                                 if (newValue != null) {
                                   setState(() {
@@ -327,8 +328,8 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                                   value: lang['name'],
                                   child: Text(
                                     lang['name']!,
-                                    style: const TextStyle(
-                                      color: Color(0xFF1A1F36),
+                                    style: TextStyle(
+                                      color: scheme.onSurface,
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -342,9 +343,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                         Align(
                           alignment: Alignment.centerRight,
                           child: Text(
-                            '${_languages.length} languages available',
-                            style: const TextStyle(
-                              color: Color(0xFF9CA3AF),
+                            AppLocalizations.of(context).languagesAvailable(_languages.length),
+                            style: TextStyle(
+                              color: scheme.onSurfaceVariant,
                               fontSize: 11,
                             ),
                           ),
@@ -355,7 +356,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                           height: 52,
                           child: ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color.fromARGB(255, 26, 124, 47),
+                              backgroundColor: scheme.primary,
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
@@ -387,10 +388,10 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                   const Spacer(),
 
                   // 3. Footer Copyright Text
-                  const Text(
+                  Text(
                     '© 2025 Jaguza Livestock. All rights reserved.',
                     style: TextStyle(
-                      color: Color(0xFF9CA3AF),
+                      color: scheme.onSurfaceVariant,
                       fontSize: 11,
                     ),
                   ),

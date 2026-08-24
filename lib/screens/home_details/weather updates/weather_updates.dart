@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:jaguza_app/services/api_service.dart';
 
 class WeatherUpdatesScreen extends StatefulWidget {
   const WeatherUpdatesScreen({super.key});
@@ -11,6 +12,8 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   int _selectedTab = 0;
   String _selectedCountry = 'Uganda';
   String _selectedLocation = 'Kampala';
+  Map<String, dynamic>? _serverWeather;
+  bool _isLoadingWeather = false;
 
   final List<String> _countries = [
     'Uganda', 'Kenya', 'Tanzania', 'Rwanda',
@@ -24,6 +27,28 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   };
 
   DateTime get _now => DateTime.now();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWeather();
+  }
+
+  Future<void> _loadWeather() async {
+    setState(() => _isLoadingWeather = true);
+    try {
+      final response = await ApiService().getWeather(_selectedLocation);
+      if (mounted) {
+        setState(() {
+          _serverWeather = Map<String, dynamic>.from(response);
+        });
+      }
+    } catch (_) {
+      // The curated forecast remains available when no server observation exists.
+    } finally {
+      if (mounted) setState(() => _isLoadingWeather = false);
+    }
+  }
 
   String _dayName(int daysFromNow) {
     final d = _now.add(Duration(days: daysFromNow));
@@ -55,8 +80,36 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
 
   WeatherDay get _todayData {
     final data = _weeklyData[_selectedCountry] ?? _weeklyData['Uganda']!;
+    final weather = _serverWeather;
+    if (weather != null) {
+      final condition = '${weather['condition'] ?? data[_now.weekday - 1].condition}';
+      final temperature = int.tryParse('${weather['temperature'] ?? ''}') ??
+          data[_now.weekday - 1].highTemp;
+      return WeatherDay(
+        day: 'Today',
+        icon: _weatherIcon(condition),
+        condition: condition,
+        highTemp: temperature,
+        lowTemp: data[_now.weekday - 1].lowTemp,
+      );
+    }
     return data[_now.weekday - 1];
   }
+
+  IconData _weatherIcon(String condition) {
+    final value = condition.toLowerCase();
+    if (value.contains('rain') || value.contains('storm')) return Icons.grain_rounded;
+    if (value.contains('cloud')) return Icons.cloud_rounded;
+    return Icons.wb_sunny_rounded;
+  }
+
+  String get _humidityText => _serverWeather == null
+      ? '65%'
+      : '${_serverWeather!['humidity'] ?? 65}%';
+
+  String get _windText => _serverWeather == null
+      ? '12 km/h'
+      : '${_serverWeather!['wind_speed'] ?? 12} km/h';
 
   static const Map<String, List<WeatherDay>> _weeklyData = {
     'Uganda': [
@@ -252,6 +305,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   };
 
   void _showCountryPicker() {
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -259,7 +313,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
       builder: (ctx) => Container(
         margin: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(ctx).cardColor,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -270,18 +324,18 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: scheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(20, 16, 20, 8),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
               child: Text(
                 'Select Country',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                 ),
               ),
             ),
@@ -319,12 +373,12 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                        color: isSelected ? const Color(0xFF1976D2) : const Color(0xFF1A1F36),
+                        color: isSelected ? const Color(0xFF1976D2) : scheme.onSurface,
                       ),
                     ),
                     subtitle: Text(
                       _countryCapitals[country] ?? '',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                     ),
                     trailing: isSelected
                         ? const Icon(Icons.check_circle_rounded, color: Color(0xFF1976D2), size: 22)
@@ -334,6 +388,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
                         _selectedCountry = country;
                         _selectedLocation = _countryCapitals[country] ?? country;
                       });
+                      _loadWeather();
                       Navigator.pop(ctx);
                     },
                   );
@@ -350,9 +405,9 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   @override
   Widget build(BuildContext context) {
     final today = _todayData;
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEAF5FF),
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
@@ -362,28 +417,28 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Weather Updates',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1F36),
+                      color: scheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_rounded, size: 12, color: Colors.grey),
+                      Icon(Icons.location_on_rounded, size: 12, color: scheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         _selectedLocation,
-                        style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                       ),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1976D2).withOpacity(0.1),
+                          color: const Color(0xFF1976D2).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -431,7 +486,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
             icon: const Icon(Icons.refresh_rounded, size: 22),
             color: const Color(0xFF1976D2),
             onPressed: () {
-              setState(() {});
+              _loadWeather();
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Weather updated'),
@@ -571,8 +626,8 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
               children: [
                 _buildMiniWeatherTile('High', '${today.highTemp}°'),
                 _buildMiniWeatherTile('Low', '${today.lowTemp}°'),
-                _buildMiniWeatherTile('Humidity', '65%'),
-                _buildMiniWeatherTile('Wind', '12 km/h'),
+                _buildMiniWeatherTile('Humidity', _humidityText),
+                _buildMiniWeatherTile('Wind', _windText),
               ],
             ),
           ),
@@ -627,7 +682,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
     return Container(
       padding: const EdgeInsets.all(6),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(color: const Color.fromRGBO(0, 0, 0, 0.04), blurRadius: 12, offset: const Offset(0, 4)),
@@ -665,13 +720,14 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   }
 
   Widget _buildForecastCard(WeatherDay day) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE3F2FD)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -689,18 +745,18 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(day.day, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+                Text(day.day, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: scheme.onSurface)),
                 const SizedBox(height: 4),
-                Text(day.condition, style:  TextStyle(fontSize: 12, color: Colors.grey[600])),
+                Text(day.condition, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text('${day.highTemp}°', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+              Text('${day.highTemp}°', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface)),
               const SizedBox(height: 2),
-              Text('${day.lowTemp}°', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Text('${day.lowTemp}°', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
             ],
           ),
         ],
@@ -709,10 +765,11 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   }
 
   Widget _buildHourlyForecast() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(color: const Color.fromRGBO(0, 0, 0, 0.03), blurRadius: 18, offset: const Offset(0, 8)),
@@ -721,7 +778,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Hourly forecast', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+          Text('Hourly forecast', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: scheme.onSurface)),
           const SizedBox(height: 14),
           SizedBox(
             height: 110,
@@ -741,7 +798,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(hour.day, style:  TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w600)),
+                      Text(hour.day, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600)),
                       const SizedBox(height: 6),
                       Container(
                         width: 36,
@@ -753,7 +810,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
                         child: Icon(hour.icon, color: const Color(0xFF1565C0), size: 18),
                       ),
                       const SizedBox(height: 6),
-                      Text('${hour.highTemp}°', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+                      Text('${hour.highTemp}°', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: scheme.onSurface)),
                     ],
                   ),
                 );
@@ -766,13 +823,14 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   }
 
   Widget _buildAnalytics() {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(18),
             boxShadow: [
               BoxShadow(color: const Color.fromRGBO(0, 0, 0, 0.03), blurRadius: 18, offset: const Offset(0, 8)),
@@ -781,7 +839,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Livestock Weather Impact', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+              Text('Livestock Weather Impact', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: scheme.onSurface)),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -805,16 +863,16 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(color: const Color(0xFFE3F2FD)),
+            border: Border.all(color: scheme.outlineVariant),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Livestock Recommendations', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+              Text('Livestock Recommendations', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: scheme.onSurface)),
               const SizedBox(height: 6),
-              Text('Based on current weather in $_selectedCountry.', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Text('Based on current weather in $_selectedCountry.', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
               const SizedBox(height: 14),
               ..._livestockRecs.map((item) => _buildLivestockRec(item)),
             ],
@@ -831,6 +889,7 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
     required String change,
     required bool isPositive,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Container(
         padding: const EdgeInsets.all(12),
@@ -845,17 +904,17 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
               children: [
                 Icon(icon, size: 14, color: const Color(0xFF1976D2)),
                 const SizedBox(width: 4),
-                Expanded(child: Text(label, style:  TextStyle(fontSize: 10, color: Colors.grey[700], fontWeight: FontWeight.w600))),
+                Expanded(child: Text(label, style: TextStyle(fontSize: 10, color: scheme.onSurfaceVariant, fontWeight: FontWeight.w600))),
               ],
             ),
             const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+            Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface)),
             const SizedBox(height: 4),
             Row(
               children: [
-                Icon(isPositive ? Icons.check_circle_rounded : Icons.warning_rounded, size: 10, color: isPositive ? const Color(0xFF2E7D32) : const Color(0xFFF57C00)),
+                Icon(isPositive ? Icons.check_circle_rounded : Icons.warning_rounded, size: 10, color: isPositive ? scheme.primary : const Color(0xFFF57C00)),
                 const SizedBox(width: 2),
-                Text(change, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isPositive ? const Color(0xFF2E7D32) : const Color(0xFFF57C00))),
+                Text(change, style: TextStyle(fontSize: 9, fontWeight: FontWeight.w700, color: isPositive ? scheme.primary : const Color(0xFFF57C00))),
               ],
             ),
           ],
@@ -865,17 +924,18 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
   }
 
   Widget _buildLivestockRec(LivestockRecommendation item) {
+    final scheme = Theme.of(context).colorScheme;
     final color = item.suitability >= 80
-        ? const Color(0xFF2E7D32)
+        ? scheme.primary
         : item.suitability >= 70
             ? const Color(0xFFF57C00)
-            : const Color(0xFFD32F2F);
+            : scheme.error;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(color: const Color.fromRGBO(0, 0, 0, 0.03), blurRadius: 8, offset: const Offset(0, 4)),
@@ -897,9 +957,9 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+                Text(item.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: scheme.onSurface)),
                 const SizedBox(height: 2),
-                Text(item.tips, style:  TextStyle(fontSize: 11, color: Colors.grey[600]), maxLines: 2, overflow: TextOverflow.ellipsis),
+                Text(item.tips, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant), maxLines: 2, overflow: TextOverflow.ellipsis),
               ],
             ),
           ),

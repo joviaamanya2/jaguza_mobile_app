@@ -23,18 +23,18 @@ class DecisionSupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: Theme.of(context).cardColor,
+        foregroundColor: scheme.onSurface,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Decision Support',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
           ),
         ),
         leading: IconButton(
@@ -46,7 +46,7 @@ class DecisionSupportScreen extends StatelessWidget {
             margin: const EdgeInsets.only(right: 8),
             child: IconButton(
               icon: const Icon(Icons.auto_awesome_rounded, size: 24),
-              color: const Color(0xFF2E7D32),
+              color: scheme.primary,
               onPressed: () => _showAIAssistantDialog(context),
             ),
           ),
@@ -57,12 +57,12 @@ class DecisionSupportScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Select Animal',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
@@ -70,7 +70,7 @@ class DecisionSupportScreen extends StatelessWidget {
               'Get decision support for your livestock',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
+                color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 16),
@@ -92,12 +92,12 @@ class DecisionSupportScreen extends StatelessWidget {
                     },
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(context).cardColor,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: const Color(0xFFE8E8E8)),
+                        border: Border.all(color: scheme.outlineVariant),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.grey.withOpacity(0.06),
+                            color: Colors.black.withValues(alpha: 0.06),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -112,12 +112,12 @@ class DecisionSupportScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: const Color(0xFF2E7D32).withOpacity(0.18),
+                                color: scheme.primary.withValues(alpha: 0.18),
                                 width: 2,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(0.06),
+                                  color: Colors.black.withValues(alpha: 0.06),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
@@ -130,10 +130,10 @@ class DecisionSupportScreen extends StatelessWidget {
                                 width: 78,
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) {
-                                  return const Icon(
+                                  return Icon(
                                     Icons.image_not_supported,
                                     size: 48,
-                                    color: Colors.grey,
+                                    color: scheme.onSurfaceVariant,
                                   );
                                 },
                               ),
@@ -142,25 +142,25 @@ class DecisionSupportScreen extends StatelessWidget {
                           const SizedBox(height: 10),
                           Text(
                             animal.name,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
-                              color: Color(0xFF1A1F36),
+                              color: scheme.onSurface,
                             ),
                           ),
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFF2E7D32).withOpacity(0.08),
+                              color: scheme.primary.withValues(alpha: 0.08),
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Text(
+                            child: Text(
                               'View Decisions',
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFF2E7D32),
+                                color: scheme.primary,
                               ),
                             ),
                           ),
@@ -221,51 +221,52 @@ class DecisionSupportScreen extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('$animalName screen coming soon!'),
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
     }
   }
 
   void _showAIAssistantDialog(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-        backgroundColor: Colors.white,
+        backgroundColor: Theme.of(context).cardColor,
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.08),
+                color: scheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.auto_awesome_rounded,
-                color: Color(0xFF2E7D32),
+                color: scheme.primary,
                 size: 18,
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'AI Farm Assistant',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
           ],
         ),
-        content: const Text(
+        content: Text(
           'Ask me anything about livestock management:',
-          style: TextStyle(fontSize: 13, color: Colors.grey),
+          style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close', style: TextStyle(color: Colors.grey[600])),
+            child: Text('Close', style: TextStyle(color: scheme.onSurfaceVariant)),
           ),
           ElevatedButton(
               onPressed: () {
@@ -277,8 +278,8 @@ class DecisionSupportScreen extends StatelessWidget {
                 );
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
+                backgroundColor: scheme.primary,
+                foregroundColor: scheme.onPrimary,
               ),
               child: const Text('Ask AI'),
             ),

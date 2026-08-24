@@ -4,29 +4,12 @@ import '../terms_and_conditions.dart';
 import '../language_selection.dart';
 import '../../services/api_service.dart';
 
-// ─── App entry ──
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  runApp(const _SignupApp());
-}
-
-class _SignupApp extends StatelessWidget {
-  const _SignupApp();
-  @override
-  Widget build(BuildContext context) => const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: RegisterScreen(),
-      );
-}
-
 // ─── Theme constants ─
+// _kGreen is kept for the custom curved header (a deliberate static brand
+// element, not driven by the theme). _kPrimary is the deliberate orange CTA
+// accent, distinct from the green design system.
 const _kGreen = Color(0xFF2E7D32);
 const _kGreenLight = Color(0xFF2E7D32);
-const _kError = Color(0xFFE5484D);
-const _kText = Color(0xFF1A1F36);
-const _kSubtext = Color(0xFF6B7280);
-const _kBorder = Color(0xFFE3E8EE);
-const _kFill = Color(0xFFF6F8FA);
 const _kPrimary = Color(0xFFFF7A1A);
 
 // ─── Password strength helper ───────────
@@ -46,12 +29,12 @@ _PasswordStrength _evalStrength(String password) {
   return _PasswordStrength.veryStrong;
 }
 
-Color _strengthColor(_PasswordStrength s) => switch (s) {
-      _PasswordStrength.weak => const Color(0xFFE5484D),
+Color _strengthColor(_PasswordStrength s, ColorScheme scheme) => switch (s) {
+      _PasswordStrength.weak => scheme.error,
       _PasswordStrength.fair => const Color(0xFFF59E0B),
       _PasswordStrength.strong => const Color(0xFF10B981),
-      _PasswordStrength.veryStrong => _kGreen,
-      _ => _kBorder,
+      _PasswordStrength.veryStrong => scheme.primary,
+      _ => scheme.outlineVariant,
     };
 
 String _strengthLabel(_PasswordStrength s) => switch (s) {
@@ -214,6 +197,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   }
 
   void _showSnack(String message, {bool isError = false}) {
+    final scheme = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -228,7 +212,7 @@ class _RegisterScreenState extends State<RegisterScreen>
           ],
         ),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isError ? _kError : _kGreen,
+        backgroundColor: isError ? scheme.error : scheme.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
@@ -237,13 +221,13 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
         body: Column(
           children: [
             FadeTransition(
@@ -364,7 +348,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               _obscurePassword
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: _kSubtext,
+                              color: scheme.onSurfaceVariant,
                               size: 21,
                             ),
                             onPressed: () => setState(
@@ -404,7 +388,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               _obscureConfirm
                                   ? Icons.visibility_off_outlined
                                   : Icons.visibility_outlined,
-                              color: _kSubtext,
+                              color: scheme.onSurfaceVariant,
                               size: 21,
                             ),
                             onPressed: () => setState(
@@ -453,21 +437,21 @@ class _RegisterScreenState extends State<RegisterScreen>
                           child: Text.rich(
                             TextSpan(
                               children: [
-                                const TextSpan(
+                                TextSpan(
                                   text: 'Already have an account? ',
                                   style: TextStyle(
-                                    color: _kSubtext,
+                                    color: scheme.onSurfaceVariant,
                                     fontSize: 14,
                                   ),
                                 ),
-                                const TextSpan(
+                                TextSpan(
                                   text: 'Sign In',
                                   style: TextStyle(
-                                    color: _kGreen,
+                                    color: scheme.primary,
                                     fontWeight: FontWeight.w700,
                                     fontSize: 14,
                                     decoration: TextDecoration.underline,
-                                    decorationColor: _kGreen,
+                                    decorationColor: scheme.primary,
                                   ),
                                 ),
                               ],
@@ -565,10 +549,10 @@ class _FormGroup extends StatelessWidget {
       children: [
         Text(
           label,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            color: _kText,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         const SizedBox(height: 8),
@@ -612,6 +596,7 @@ class _AppField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
@@ -629,33 +614,33 @@ class _AppField extends StatelessWidget {
         }
       },
       validator: validator,
-      style: const TextStyle(fontSize: 14, color: _kText),
+      style: TextStyle(fontSize: 14, color: scheme.onSurface),
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+        hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
         filled: true,
-        fillColor: _kFill,
+        fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        prefixIcon: Icon(icon, color: _kSubtext, size: 21),
+        prefixIcon: Icon(icon, color: scheme.onSurfaceVariant, size: 21),
         suffixIcon: suffixIcon,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kBorder, width: 1),
+          borderSide: BorderSide(color: scheme.outlineVariant, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kGreen, width: 1.5),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kError, width: 1),
+          borderSide: BorderSide(color: scheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kError, width: 1.5),
+          borderSide: BorderSide(color: scheme.error, width: 1.5),
         ),
-        errorStyle: const TextStyle(fontSize: 11.5, color: _kError),
+        errorStyle: TextStyle(fontSize: 11.5, color: scheme.error),
       ),
     );
   }
@@ -681,6 +666,7 @@ class _PhoneField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
@@ -696,12 +682,12 @@ class _PhoneField extends StatelessWidget {
         if (v.length < 7) return 'Enter a valid phone number';
         return null;
       },
-      style: const TextStyle(fontSize: 14, color: _kText),
+      style: TextStyle(fontSize: 14, color: scheme.onSurface),
       decoration: InputDecoration(
         hintText: '712 345 678',
-        hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+        hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 14),
         filled: true,
-        fillColor: _kFill,
+        fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
         contentPadding:
             const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         prefixIcon: Padding(
@@ -709,11 +695,11 @@ class _PhoneField extends StatelessWidget {
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: selectedCode,
-              icon: const Icon(Icons.arrow_drop_down_rounded,
-                  color: _kSubtext, size: 20),
+              icon: Icon(Icons.arrow_drop_down_rounded,
+                  color: scheme.onSurfaceVariant, size: 20),
               isDense: true,
-              style: const TextStyle(
-                color: _kText,
+              style: TextStyle(
+                color: scheme.onSurface,
                 fontWeight: FontWeight.w600,
                 fontSize: 13,
               ),
@@ -735,21 +721,21 @@ class _PhoneField extends StatelessWidget {
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kBorder, width: 1),
+          borderSide: BorderSide(color: scheme.outlineVariant, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kGreen, width: 1.5),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kError, width: 1),
+          borderSide: BorderSide(color: scheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: _kError, width: 1.5),
+          borderSide: BorderSide(color: scheme.error, width: 1.5),
         ),
-        errorStyle: const TextStyle(fontSize: 11.5, color: _kError),
+        errorStyle: TextStyle(fontSize: 11.5, color: scheme.error),
       ),
     );
   }
@@ -762,7 +748,8 @@ class _PasswordStrengthMeter extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = _strengthColor(strength);
+    final scheme = Theme.of(context).colorScheme;
+    final color = _strengthColor(strength, scheme);
     final filled = _strengthSegments(strength);
     final label = _strengthLabel(strength);
 
@@ -776,7 +763,7 @@ class _PasswordStrengthMeter extends StatelessWidget {
                 margin: EdgeInsets.only(left: i == 0 ? 0 : 4),
                 height: 5,
                 decoration: BoxDecoration(
-                  color: i < filled ? color : _kBorder,
+                  color: i < filled ? color : scheme.outlineVariant,
                   borderRadius: BorderRadius.circular(3),
                 ),
               ),
@@ -817,6 +804,7 @@ class _TermsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => onChanged(!isChecked),
       child: Row(
@@ -829,11 +817,11 @@ class _TermsRow extends StatelessWidget {
               value: isChecked,
               onChanged: onChanged,
               checkColor: Colors.white,
-              activeColor: _kGreen,
+              activeColor: scheme.primary,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(6),
               ),
-              side: const BorderSide(color: Color(0xFF9CA3AF), width: 1.5),
+              side: BorderSide(color: scheme.onSurfaceVariant, width: 1.5),
             ),
           ),
           const SizedBox(width: 12),
@@ -841,11 +829,11 @@ class _TermsRow extends StatelessWidget {
             child: Text.rich(
               TextSpan(
                 children: [
-                  const TextSpan(
+                  TextSpan(
                     text: 'I have read and agree to the Jaguza Livestock ',
                     style: TextStyle(
                       fontSize: 13,
-                      color: _kSubtext,
+                      color: scheme.onSurfaceVariant,
                       height: 1.5,
                     ),
                   ),
@@ -854,24 +842,24 @@ class _TermsRow extends StatelessWidget {
                     baseline: TextBaseline.alphabetic,
                     child: GestureDetector(
                       onTap: onTermsTap,
-                      child: const Text(
+                      child: Text(
                         'Terms & Conditions',
                         style: TextStyle(
                           fontSize: 13,
-                          color: _kGreen,
+                          color: scheme.primary,
                           fontWeight: FontWeight.w700,
                           decoration: TextDecoration.underline,
-                          decorationColor: _kGreen,
+                          decorationColor: scheme.primary,
                           height: 1.5,
                         ),
                       ),
                     ),
                   ),
-                  const TextSpan(
+                  TextSpan(
                     text: ' and Privacy Policy.',
                     style: TextStyle(
                       fontSize: 13,
-                      color: _kSubtext,
+                      color: scheme.onSurfaceVariant,
                       height: 1.5,
                     ),
                   ),
@@ -900,7 +888,7 @@ class _RegisterButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: _kPrimary,
           foregroundColor: Colors.white,
-          disabledBackgroundColor: _kPrimary.withOpacity(0.6),
+          disabledBackgroundColor: _kPrimary.withValues(alpha: 0.6),
           disabledForegroundColor: Colors.white,
           elevation: 0,
           shadowColor: Colors.transparent,

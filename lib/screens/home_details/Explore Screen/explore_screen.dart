@@ -1,44 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:jaguza_app/services/api_service.dart';
 
 // Import your disease and marketplace screens
 import '../../home_details/Disease Information/disease_info.dart';
 import '../../home_details/Market place/market_place.dart';
-
-
-
-
-
-
-void main() {
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-  );
-  runApp(const ExploreApp());
-}
-
-class ExploreApp extends StatelessWidget {
-  const ExploreApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Jaguza - Explore',
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-        primaryColor: const Color(0xFF2E7D32),
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFF2E7D32),
-          secondary: Color(0xFF2E7D32),
-        ),
-        fontFamily: 'Inter',
-      ),
-      home: const ExploreScreen(),
-    );
-  }
-}
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -51,6 +17,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   int _selectedCategory = 0;
+  bool _isLoading = true;
+  String? _loadError;
+  List<FeedPost> _feedPosts = [];
 
   final List<CategoryItem> _categories = [
     CategoryItem(icon: Icons.grid_view_rounded, label: 'All'),
@@ -61,21 +30,152 @@ class _ExploreScreenState extends State<ExploreScreen> {
   ];
 
   @override
+  void initState() {
+    super.initState();
+    _loadExploreContent();
+  }
+
+  Future<void> _loadExploreContent() async {
+    setState(() {
+      _isLoading = true;
+      _loadError = null;
+    });
+    final posts = <FeedPost>[];
+    try {
+      final resources = await ApiService().getDecisionSupport();
+      posts.addAll(resources.whereType<Map>().map(_resourceToPost));
+    } catch (e) {
+      debugPrint('Decision support load error: $e');
+    }
+    try {
+      final videos = await ApiService().getVideos();
+      posts.addAll(videos.whereType<Map>().map(_videoToPost));
+    } catch (e) {
+      debugPrint('Explore videos load error: $e');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _feedPosts = posts;
+      _isLoading = false;
+      if (posts.isEmpty) {
+        _loadError = 'No published dashboard content is available yet.';
+      }
+    });
+  }
+
+  FeedPost _resourceToPost(Map raw) {
+    final item = Map<String, dynamic>.from(raw);
+    final category = _displayCategory('${item['category'] ?? 'General'}');
+    final title = '${item['title'] ?? 'Jaguza farming resource'}';
+    final content = '${item['summary'] ?? item['content'] ?? ''}';
+    return FeedPost(
+      author: 'Jaguza Support',
+      location: category,
+      dateTime: _dateLabel(item['created_at']),
+      timeAgo: _timeAgo(item['created_at']),
+      title: title,
+      excerpt: content,
+      category: category,
+      likes: int.tryParse('${item['views_count'] ?? 0}') ?? 0,
+      comments: 0,
+      isVerified: true,
+      authorColor: const Color(0xFF2E7D32),
+      categoryColor: _categoryColor(category),
+      categoryIcon: _categoryIcon(category),
+      imageGradientStart: const Color(0xFF2E7D32),
+      imageGradientEnd: const Color(0xFF66BB6A),
+    );
+  }
+
+  FeedPost _videoToPost(Map raw) {
+    final item = Map<String, dynamic>.from(raw);
+    final categoryValue = item['category'];
+    final categoryName = categoryValue is Map ? categoryValue['name'] : categoryValue;
+    final category = _displayCategory('${categoryName ?? 'Videos'}');
+    final title = '${item['title'] ?? 'Jaguza farming video'}';
+    return FeedPost(
+      author: 'Jaguza Official',
+      location: category,
+      dateTime: _dateLabel(item['created_at']),
+      timeAgo: _timeAgo(item['created_at']),
+      title: title,
+      excerpt: '${item['description'] ?? 'Watch this farming lesson from the Jaguza dashboard.'}',
+      category: category,
+      likes: int.tryParse('${item['views_count'] ?? 0}') ?? 0,
+      comments: 0,
+      isVerified: true,
+      authorColor: const Color(0xFF1565C0),
+      categoryColor: const Color(0xFF1565C0),
+      categoryIcon: Icons.play_circle_fill_rounded,
+      imageGradientStart: const Color(0xFF1565C0),
+      imageGradientEnd: const Color(0xFF42A5F5),
+    );
+  }
+
+  String _displayCategory(String value) {
+    final cleaned = value.trim();
+    if (cleaned.isEmpty) return 'General';
+    return cleaned[0].toUpperCase() + cleaned.substring(1).toLowerCase();
+  }
+
+  Color _categoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'poultry': return const Color(0xFFE65100);
+      case 'cattle': return const Color(0xFF1E88E5);
+      case 'pig': case 'pigs': return const Color(0xFFD84315);
+      case 'goat': case 'goats': return const Color(0xFF6D4C41);
+      default: return const Color(0xFF2E7D32);
+    }
+  }
+
+  IconData _categoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'poultry': return Icons.egg_rounded;
+      case 'cattle': return Icons.pets_rounded;
+      case 'pig': case 'pigs': return Icons.set_meal_rounded;
+      case 'goat': case 'goats': return Icons.grass_rounded;
+      default: return Icons.agriculture_rounded;
+    }
+  }
+
+  String _dateLabel(dynamic value) {
+    final date = DateTime.tryParse('${value ?? ''}');
+    if (date == null) return 'Recently published';
+    return '${date.day}/${date.month}/${date.year}';
+  }
+
+  String _timeAgo(dynamic value) {
+    final date = DateTime.tryParse('${value ?? ''}');
+    if (date == null) return 'recently';
+    final difference = DateTime.now().difference(date);
+    if (difference.inDays > 0) return '${difference.inDays}d ago';
+    if (difference.inHours > 0) return '${difference.inHours}h ago';
+    return 'recently';
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
   }
 
   List<FeedPost> get _filteredPosts {
-    if (_selectedCategory == 0) return feedPosts;
+    final source = _feedPosts;
+    if (_selectedCategory == 0) return _filterSearch(source);
     final catLabel = _categories[_selectedCategory].label.toLowerCase();
-    return feedPosts.where((p) => p.category.toLowerCase() == catLabel).toList();
+    return _filterSearch(source.where((p) => p.category.toLowerCase() == catLabel).toList());
+  }
+
+  List<FeedPost> _filterSearch(List<FeedPost> posts) {
+    final query = _searchQuery.trim().toLowerCase();
+    if (query.isEmpty) return posts;
+    return posts.where((post) => '${post.title} ${post.excerpt} ${post.category} ${post.author}'.toLowerCase().contains(query)).toList();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
           _buildHeader(),
@@ -88,12 +188,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  HEADER - Clean, solid color
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildHeader() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFF2E7D32),
+      color: scheme.primary,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
       child: Column(
         children: [
@@ -109,7 +210,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       'Discover',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -152,7 +253,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: Colors.white, size: 20),
@@ -164,7 +265,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Text(
@@ -178,19 +279,20 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  SEARCH BAR
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildSearchBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -201,15 +303,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search posts, topics, or authors...',
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF2E7D32), size: 20),
+            hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+            prefixIcon: Icon(Icons.search_rounded, color: scheme.primary, size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
-                    child: Icon(Icons.close_rounded, color: Colors.grey[400], size: 18),
+                    child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
                   )
                 : null,
             border: InputBorder.none,
@@ -220,9 +322,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  QUICK BANNERS - Flat, clean with navigation
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildQuickBanners() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
@@ -248,7 +350,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               icon: Icons.biotech_rounded,
               title: 'Know more about',
               subtitle: 'animal Diseases',
-              color: const Color(0xFF2E7D32),
+              color: Theme.of(context).colorScheme.primary,
               onTap: () {
                 Navigator.push(
                   context,
@@ -269,14 +371,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -284,7 +387,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 18),
@@ -306,7 +409,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: scheme.onSurfaceVariant,
                       fontSize: 11,
                     ),
                   ),
@@ -315,7 +418,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.grey[400],
+              color: scheme.onSurfaceVariant,
               size: 20,
             ),
           ],
@@ -324,10 +427,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  CATEGORY CHIPS
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildCategoryChips() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: SizedBox(
@@ -345,10 +449,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isActive ? const Color(0xFF2E7D32) : Colors.white,
+                  color: isActive ? scheme.primary : Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isActive ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                    color: isActive ? scheme.primary : scheme.outlineVariant,
                   ),
                 ),
                 child: Row(
@@ -357,13 +461,13 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     Icon(
                       cat.icon,
                       size: 14,
-                      color: isActive ? Colors.white : Colors.grey[500],
+                      color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       cat.label,
                       style: TextStyle(
-                        color: isActive ? Colors.white : Colors.grey[600],
+                        color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
                         fontSize: 12,
                         fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                       ),
@@ -378,34 +482,49 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  FEED
-  // ═══════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   Widget _buildFeed() {
+    final scheme = Theme.of(context).colorScheme;
+    if (_isLoading) {
+      return Center(
+        child: CircularProgressIndicator(color: scheme.primary),
+      );
+    }
+
     final posts = _filteredPosts;
     if (posts.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.article_outlined, size: 48, color: Colors.grey[400]),
+            Icon(Icons.article_outlined, size: 48, color: scheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
-              'No posts yet',
-              style: const TextStyle(
+              _loadError ?? 'No matching posts',
+              style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              'Check back later for new content',
+              _loadError == null ? 'Try another category or search term' : 'Pull down to refresh dashboard content',
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[500],
+                color: scheme.onSurfaceVariant,
               ),
             ),
+            if (_loadError != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: _loadExploreContent,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Retry'),
+              ),
+            ],
           ],
         ),
       );
@@ -419,9 +538,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-// ═══════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  FEED POST CARD - Clean, flat design
-// ═══════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _FeedPostCard extends StatefulWidget {
   final FeedPost post;
   const _FeedPostCard({required this.post});
@@ -443,13 +562,14 @@ class _FeedPostCardState extends State<_FeedPostCard> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final post = widget.post;
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -488,36 +608,36 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                         children: [
                           Text(
                             post.author,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 13.5,
                               fontWeight: FontWeight.w600,
-                              color: Color(0xFF1A1F36),
+                              color: scheme.onSurface,
                             ),
                           ),
                           if (post.isVerified) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.verified_rounded, color: Color(0xFF2E7D32), size: 14),
+                            Icon(Icons.verified_rounded, color: scheme.primary, size: 14),
                           ],
                         ],
                       ),
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(Icons.location_on_rounded, color: Colors.grey[400], size: 11),
+                          Icon(Icons.location_on_rounded, color: scheme.onSurfaceVariant, size: 11),
                           const SizedBox(width: 2),
                           Text(
                             post.location,
-                            style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
                           ),
                           const SizedBox(width: 6),
                           Text(
-                            '•',
-                            style: TextStyle(color: Colors.grey[300], fontSize: 11),
+                            'â€¢',
+                            style: TextStyle(color: scheme.outlineVariant, fontSize: 11),
                           ),
                           const SizedBox(width: 6),
                           Text(
                             post.timeAgo,
-                            style: TextStyle(fontSize: 11, color: Colors.grey[400]),
+                            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
                           ),
                         ],
                       ),
@@ -528,7 +648,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: post.categoryColor.withOpacity(0.1),
+                    color: post.categoryColor.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -564,7 +684,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.12),
+                      color: Colors.white.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(
@@ -577,18 +697,18 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.15),
+                      color: Colors.black.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.camera_alt_rounded, color: Colors.white.withOpacity(0.8), size: 12),
+                        Icon(Icons.camera_alt_rounded, color: Colors.white.withValues(alpha: 0.8), size: 12),
                         const SizedBox(width: 4),
                         Text(
                           '${post.location}, ${post.dateTime}',
                           style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
+                            color: Colors.white.withValues(alpha: 0.9),
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
                           ),
@@ -606,10 +726,10 @@ class _FeedPostCardState extends State<_FeedPostCard> {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 4),
             child: Text(
               post.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
                 height: 1.3,
               ),
             ),
@@ -620,7 +740,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
               post.excerpt,
               style: TextStyle(
                 fontSize: 12.5,
-                color: Colors.grey[600],
+                color: scheme.onSurfaceVariant,
                 height: 1.5,
               ),
               maxLines: 2,
@@ -638,9 +758,9 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: const Color(0xFF2E7D32),
+                  color: scheme.primary,
                   decoration: TextDecoration.underline,
-                  decorationColor: const Color(0xFF2E7D32).withOpacity(0.3),
+                  decorationColor: scheme.primary.withValues(alpha: 0.3),
                 ),
               ),
             ),
@@ -649,7 +769,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
           // Divider
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            child: Divider(color: Colors.grey[200], height: 1),
+            child: Divider(color: scheme.outlineVariant, height: 1),
           ),
 
           // Action bar
@@ -660,7 +780,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                 _actionBtn(
                   icon: _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                   label: '$_likeCount',
-                  color: _isLiked ? const Color(0xFFE53935) : Colors.grey[500]!,
+                  color: _isLiked ? const Color(0xFFE53935) : scheme.onSurfaceVariant,
                   onTap: () {
                     setState(() {
                       _isLiked = !_isLiked;
@@ -671,14 +791,14 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                 _actionBtn(
                   icon: Icons.chat_bubble_outline_rounded,
                   label: '${post.comments}',
-                  color: Colors.grey[500]!,
+                  color: scheme.onSurfaceVariant,
                   onTap: () => _showCommentsSheet(context, post),
                 ),
                 const Spacer(),
                 _actionBtn(
                   icon: Icons.share_rounded,
                   label: 'Share',
-                  color: Colors.grey[500]!,
+                  color: scheme.onSurfaceVariant,
                   onTap: () {},
                 ),
                 const SizedBox(width: 4),
@@ -688,7 +808,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                     padding: const EdgeInsets.all(8),
                     child: Icon(
                       _isBookmarked ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
-                      color: _isBookmarked ? const Color(0xFFFFA000) : Colors.grey[400],
+                      color: _isBookmarked ? const Color(0xFFFFA000) : scheme.onSurfaceVariant,
                       size: 18,
                     ),
                   ),
@@ -731,6 +851,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   }
 
   void _showCommentsSheet(BuildContext context, FeedPost post) {
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -739,7 +860,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
         height: MediaQuery.of(ctx).size.height * 0.55,
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(ctx).cardColor,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -749,7 +870,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
               width: 36,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: scheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -757,34 +878,34 @@ class _FeedPostCardState extends State<_FeedPostCard> {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Row(
                 children: [
-                  const Text(
+                  Text(
                     'Comments',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
-                      color: Color(0xFF1A1F36),
+                      color: scheme.onSurface,
                     ),
                   ),
                   const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32).withOpacity(0.1),
+                      color: scheme.primary.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
                       '${post.comments}',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF2E7D32),
+                        color: scheme.primary,
                       ),
                     ),
                   ),
                   const Spacer(),
                   GestureDetector(
                     onTap: () => Navigator.pop(ctx),
-                    child: Icon(Icons.close_rounded, color: Colors.grey[400]),
+                    child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant),
                   ),
                 ],
               ),
@@ -796,16 +917,16 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(Icons.chat_bubble_outline_rounded, size: 44, color: Colors.grey[300]),
+                      Icon(Icons.chat_bubble_outline_rounded, size: 44, color: scheme.outlineVariant),
                       const SizedBox(height: 10),
                       Text(
                         'No comments yet',
-                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                        style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'Be the first to share your thoughts',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[400]),
+                        style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -817,9 +938,9 @@ class _FeedPostCardState extends State<_FeedPostCard> {
             Container(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
               decoration: BoxDecoration(
-                color: const Color(0xFFF8FAFB),
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
-                border: Border(top: BorderSide(color: Colors.grey[200]!)),
+                border: Border(top: BorderSide(color: scheme.outlineVariant)),
               ),
               child: Row(
                 children: [
@@ -827,14 +948,14 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32),
+                      color: scheme.primary,
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Center(
+                    child: Center(
                       child: Text(
                         'Y',
                         style: TextStyle(
-                          color: Colors.white,
+                          color: scheme.onPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
@@ -846,13 +967,13 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: Theme.of(ctx).cardColor,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.grey[200]!),
+                        border: Border.all(color: scheme.outlineVariant),
                       ),
                       child: Text(
                         'Add a comment...',
-                        style: TextStyle(color: Colors.grey[400], fontSize: 12.5),
+                        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12.5),
                       ),
                     ),
                   ),
@@ -861,11 +982,11 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF2E7D32),
+                      color: scheme.primary,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Center(
-                      child: Icon(Icons.send_rounded, color: Colors.white, size: 16),
+                    child: Center(
+                      child: Icon(Icons.send_rounded, color: scheme.onPrimary, size: 16),
                     ),
                   ),
                 ],
@@ -878,9 +999,9 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   }
 }
 
-// ═══════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  DATA MODELS
-// ═══════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class CategoryItem {
   final IconData icon;
   final String label;
@@ -925,14 +1046,14 @@ class FeedPost {
   });
 }
 
-// ═══════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  SAMPLE DATA
-// ═══════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Jaguza Official',
     location: 'Kampala',
-    dateTime: 'Sep 8, 2023 · 1:19 PM',
+    dateTime: 'Sep 8, 2023 Â· 1:19 PM',
     timeAgo: '2h ago',
     title: 'Benefits of Small Scale Poultry ~ Poultry Farming Guide',
     excerpt: 'Ever wondered whether small scale poultry farming is worth it? Here is a detailed breakdown of benefits, challenges, and tips to get started successfully in your backyard.',
@@ -949,7 +1070,7 @@ const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Dr. Atim Nancy',
     location: 'Jinja',
-    dateTime: 'Sep 7, 2023 · 10:30 AM',
+    dateTime: 'Sep 7, 2023 Â· 10:30 AM',
     timeAgo: '1d ago',
     title: 'Understanding Cattle Nutrition: A Complete Feeding Guide',
     excerpt: 'Proper nutrition is the backbone of a healthy herd. Learn about balanced feed rations, mineral supplements, and seasonal feeding strategies for optimal cattle productivity.',
@@ -966,7 +1087,7 @@ const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Mugisha David',
     location: 'Kabale',
-    dateTime: 'Sep 6, 2023 · 4:45 PM',
+    dateTime: 'Sep 6, 2023 Â· 4:45 PM',
     timeAgo: '2d ago',
     title: 'Modern Pig Farming Techniques for Ugandan Farmers',
     excerpt: 'Discover modern techniques in pig housing, feeding, disease prevention, and breeding that can significantly increase your farm output and profitability.',
@@ -983,7 +1104,7 @@ const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Nabukenya Sarah',
     location: 'Wakiso',
-    dateTime: 'Sep 5, 2023 · 9:00 AM',
+    dateTime: 'Sep 5, 2023 Â· 9:00 AM',
     timeAgo: '3d ago',
     title: 'Dairy Farming Best Practices: From Milking to Market',
     excerpt: 'Learn the essential best practices for dairy farming including proper milking hygiene, milk storage, quality testing, and finding the best markets for your products.',
@@ -1000,7 +1121,7 @@ const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Okello James',
     location: 'Lira',
-    dateTime: 'Sep 4, 2023 · 2:15 PM',
+    dateTime: 'Sep 4, 2023 Â· 2:15 PM',
     timeAgo: '4d ago',
     title: 'Crop-Livestock Integration: Maximizing Your Farm Output',
     excerpt: 'How integrating crops and livestock on the same farm can reduce costs, improve soil fertility, and create multiple income streams for smallholder farmers.',
@@ -1017,7 +1138,7 @@ const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Kemigisha Alice',
     location: 'Fort Portal',
-    dateTime: 'Sep 3, 2023 · 11:30 AM',
+    dateTime: 'Sep 3, 2023 Â· 11:30 AM',
     timeAgo: '5d ago',
     title: 'Goat Rearing in Uganda: Breeds, Feeding & Health Tips',
     excerpt: 'A comprehensive guide to the best goat breeds in Uganda, their feeding requirements, common diseases, vaccination schedules, and market opportunities.',
@@ -1034,10 +1155,10 @@ const List<FeedPost> feedPosts = [
   FeedPost(
     author: 'Ssebaggala Joseph',
     location: 'Masaka',
-    dateTime: 'Sep 2, 2023 · 3:00 PM',
+    dateTime: 'Sep 2, 2023 Â· 3:00 PM',
     timeAgo: '6d ago',
     title: 'Starting a Fish Farm: A Beginner\'s Guide to Aquaculture',
-    excerpt: 'Everything you need to know about setting up a fish pond in Uganda — from site selection and pond construction to stocking, feeding, and harvesting.',
+    excerpt: 'Everything you need to know about setting up a fish pond in Uganda â€” from site selection and pond construction to stocking, feeding, and harvesting.',
     category: 'Fish',
     likes: 11,
     comments: 2,

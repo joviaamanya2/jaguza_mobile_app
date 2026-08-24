@@ -1,74 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import '../language_selection.dart';
 import '../auth_screens/forgot_password_screen.dart';
 import '../auth_screens/Signup_screen.dart';
 import '../../services/api_service.dart';
-
-void main() {
-  WidgetsFlutterBinding.ensureInitialized();
-  SystemChrome.setSystemUIOverlayStyle(
-    SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color.fromARGB(255, 18, 112, 30)),
-  );
-  runApp(const SignInApp());
-}
-
-class SignInApp extends StatelessWidget {
-  const SignInApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Sign In',
-      debugShowCheckedModeBanner: false,
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('en'),
-        Locale('fr'),
-        Locale('es'),
-        Locale('sw'),
-        Locale('lg'),
-      ],
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: Colors.white,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 33, 117, 11),
-          primary: const Color.fromARGB(255, 33, 117, 11),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: const Color(0xFFF6F8FA),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE3E8EE), width: 1),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color.fromARGB(255, 49, 121, 28), width: 1.5),
-          ),
-          errorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE5484D), width: 1),
-          ),
-          focusedErrorBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFFE5484D), width: 1.5),
-          ),
-        ),
-      ),
-      home: const SignInScreen(),
-    );
-  }
-}
-
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -139,6 +74,7 @@ class _SignInScreenState extends State<SignInScreen>
   }
 
   void _showSnack(String message, {bool isError = false}) {
+    final scheme = Theme.of(context).colorScheme;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -153,7 +89,7 @@ class _SignInScreenState extends State<SignInScreen>
           ],
         ),
         behavior: SnackBarBehavior.floating,
-        backgroundColor: isError ? const Color(0xFFE5484D) : const Color(0xFF2E7D32),
+        backgroundColor: isError ? scheme.error : scheme.primary,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         margin: const EdgeInsets.all(16),
       ),
@@ -163,9 +99,9 @@ class _SignInScreenState extends State<SignInScreen>
   void _handleGoogleSignIn() {
     // Implement Google Sign-In
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Google Sign-In initiated'),
-        backgroundColor: Color(0xFF1E7B4E),
+      SnackBar(
+        content: const Text('Google Sign-In initiated'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
@@ -173,17 +109,17 @@ class _SignInScreenState extends State<SignInScreen>
   void _handleAppleSignIn() {
     // Implement Apple Sign-In
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Apple Sign-In initiated'),
-        backgroundColor: Color(0xFF1E7B4E),
+      SnackBar(
+        content: const Text('Apple Sign-In initiated'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light.copyWith(statusBarColor: const Color.fromARGB(255, 24, 117, 44)),
         child: SafeArea(
@@ -218,10 +154,10 @@ class _SignInScreenState extends State<SignInScreen>
                             }
                             return null;
                           },
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                             hintText: 'you@example.com',
                             prefixIcon: Icon(Icons.alternate_email_rounded,
-                                color: Color(0xFF6B7280), size: 22),
+                                color: scheme.onSurfaceVariant, size: 22),
                           ),
                         ),
                         const SizedBox(height: 16),
@@ -241,14 +177,14 @@ class _SignInScreenState extends State<SignInScreen>
                           },
                           decoration: InputDecoration(
                             hintText: '••••••••',
-                            prefixIcon: const Icon(Icons.lock_outline_rounded,
-                                color: Color(0xFF6B7280), size: 22),
+                            prefixIcon: Icon(Icons.lock_outline_rounded,
+                                color: scheme.onSurfaceVariant, size: 22),
                             suffixIcon: IconButton(
                               icon: Icon(
                                 _obscurePassword
                                     ? Icons.visibility_off_outlined
                                     : Icons.visibility_outlined,
-                                color: const Color(0xFF6B7280),
+                                color: scheme.onSurfaceVariant,
                                 size: 22,
                               ),
                               onPressed: _togglePasswordVisibility,
@@ -275,10 +211,10 @@ class _SignInScreenState extends State<SignInScreen>
                               minimumSize: Size.zero,
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
-                            child: const Text(
+                            child: Text(
                               'Forgot Password?',
                               style: TextStyle(
-                                color: Color(0xFF1E7B4E),
+                                color: scheme.primary,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 13,
                               ),
@@ -350,22 +286,23 @@ class _SectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 26,
             fontWeight: FontWeight.w800,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
             letterSpacing: 0.6,
           ),
         ),
         const SizedBox(height: 6),
         Text(
           subtitle,
-          style: const TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+          style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
         ),
       ],
     );
@@ -382,10 +319,10 @@ class _FieldLabel extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 8, left: 4),
       child: Text(
         text,
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 13,
           fontWeight: FontWeight.w600,
-          color: Color(0xFF374151),
+          color: Theme.of(context).colorScheme.onSurface,
         ),
       ),
     );
@@ -439,22 +376,23 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
-      children: const [
-        Expanded(child: Divider(color: Color(0xFFE3E8EE), thickness: 1)),
+      children: [
+        Expanded(child: Divider(color: scheme.outlineVariant, thickness: 1)),
         Padding(
-          padding: EdgeInsets.symmetric(horizontal: 14),
+          padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
             'OR CONTINUE WITH',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF9CA3AF),
+              color: scheme.onSurfaceVariant,
               letterSpacing: 1.2,
             ),
           ),
         ),
-        Expanded(child: Divider(color: Color(0xFFE3E8EE), thickness: 1)),
+        Expanded(child: Divider(color: scheme.outlineVariant, thickness: 1)),
       ],
     );
   }
@@ -486,7 +424,8 @@ class _SocialButtons extends StatelessWidget {
         ),
         const SizedBox(width: 18),
         _SocialTile(
-          icon: const Icon(Icons.apple_rounded, color: Color(0xFF1A1F36), size: 30),
+          icon: Icon(Icons.apple_rounded,
+              color: Theme.of(context).colorScheme.onSurface, size: 30),
           semanticLabel: 'Sign in with Apple',
           onTap: onAppleTap,
         ),
@@ -503,6 +442,7 @@ class _SocialTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Semantics(
       button: true,
       label: semanticLabel,
@@ -513,9 +453,9 @@ class _SocialTile extends StatelessWidget {
           width: 56,
           height: 56,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.cardColor,
             shape: BoxShape.circle,
-            border: Border.all(color: const Color(0xFFE3E8EE), width: 1.5),
+            border: Border.all(color: theme.colorScheme.outlineVariant, width: 1.5),
           ),
           child: Center(child: icon),
         ),
@@ -540,26 +480,26 @@ class _RegisterPrompt extends StatelessWidget {
           );
         },
         borderRadius: BorderRadius.circular(8),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           child: Text.rich(
             TextSpan(
               children: [
                 TextSpan(
                   text: "Don't have an Account? ",
                   style: TextStyle(
-                    color: Color(0xFF6B7280),
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 14,
                   ),
                 ),
                 TextSpan(
                   text: 'Register',
                   style: TextStyle(
-                    color: Color(0xFF1E7B4E),
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w800,
                     fontSize: 14,
                     decoration: TextDecoration.underline,
-                    decorationColor: Color(0xFF1E7B4E),
+                    decorationColor: Theme.of(context).colorScheme.primary,
                   ),
                 ),
               ],

@@ -1,39 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/screens/home_details/Profile/profile_screen.dart';
+import 'package:jaguza_app/services/api_service.dart';
 import 'package:jaguza_app/screens/home_screen.dart';
 import '../My farm/my_farm.dart';
-
-void main() {
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(statusBarColor: Colors.transparent),
-  );
-  runApp(const VetDoctorsApp());
-}
-
-class VetDoctorsApp extends StatelessWidget {
-  const VetDoctorsApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Jaguza - Veterinary Doctors',
-      theme: ThemeData(
-        scaffoldBackgroundColor: const Color(0xFFF5F5F5),
-        primaryColor: const Color(0xFF2E7D32),
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFF2E7D32),
-          secondary: Color(0xFF2E7D32),
-        ),
-        fontFamily: 'Inter',
-      ),
-      home: const VeterinaryDoctorsScreen(),
-    );
-  }
-}
 
 class VeterinaryDoctorsScreen extends StatefulWidget {
   const VeterinaryDoctorsScreen({super.key});
@@ -52,11 +23,16 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   int _selectedNavIndex = 2; // Default to Doctors tab
 
   final List<String> _filters = ['All', 'Nearby', 'Top Rated', 'Available Now'];
+  final ApiService _apiService = ApiService();
+  List<VetDoctor> _doctors = List<VetDoctor>.from(vetDoctors);
+  List<ExtensionWorker> _workers = List<ExtensionWorker>.from(extensionWorkers);
+  bool _isLoadingProfessionals = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    _loadProfessionals();
   }
 
   @override
@@ -68,7 +44,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
 
   List<VetDoctor> get _filteredDoctors {
     final query = _searchQuery.toLowerCase();
-    return vetDoctors.where((doc) {
+    return _doctors.where((doc) {
       final matchesSearch = doc.name.toLowerCase().contains(query) ||
           doc.location.toLowerCase().contains(query) ||
           doc.specialty.toLowerCase().contains(query);
@@ -82,7 +58,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
 
   List<ExtensionWorker> get _filteredWorkers {
     final query = _searchQuery.toLowerCase();
-    return extensionWorkers.where((w) {
+    return _workers.where((w) {
       final matchesSearch = w.name.toLowerCase().contains(query) ||
           w.location.toLowerCase().contains(query) ||
           w.specialty.toLowerCase().contains(query);
@@ -92,6 +68,56 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           (_selectedFilter == 'Available Now' && w.isAvailableNow);
       return matchesSearch && matchesFilter;
     }).toList();
+  }
+
+  Future<void> _loadProfessionals() async {
+    setState(() => _isLoadingProfessionals = true);
+    Object? doctorsError;
+    Object? workersError;
+
+    try {
+      final doctors = await _apiService.getDoctors();
+      if (mounted) {
+        setState(() {
+          _doctors = doctors
+              .whereType<Map>()
+              .map((item) => VetDoctor.fromApi(Map<String, dynamic>.from(item)))
+              .toList();
+        });
+      }
+    } catch (error) {
+      doctorsError = error;
+    }
+
+    try {
+      final workers = await _apiService.getExtensionWorkers();
+      if (mounted) {
+        setState(() {
+          _workers = workers
+              .whereType<Map>()
+              .map((item) => ExtensionWorker.fromApi(Map<String, dynamic>.from(item)))
+              .toList();
+        });
+      }
+    } catch (error) {
+      workersError = error;
+    }
+
+    if (!mounted) return;
+    setState(() => _isLoadingProfessionals = false);
+    if (doctorsError != null || workersError != null) {
+      final failed = doctorsError != null && workersError != null
+          ? 'doctors and extension workers'
+          : doctorsError != null
+              ? 'doctors'
+              : 'extension workers';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not load $failed. Check the deployed API and login session.'),
+          action: SnackBarAction(label: 'Retry', onPressed: _loadProfessionals),
+        ),
+      );
+    }
   }
 
   void _navigateToScreen(Widget screen) {
@@ -104,7 +130,6 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       body: Column(
         children: [
           _buildHeader(),
@@ -127,15 +152,16 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   Widget _buildHeader() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFF2E7D32),
+      color: scheme.primary,
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
       child: Column(
         children: [
           Row(
             children: [
               _headerIcon(Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
-              SizedBox(width: 12),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -144,18 +170,20 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
                       'Find Experts',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: 2),
-                       Text(
+                    Text(
                       'Veterinary Doctors',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
                       ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ],
                 ),
@@ -186,14 +214,15 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   void _showFilterBottomSheet(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -201,9 +230,9 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           children: [
             Row(
               children: [
-                const Icon(Icons.filter_list_rounded, color: Color(0xFF2E7D32), size: 20),
+                Icon(Icons.filter_list_rounded, color: scheme.primary, size: 20),
                 const SizedBox(width: 10),
-                const Text('Filter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+                Text('Filter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface)),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 22),
@@ -218,7 +247,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Text('Filter: $filter'),
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: scheme.primary,
                   behavior: SnackBarBehavior.floating,
                   duration: const Duration(seconds: 2),
                 ),
@@ -232,6 +261,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   Widget _filterOption(String title, bool isActive, VoidCallback onTap) {
+    final scheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -246,8 +276,8 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
                 height: 20,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: isActive ? const Color(0xFF2E7D32) : Colors.grey[400]!),
-                  color: isActive ? const Color(0xFF2E7D32) : Colors.transparent,
+                  border: Border.all(color: isActive ? scheme.primary : scheme.outlineVariant),
+                  color: isActive ? scheme.primary : Colors.transparent,
                 ),
                 child: isActive ? const Icon(Icons.check_rounded, color: Colors.white, size: 14) : null,
               ),
@@ -255,7 +285,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
               Text(title, style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
-                color: isActive ? const Color(0xFF2E7D32) : const Color(0xFF1A1F36),
+                color: isActive ? scheme.primary : scheme.onSurface,
               )),
             ],
           ),
@@ -265,14 +295,15 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   void _showSortBottomSheet(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -280,9 +311,9 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           children: [
             Row(
               children: [
-                const Icon(Icons.tune_rounded, color: Color(0xFF2E7D32), size: 20),
+                Icon(Icons.tune_rounded, color: scheme.primary, size: 20),
                 const SizedBox(width: 10),
-                const Text('Sort & Filter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+                Text('Sort & Filter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface)),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.close_rounded, size: 22),
@@ -294,22 +325,22 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
             _sortOption(Icons.star_rounded, 'Highest Rated', 'Sort by best reviews', () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Sorted by: Highest Rated'),
-                  backgroundColor: Color(0xFF2E7D32),
+                SnackBar(
+                  content: const Text('Sorted by: Highest Rated'),
+                  backgroundColor: scheme.primary,
                   behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 2),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }),
             _sortOption(Icons.location_on_rounded, 'Nearest First', 'Sort by distance', () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Sorted by: Nearest First'),
-                  backgroundColor: Color(0xFF2E7D32),
+                SnackBar(
+                  content: const Text('Sorted by: Nearest First'),
+                  backgroundColor: scheme.primary,
                   behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 2),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }),
@@ -317,22 +348,22 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
               Navigator.pop(context);
               setState(() => _selectedFilter = 'Available Now');
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Filter: Available Now'),
-                  backgroundColor: Color(0xFF2E7D32),
+                SnackBar(
+                  content: const Text('Filter: Available Now'),
+                  backgroundColor: scheme.primary,
                   behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 2),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }),
             _sortOption(Icons.verified_rounded, 'Verified Only', 'Show only verified experts', () {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Filter: Verified Only'),
-                  backgroundColor: Color(0xFF2E7D32),
+                SnackBar(
+                  content: const Text('Filter: Verified Only'),
+                  backgroundColor: scheme.primary,
                   behavior: SnackBarBehavior.floating,
-                  duration: Duration(seconds: 2),
+                  duration: const Duration(seconds: 2),
                 ),
               );
             }),
@@ -344,6 +375,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   Widget _sortOption(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    final scheme = Theme.of(context).colorScheme;
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -353,18 +385,18 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           padding: const EdgeInsets.symmetric(vertical: 12),
           child: Row(
             children: [
-              Icon(icon, color: Colors.grey[500], size: 20),
+              Icon(icon, color: scheme.onSurfaceVariant, size: 20),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
-                    Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+                    Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface)),
+                    Text(subtitle, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right_rounded, size: 20, color: Colors.grey[400]),
+              Icon(Icons.chevron_right_rounded, size: 20, color: scheme.onSurfaceVariant),
             ],
           ),
         ),
@@ -379,7 +411,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: Colors.white.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, color: Colors.white, size: 20),
@@ -391,7 +423,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.12),
+        color: Colors.white.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(
@@ -406,15 +438,16 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   Widget _buildSearchBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -425,15 +458,15 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search by name, location, or specialty...',
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF2E7D32), size: 20),
+            hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+            prefixIcon: Icon(Icons.search_rounded, color: scheme.primary, size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
-                    child: Icon(Icons.close_rounded, color: Colors.grey[400], size: 18),
+                    child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
                   )
                 : null,
             border: InputBorder.none,
@@ -443,8 +476,6 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
       ),
     );
   }
-
-  // Removed _buildQuickActions() method entirely
 
   Widget _buildFilterChips() {
     return Padding(
@@ -456,6 +487,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           itemCount: _filters.length,
           separatorBuilder: (_, __) => const SizedBox(width: 8),
           itemBuilder: (context, index) {
+            final scheme = Theme.of(context).colorScheme;
             final filter = _filters[index];
             final isActive = _selectedFilter == filter;
             return GestureDetector(
@@ -464,16 +496,16 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                 decoration: BoxDecoration(
-                  color: isActive ? const Color(0xFF2E7D32) : Colors.white,
+                  color: isActive ? scheme.primary : Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: isActive ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                    color: isActive ? scheme.primary : scheme.outlineVariant,
                   ),
                 ),
                 child: Text(
                   filter,
                   style: TextStyle(
-                    color: isActive ? Colors.white : Colors.grey[600],
+                    color: isActive ? Colors.white : scheme.onSurfaceVariant,
                     fontSize: 12,
                     fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                   ),
@@ -487,25 +519,26 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   Widget _buildTabBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: scheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
       ),
       child: TabBar(
         controller: _tabController,
         indicator: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6),
+            BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6),
           ],
         ),
         indicatorPadding: const EdgeInsets.all(3),
         dividerColor: Colors.transparent,
-        labelColor: const Color(0xFF1B5E20),
-        unselectedLabelColor: Colors.grey[500],
+        labelColor: scheme.primary,
+        unselectedLabelColor: scheme.onSurfaceVariant,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
         unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
         tabs: const [
@@ -543,16 +576,17 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   Widget _emptyState(String title, String subtitle) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
         child: Column(
           children: [
-            Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[400]),
+            Icon(Icons.search_off_rounded, size: 48, color: scheme.onSurfaceVariant),
             const SizedBox(height: 16),
-            Text(title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+            Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: scheme.onSurface)),
             const SizedBox(height: 6),
-            Text(subtitle, style: TextStyle(fontSize: 13, color: Colors.grey[500])),
+            Text(subtitle, style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
           ],
         ),
       ),
@@ -562,8 +596,8 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, -2))],
+        color: Theme.of(context).cardColor,
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, -2))],
       ),
       child: SafeArea(
         top: false,
@@ -610,7 +644,8 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 
   Widget _navItem(IconData icon, String label, bool active, VoidCallback onTap) {
-    final color = active ? const Color(0xFF2E7D32) : const Color(0xFF9E9E9E);
+    final scheme = Theme.of(context).colorScheme;
+    final color = active ? scheme.primary : scheme.onSurfaceVariant;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -619,7 +654,7 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           Container(
             padding: const EdgeInsets.all(6),
             decoration: active
-                ? BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), borderRadius: BorderRadius.circular(10))
+                ? BoxDecoration(color: scheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10))
                 : null,
             child: Icon(icon, color: color, size: 22),
           ),
@@ -631,9 +666,9 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DATA MODELS (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  DATA MODELS
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 class VetDoctor {
   final String name;
@@ -671,6 +706,33 @@ class VetDoctor {
     required this.latitude,
     required this.longitude,
   });
+
+  factory VetDoctor.fromApi(Map<String, dynamic> json) {
+    final user = json['user'] is Map
+        ? Map<String, dynamic>.from(json['user'] as Map)
+        : <String, dynamic>{};
+    final name = (user['name'] ?? json['name'] ?? 'Veterinary Doctor').toString();
+    final rating = double.tryParse('${json['rating'] ?? 0}') ?? 0;
+    final fee = double.tryParse('${json['consultation_fee'] ?? 0}') ?? 0;
+    return VetDoctor(
+      name: name,
+      specialty: (json['specialization'] ?? 'Veterinary Medicine').toString(),
+      location: (json['location'] ?? 'Location unavailable').toString(),
+      rating: rating,
+      isVerified: true,
+      isNearby: false,
+      isAvailableNow: json['is_available'] == true,
+      bio: (json['bio'] ?? 'Veterinary professional available through Jaguza.').toString(),
+      availability: json['is_available'] == true ? 'Available now' : 'Currently unavailable',
+      consultFee: fee > 0 ? 'UGX ${fee.toStringAsFixed(0)}' : 'Contact for fee',
+      avatarColor: const Color(0xFF2E7D32),
+      tagColor: const Color(0xFF2E7D32),
+      initials: _initials(name),
+      phone: (json['phone_number'] ?? '').toString(),
+      latitude: double.tryParse('${json['latitude'] ?? 0}') ?? 0,
+      longitude: double.tryParse('${json['longitude'] ?? 0}') ?? 0,
+    );
+  }
 }
 
 class ExtensionWorker {
@@ -711,6 +773,43 @@ class ExtensionWorker {
     required this.latitude,
     required this.longitude,
   });
+
+  factory ExtensionWorker.fromApi(Map<String, dynamic> json) {
+    final user = json['user'] is Map
+        ? Map<String, dynamic>.from(json['user'] as Map)
+        : <String, dynamic>{};
+    final name = (user['name'] ?? json['name'] ?? 'Extension Worker').toString();
+    return ExtensionWorker(
+      name: name,
+      specialty: (json['expertise_area'] ?? 'Livestock Extension').toString(),
+      location: (json['assigned_region'] ?? 'Location unavailable').toString(),
+      rating: double.tryParse('${json['rating'] ?? 0}') ?? 0,
+      isVerified: true,
+      isNearby: false,
+      isAvailableNow: json['is_available'] == true,
+      bio: (json['bio'] ?? 'Extension worker available through Jaguza.').toString(),
+      availability: json['is_available'] == true ? 'Available now' : 'Currently unavailable',
+      serviceArea: (json['assigned_region'] ?? 'Contact for service area').toString(),
+      languages: (json['languages_spoken'] ?? 'English').toString(),
+      avatarColor: const Color(0xFF2E7D32),
+      tagColor: const Color(0xFF2E7D32),
+      initials: _initials(name),
+      phone: (json['phone_number'] ?? '').toString(),
+      latitude: double.tryParse('${json['latitude'] ?? 0}') ?? 0,
+      longitude: double.tryParse('${json['longitude'] ?? 0}') ?? 0,
+    );
+  }
+}
+
+String _initials(String name) {
+  final initials = name
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .map((part) => part[0])
+      .take(2)
+      .join()
+      .toUpperCase();
+  return initials.isEmpty ? 'NA' : initials;
 }
 
 final List<VetDoctor> vetDoctors = [
@@ -941,9 +1040,9 @@ final List<ExtensionWorker> extensionWorkers = [
   ),
 ];
 
-// ═══════════════════════════════════════════════════════════════
-//  HELPERS (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  HELPERS
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 Future<void> _makePhoneCall(String phone) async {
   final uri = Uri.parse('tel:$phone');
@@ -988,24 +1087,23 @@ String _getGoogleMapsStaticUrl(double lat, double lng) {
   return 'https://maps.googleapis.com/maps/api/staticmap?center=$lat,$lng&zoom=15&size=800x400&maptype=roadmap&markers=color:red%7C$lat,$lng';
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  PROFILE SCREEN WRAPPER (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  PROFILE SCREEN WRAPPER
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class ProfileScreenWrapper extends StatelessWidget {
   const ProfileScreenWrapper({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       body: const ProfileTab(),
     );
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DOCTOR INFO SCREEN (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  DOCTOR INFO SCREEN
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class DoctorInfoScreen extends StatelessWidget {
   final VetDoctor doctor;
   const DoctorInfoScreen({super.key, required this.doctor});
@@ -1013,12 +1111,9 @@ class DoctorInfoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1F36),
         elevation: 0,
-        title: const Text('About Doctor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+        title: const Text('About Doctor', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -1030,6 +1125,7 @@ class DoctorInfoScreen extends StatelessWidget {
         child: Column(
           children: [
             _buildProfileHeader(
+              context: context,
               initials: doctor.initials,
               avatarColor: doctor.avatarColor,
               name: doctor.name,
@@ -1041,13 +1137,13 @@ class DoctorInfoScreen extends StatelessWidget {
               isAvailableNow: doctor.isAvailableNow,
             ),
             const SizedBox(height: 12),
-            _buildBioCard(bio: doctor.bio),
+            _buildBioCard(context: context, bio: doctor.bio),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildInfoCard(Icons.schedule_rounded, 'Availability', doctor.availability)),
+                Expanded(child: _buildInfoCard(context, Icons.schedule_rounded, 'Availability', doctor.availability)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInfoCard(Icons.monetization_on_rounded, 'Consult Fee', doctor.consultFee)),
+                Expanded(child: _buildInfoCard(context, Icons.monetization_on_rounded, 'Consult Fee', doctor.consultFee)),
               ],
             ),
             const SizedBox(height: 24),
@@ -1070,9 +1166,9 @@ class DoctorInfoScreen extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  WORKER INFO SCREEN (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  WORKER INFO SCREEN
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class WorkerInfoScreen extends StatelessWidget {
   final ExtensionWorker worker;
   const WorkerInfoScreen({super.key, required this.worker});
@@ -1080,12 +1176,9 @@ class WorkerInfoScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1F36),
         elevation: 0,
-        title: const Text('About Worker', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+        title: const Text('About Worker', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -1097,6 +1190,7 @@ class WorkerInfoScreen extends StatelessWidget {
         child: Column(
           children: [
             _buildProfileHeader(
+              context: context,
               initials: worker.initials,
               avatarColor: worker.avatarColor,
               name: worker.name,
@@ -1108,17 +1202,17 @@ class WorkerInfoScreen extends StatelessWidget {
               isAvailableNow: worker.isAvailableNow,
             ),
             const SizedBox(height: 12),
-            _buildBioCard(bio: worker.bio),
+            _buildBioCard(context: context, bio: worker.bio),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _buildInfoCard(Icons.schedule_rounded, 'Availability', worker.availability)),
+                Expanded(child: _buildInfoCard(context, Icons.schedule_rounded, 'Availability', worker.availability)),
                 const SizedBox(width: 12),
-                Expanded(child: _buildInfoCard(Icons.map_rounded, 'Service Area', worker.serviceArea)),
+                Expanded(child: _buildInfoCard(context, Icons.map_rounded, 'Service Area', worker.serviceArea)),
               ],
             ),
             const SizedBox(height: 12),
-            _buildInfoCardFull(Icons.language_rounded, 'Languages', worker.languages),
+            _buildInfoCardFull(context, Icons.language_rounded, 'Languages', worker.languages),
             const SizedBox(height: 24),
             _buildActionButtons(
               context: context,
@@ -1139,11 +1233,12 @@ class WorkerInfoScreen extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  SHARED WIDGETS for Info Screens (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  SHARED WIDGETS for Info Screens
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 Widget _buildProfileHeader({
+  required BuildContext context,
   required String initials,
   required Color avatarColor,
   required String name,
@@ -1154,73 +1249,86 @@ Widget _buildProfileHeader({
   required bool isNearby,
   required bool isAvailableNow,
 }) {
+  final scheme = Theme.of(context).colorScheme;
   return Container(
     padding: const EdgeInsets.all(24),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
     ),
     child: Column(
       children: [
         CircleAvatar(
           radius: 44,
-          backgroundColor: avatarColor.withOpacity(0.12),
+          backgroundColor: avatarColor.withValues(alpha: 0.12),
           child: Text(initials, style: TextStyle(color: avatarColor, fontSize: 28, fontWeight: FontWeight.w700)),
         ),
         const SizedBox(height: 14),
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+            Flexible(
+              child: Text(
+                name,
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: scheme.onSurface),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
             if (isVerified) ...[
               const SizedBox(width: 6),
-              const Icon(Icons.verified_rounded, color: Color(0xFF2E7D32), size: 20),
+              Icon(Icons.verified_rounded, color: scheme.primary, size: 20),
             ],
           ],
         ),
         const SizedBox(height: 6),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-          decoration: BoxDecoration(color: tagColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-          child: Text(tagText, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: tagColor)),
+          decoration: BoxDecoration(color: tagColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+          child: Text(
+            tagText,
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: tagColor),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
         ),
         const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
           children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(color: rating >= 4.5 ? const Color(0xFFFFF8E1) : Colors.grey[100], borderRadius: BorderRadius.circular(10)),
+              decoration: BoxDecoration(color: rating >= 4.5 ? const Color(0xFFFFF8E1) : scheme.surfaceContainerHighest, borderRadius: BorderRadius.circular(10)),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.star_rounded, color: rating >= 4.5 ? Colors.amber[600] : Colors.grey[400], size: 14),
+                  Icon(Icons.star_rounded, color: rating >= 4.5 ? Colors.amber[600] : scheme.onSurfaceVariant, size: 14),
                   const SizedBox(width: 3),
-                  Text(rating.toString(), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: rating >= 4.5 ? Colors.amber[800] : Colors.grey[600])),
+                  Text(rating.toString(), style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: rating >= 4.5 ? Colors.amber[800] : scheme.onSurfaceVariant)),
                 ],
               ),
             ),
             if (isNearby) ...[
-              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                child: const Row(
+                decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.location_on_rounded, color: Color(0xFF2E7D32), size: 13),
-                    SizedBox(width: 3),
-                    Text('Nearby', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32)),
-                )],
+                    Icon(Icons.location_on_rounded, color: scheme.primary, size: 13),
+                    const SizedBox(width: 3),
+                    Text('Nearby', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary)),
+                  ],
                 ),
               ),
             ],
             if (isAvailableNow) ...[
-              const SizedBox(width: 8),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(color: Colors.green.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+                decoration: BoxDecoration(color: Colors.green.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -1238,66 +1346,80 @@ Widget _buildProfileHeader({
   );
 }
 
-Widget _buildBioCard({required String bio}) {
+Widget _buildBioCard({required BuildContext context, required String bio}) {
+  final scheme = Theme.of(context).colorScheme;
   return Container(
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('About', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+        Text('About', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: scheme.onSurface)),
         const SizedBox(height: 8),
-        Text(bio, style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280), height: 1.6)),
+        Text(bio, style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant, height: 1.6)),
       ],
     ),
   );
 }
 
-Widget _buildInfoCard(IconData icon, String label, String value) {
+Widget _buildInfoCard(BuildContext context, IconData icon, String label, String value) {
+  final scheme = Theme.of(context).colorScheme;
   return Container(
     padding: const EdgeInsets.all(14),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
     ),
     child: Column(
       children: [
-        Icon(icon, size: 22, color: Colors.grey[500]),
+        Icon(icon, size: 22, color: scheme.onSurfaceVariant),
         const SizedBox(height: 6),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        Text(label, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
         const SizedBox(height: 3),
-        Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36)), textAlign: TextAlign.center),
+        Text(
+          value,
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.onSurface),
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          maxLines: 2,
+        ),
       ],
     ),
   );
 }
 
-Widget _buildInfoCardFull(IconData icon, String label, String value) {
+Widget _buildInfoCardFull(BuildContext context, IconData icon, String label, String value) {
+  final scheme = Theme.of(context).colorScheme;
   return Container(
     width: double.infinity,
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
-      color: Colors.white,
+      color: Theme.of(context).cardColor,
       borderRadius: BorderRadius.circular(16),
-      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))],
+      boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
     ),
     child: Row(
       children: [
-        Icon(icon, size: 20, color: Colors.grey[500]),
+        Icon(icon, size: 20, color: scheme.onSurfaceVariant),
         const SizedBox(width: 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+              Text(label, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
               const SizedBox(height: 3),
-              Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+              Text(
+                value,
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: scheme.onSurface),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 2,
+              ),
             ],
           ),
         ),
@@ -1317,6 +1439,7 @@ Widget _buildActionButtons({
   required double latitude,
   required double longitude,
 }) {
+  final scheme = Theme.of(context).colorScheme;
   return Row(
     children: [
       Expanded(
@@ -1341,7 +1464,7 @@ Widget _buildActionButtons({
           icon: const Icon(Icons.phone_rounded, size: 18),
           label: const Text('Call Now'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: scheme.primary,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -1352,9 +1475,9 @@ Widget _buildActionButtons({
   );
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  LOCATION SCREEN (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  LOCATION SCREEN
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class LocationScreen extends StatelessWidget {
   final String name;
   final String location;
@@ -1365,13 +1488,11 @@ class LocationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1F36),
         elevation: 0,
-        title: const Text('Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+        title: const Text('Location', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
@@ -1385,7 +1506,7 @@ class LocationScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               height: 300,
-              decoration: BoxDecoration(color: const Color(0xFFE8F5E9), borderRadius: BorderRadius.circular(16), border: Border.all(color: const Color(0xFFC8E6C9))),
+              decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(16), border: Border.all(color: scheme.primary.withValues(alpha: 0.3))),
               clipBehavior: Clip.antiAlias,
               child: Stack(
                 children: [
@@ -1394,15 +1515,15 @@ class LocationScreen extends StatelessWidget {
                     width: double.infinity, height: 300, fit: BoxFit.cover,
                     loadingBuilder: (context, child, loadingProgress) {
                       if (loadingProgress == null) return child;
-                      return Container(height: 300, color: const Color(0xFFE8F5E9), child: const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF2E7D32)))));
+                      return Container(height: 300, color: scheme.primaryContainer, child: Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(scheme.primary))));
                     },
                     errorBuilder: (context, error, stackTrace) {
                       return Container(
-                        height: 300, color: const Color(0xFFE8F5E9),
+                        height: 300, color: scheme.primaryContainer,
                         child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          const Icon(Icons.map_rounded, size: 56, color: Color(0xFF2E7D32)),
+                          Icon(Icons.map_rounded, size: 56, color: scheme.primary),
                           const SizedBox(height: 10),
-                          Text('Tap below to open in Google Maps', style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+                          Text('Tap below to open in Google Maps', style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
                         ]),
                       );
                     },
@@ -1413,14 +1534,19 @@ class LocationScreen extends StatelessWidget {
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Container(
                           padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2))]),
+                          decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.3), blurRadius: 6, offset: const Offset(0, 2))]),
                           child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 20),
                         ),
                         const SizedBox(height: 4),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 4)]),
-                          child: Text(name, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+                          decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(6), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.15), blurRadius: 4)]),
+                          child: Text(
+                            name,
+                            style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: scheme.onSurface),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         ),
                       ]),
                     ),
@@ -1429,7 +1555,7 @@ class LocationScreen extends StatelessWidget {
                     bottom: 12, left: 12,
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.black.withOpacity(0.6), borderRadius: BorderRadius.circular(6)),
+                      decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(6)),
                       child: Text('${latitude.toStringAsFixed(4)}, ${longitude.toStringAsFixed(4)}', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.w500)),
                     ),
                   ),
@@ -1440,16 +1566,26 @@ class LocationScreen extends StatelessWidget {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))]),
+              decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))]),
               child: Row(
                 children: [
-                  Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFF1E88E5).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  Container(width: 44, height: 44, decoration: BoxDecoration(color: const Color(0xFF1E88E5).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
                     child: const Icon(Icons.location_on_rounded, color: Color(0xFF1E88E5), size: 22)),
                   const SizedBox(width: 14),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
-                    SizedBox(height: 3),
-                    Text(location, style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280))),
+                    Text(
+                      name,
+                      style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: scheme.onSurface),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      location,
+                      style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 2,
+                    ),
                   ])),
                 ],
               ),
@@ -1467,7 +1603,7 @@ class LocationScreen extends StatelessWidget {
               child: OutlinedButton.icon(
                 onPressed: () => _openGoogleMapsDirections(latitude, longitude),
                 icon: const Icon(Icons.directions_rounded, size: 20), label: const Text('Get Directions'),
-                style: OutlinedButton.styleFrom(foregroundColor: const Color(0xFF2E7D32), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: const BorderSide(color: Color(0xFF2E7D32))),
+                style: OutlinedButton.styleFrom(foregroundColor: scheme.primary, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), side: BorderSide(color: scheme.primary)),
               ),
             ),
             const SizedBox(height: 20),
@@ -1478,9 +1614,9 @@ class LocationScreen extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  DOCTOR CARD (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  DOCTOR CARD (FIXED - No Overflow)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _DoctorCard extends StatelessWidget {
   final VetDoctor doctor;
   const _DoctorCard({required this.doctor});
@@ -1488,14 +1624,20 @@ class _DoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final doc = doctor;
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))]
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildAvatar(doc.avatarColor, doc.initials),
                 const SizedBox(width: 12),
@@ -1503,46 +1645,101 @@ class _DoctorCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        Flexible(child: Text(doc.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36)), overflow: TextOverflow.ellipsis)),
-                        if (doc.isVerified) ...[const SizedBox(width: 4), const Icon(Icons.verified_rounded, color: Color(0xFF2E7D32), size: 14)],
-                      ]),
-                      const SizedBox(height: 2),
-                      Row(children: [
-                        Icon(Icons.location_on_rounded, color: Colors.grey[400], size: 13),
-                        const SizedBox(width: 2),
-                        Text(doc.location, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                        if (doc.isNearby) ...[
-                          const SizedBox(width: 4),
-                          Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1), decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                            child: const Text('Nearby', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              doc.name,
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
+                          if (doc.isVerified) ...[
+                            const SizedBox(width: 4),
+                            Icon(Icons.verified_rounded, color: scheme.primary, size: 14),
+                          ],
                         ],
-                      ]),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_rounded, color: scheme.onSurfaceVariant, size: 13),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              doc.location,
+                              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          if (doc.isNearby) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: scheme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4)
+                              ),
+                              child: Text(
+                                'Nearby',
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: scheme.primary)
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                       const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: doc.tagColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text(doc.specialty, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: doc.tagColor)),
+                        decoration: BoxDecoration(
+                          color: doc.tagColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6)
+                        ),
+                        child: Text(
+                          doc.specialty,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: doc.tagColor),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: doc.rating >= 4.5 ? const Color(0xFFFFF8E1) : Colors.grey[100], borderRadius: BorderRadius.circular(10)),
-                  child: Row(children: [
-                    Icon(Icons.star_rounded, color: doc.rating >= 4.5 ? Colors.amber[600] : Colors.grey[400], size: 14),
-                    const SizedBox(width: 2),
-                    Text(doc.rating.toString(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: doc.rating >= 4.5 ? Colors.amber[800] : Colors.grey[600])),
-                  ]),
+                  decoration: BoxDecoration(
+                    color: doc.rating >= 4.5 ? const Color(0xFFFFF8E1) : scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10)
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star_rounded,
+                        color: doc.rating >= 4.5 ? Colors.amber[600] : scheme.onSurfaceVariant,
+                        size: 14
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        doc.rating.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: doc.rating >= 4.5 ? Colors.amber[800] : scheme.onSurfaceVariant
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _actionButton(Icons.info_outline_rounded, 'About', const Color(0xFF2E7D32), () {
+                Expanded(child: _actionButton(Icons.info_outline_rounded, 'About', scheme.primary, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorInfoScreen(doctor: doc)));
                 })),
                 const SizedBox(width: 8),
@@ -1550,7 +1747,7 @@ class _DoctorCard extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => LocationScreen(name: doc.name, location: doc.location, latitude: doc.latitude, longitude: doc.longitude)));
                 })),
                 const SizedBox(width: 8),
-                Expanded(child: _actionButton(Icons.phone_rounded, 'Call', const Color(0xFF43A047), () => _makePhoneCall(doc.phone))),
+                Expanded(child: _actionButton(Icons.phone_rounded, 'Call', scheme.primary, () => _makePhoneCall(doc.phone))),
               ],
             ),
           ],
@@ -1560,9 +1757,9 @@ class _DoctorCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  WORKER CARD (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  WORKER CARD (FIXED - No Overflow)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class _WorkerCard extends StatelessWidget {
   final ExtensionWorker worker;
   const _WorkerCard({required this.worker});
@@ -1570,14 +1767,20 @@ class _WorkerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = worker;
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 8, offset: const Offset(0, 2))]),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))]
+      ),
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Column(
           children: [
             Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildAvatar(w.avatarColor, w.initials),
                 const SizedBox(width: 12),
@@ -1585,46 +1788,101 @@ class _WorkerCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(children: [
-                        Flexible(child: Text(w.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36)), overflow: TextOverflow.ellipsis)),
-                        if (w.isVerified) ...[const SizedBox(width: 4), const Icon(Icons.verified_rounded, color: Color(0xFF2E7D32), size: 14)],
-                      ]),
-                      const SizedBox(height: 2),
-                      Row(children: [
-                        Icon(Icons.location_on_rounded, color: Colors.grey[400], size: 13),
-                        const SizedBox(width: 2),
-                        Text(w.location, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
-                        if (w.isNearby) ...[
-                          const SizedBox(width: 4),
-                          Container(padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1), decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
-                            child: const Text('Nearby', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              w.name,
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
                           ),
+                          if (w.isVerified) ...[
+                            const SizedBox(width: 4),
+                            Icon(Icons.verified_rounded, color: scheme.primary, size: 14),
+                          ],
                         ],
-                      ]),
+                      ),
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          Icon(Icons.location_on_rounded, color: scheme.onSurfaceVariant, size: 13),
+                          const SizedBox(width: 2),
+                          Flexible(
+                            child: Text(
+                              w.location,
+                              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1,
+                            ),
+                          ),
+                          if (w.isNearby) ...[
+                            const SizedBox(width: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: scheme.primary.withValues(alpha: 0.1),
+                                borderRadius: BorderRadius.circular(4)
+                              ),
+                              child: Text(
+                                'Nearby',
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: scheme.primary)
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                       const SizedBox(height: 4),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(color: w.tagColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                        child: Text(w.specialty, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: w.tagColor)),
+                        decoration: BoxDecoration(
+                          color: w.tagColor.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(6)
+                        ),
+                        child: Text(
+                          w.specialty,
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: w.tagColor),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: w.rating >= 4.5 ? const Color(0xFFFFF8E1) : Colors.grey[100], borderRadius: BorderRadius.circular(10)),
-                  child: Row(children: [
-                    Icon(Icons.star_rounded, color: w.rating >= 4.5 ? Colors.amber[600] : Colors.grey[400], size: 14),
-                    const SizedBox(width: 2),
-                    Text(w.rating.toString(), style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: w.rating >= 4.5 ? Colors.amber[800] : Colors.grey[600])),
-                  ]),
+                  decoration: BoxDecoration(
+                    color: w.rating >= 4.5 ? const Color(0xFFFFF8E1) : scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10)
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.star_rounded,
+                        color: w.rating >= 4.5 ? Colors.amber[600] : scheme.onSurfaceVariant,
+                        size: 14
+                      ),
+                      const SizedBox(width: 2),
+                      Text(
+                        w.rating.toString(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: w.rating >= 4.5 ? Colors.amber[800] : scheme.onSurfaceVariant
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _actionButton(Icons.info_outline_rounded, 'About', const Color(0xFF2E7D32), () {
+                Expanded(child: _actionButton(Icons.info_outline_rounded, 'About', scheme.primary, () {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => WorkerInfoScreen(worker: w)));
                 })),
                 const SizedBox(width: 8),
@@ -1632,7 +1890,7 @@ class _WorkerCard extends StatelessWidget {
                   Navigator.push(context, MaterialPageRoute(builder: (context) => LocationScreen(name: w.name, location: w.location, latitude: w.latitude, longitude: w.longitude)));
                 })),
                 const SizedBox(width: 8),
-                Expanded(child: _actionButton(Icons.phone_rounded, 'Call', const Color(0xFF43A047), () => _makePhoneCall(w.phone))),
+                Expanded(child: _actionButton(Icons.phone_rounded, 'Call', scheme.primary, () => _makePhoneCall(w.phone))),
               ],
             ),
           ],
@@ -1642,9 +1900,9 @@ class _WorkerCard extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-//  SHARED CARD WIDGETS (unchanged)
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  SHARED CARD WIDGETS
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 Widget _buildAvatar(Color color, String initials) {
   return Container(
@@ -1656,18 +1914,28 @@ Widget _buildAvatar(Color color, String initials) {
 
 Widget _actionButton(IconData icon, String label, Color color, VoidCallback onTap) {
   return Material(
-    color: color.withOpacity(0.08),
+    color: color.withValues(alpha: 0.08),
     borderRadius: BorderRadius.circular(10),
     child: InkWell(
       borderRadius: BorderRadius.circular(10),
       onTap: onTap,
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 4),
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
-        ]),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: color, size: 16),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text(
+                label, 
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );

@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:jaguza_app/models/user.dart';
-import 'package:jaguza_app/models/farm_model.dart'; // Add this import
+import 'package:jaguza_app/models/farm_model.dart';
 import 'package:jaguza_app/services/api_service.dart';
 
 class MyFarmScreen extends StatefulWidget {
@@ -48,9 +48,35 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               if (farmOwnerId.toString() == currentUserId.toString()) {
                 loadedFarms.add(farm);
               }
-            } else if (farm.owner.isNotEmpty) {
+            } else if (farm.owner.isNotEmpty || loadedFarms.isEmpty) {
               loadedFarms.add(farm);
             }
+          }
+        }
+      }
+
+      // Fetch workers for each farm directly from ApiService().getWorkers
+      for (final farm in loadedFarms) {
+        final farmId = int.tryParse(farm.id);
+        if (farmId != null) {
+          try {
+            final workersData = await apiService.getWorkers(farmId: farmId);
+            if (workersData.isNotEmpty) {
+              final fetchedWorkers = workersData
+                  .whereType<Map>()
+                  .map((w) => Worker(
+                        id: w['id']?.toString(),
+                        name: w['name'] ?? '',
+                        role: w['role'] ?? '',
+                        phone: w['phone'] ?? w['phone_number'] ?? '',
+                      ))
+                  .toList();
+              if (fetchedWorkers.isNotEmpty) {
+                farm.workers = fetchedWorkers;
+              }
+            }
+          } catch (e) {
+            print('Workers fetch note for farm $farmId: $e');
           }
         }
       }
@@ -62,7 +88,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           ..clear()
           ..addAll(loadedFarms);
         _isLoading = false;
-        if (_farms.isNotEmpty) {
+        if (_farms.isNotEmpty && _selectedFarmIndex >= _farms.length) {
           _selectedFarmIndex = 0;
         }
       });
@@ -74,7 +100,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Unable to load farms from the server: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }
@@ -82,7 +108,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
 
   Future<void> _loadCurrentUser() async {
     try {
-      final response = await ApiService().get('users/profile/');
+      final response = await ApiService().get('user');
       if (response is Map) {
         setState(() {
           _currentUser = User.fromJson(Map<String, dynamic>.from(response));
@@ -120,18 +146,15 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
         title: const Text(
           'My Farm',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
           ),
         ),
         leading: IconButton(
@@ -139,20 +162,12 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          TextButton.icon(
+          IconButton(
+            tooltip: 'Add farm',
             onPressed: () => _navigateToCreateFarm(context),
-            icon: const Icon(Icons.add_rounded, size: 18),
-            label: const Text('Add Farm'),
-            style: TextButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
+            icon: Icon(Icons.add_rounded, color: scheme.onPrimary),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 4),
         ],
       ),
       body: _isLoading
@@ -164,6 +179,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   }
 
   Widget _buildEmptyState() {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -173,28 +189,28 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.08),
+                color: scheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 Icons.agriculture_rounded,
                 size: 64,
-                color: Colors.grey[400],
+                color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'No Farm Registered',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Get started by creating your first farm',
-              style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
@@ -202,7 +218,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               icon: const Icon(Icons.add_rounded, size: 20),
               label: const Text('Create Farm'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
+                backgroundColor: scheme.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -271,6 +287,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
 
   Widget _buildFarmSelector() {
     if (_farms.length <= 1) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -295,12 +312,12 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   vertical: 8,
                 ),
                 decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
+                  color: isSelected ? scheme.primary : Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
                     color: isSelected
-                        ? const Color(0xFF2E7D32)
-                        : Colors.grey[300]!,
+                        ? scheme.primary
+                        : scheme.outlineVariant,
                   ),
                 ),
                 child: Row(
@@ -309,13 +326,13 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                     Icon(
                       Icons.storefront_rounded,
                       size: 16,
-                      color: isSelected ? Colors.white : Colors.grey[600],
+                      color: isSelected ? Colors.white : scheme.onSurfaceVariant,
                     ),
                     const SizedBox(width: 6),
                     Text(
                       farm.name,
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.grey[700],
+                        color: isSelected ? Colors.white : scheme.onSurfaceVariant,
                         fontSize: 13,
                         fontWeight: isSelected
                             ? FontWeight.w600
@@ -333,19 +350,16 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   }
 
   Widget _buildFarmOverviewCard(Farm farm) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [const Color(0xFF2E7D32), const Color(0xFF2E7D32)],
-        ),
+        color: scheme.primary,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF2E7D32).withOpacity(0.2),
+            color: scheme.primary.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -380,7 +394,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: const Icon(
@@ -405,7 +419,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                     const SizedBox(height: 2),
                     Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.location_on_rounded,
                           color: Colors.white70,
                           size: 14,
@@ -427,7 +441,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                       const SizedBox(height: 2),
                       Row(
                         children: [
-                          Icon(
+                          const Icon(
                             Icons.gps_fixed_rounded,
                             color: Colors.white70,
                             size: 12,
@@ -452,7 +466,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
+                  color: Colors.white.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -463,6 +477,17 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                onSelected: (value) {
+                  if (value == 'edit') _editFarm(farm);
+                  if (value == 'delete') _deleteFarm(farm);
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit farm')),
+                  PopupMenuItem(value: 'delete', child: Text('Delete farm')),
+                ],
               ),
             ],
           ),
@@ -519,11 +544,12 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   }
 
   Widget _buildAnimalSection(Farm farm) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -536,22 +562,22 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.08),
+                    color: scheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.pets_rounded,
                     size: 16,
-                    color: Color(0xFF2E7D32),
+                    color: scheme.primary,
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Animal Inventory',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1F36),
+                    color: scheme.onSurface,
                   ),
                 ),
                 const Spacer(),
@@ -560,7 +586,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   icon: const Icon(Icons.add_rounded, size: 16),
                   label: const Text('Add Animal'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: scheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -580,7 +606,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFE8E8E8)),
+          Divider(height: 1, color: scheme.outlineVariant),
 
           // Animal List
           farm.animals.isEmpty
@@ -589,7 +615,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   child: Center(
                     child: Text(
                       'No animals registered yet',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
                     ),
                   ),
                 )
@@ -599,7 +625,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   padding: EdgeInsets.zero,
                   itemCount: farm.animals.length,
                   separatorBuilder: (_, __) =>
-                      const Divider(height: 1, color: Color(0xFFE8E8E8)),
+                      Divider(height: 1, color: scheme.outlineVariant),
                   itemBuilder: (context, index) {
                     final animal = farm.animals[index];
                     return _buildAnimalTile(animal);
@@ -611,6 +637,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   }
 
   Widget _buildAnimalTile(AnimalCategory animal) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -619,43 +646,53 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withOpacity(0.08),
+              color: scheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
               _getAnimalIcon(animal.name),
               size: 22,
-              color: const Color(0xFF2E7D32),
+              color: scheme.primary,
             ),
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               animal.name,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
           ),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withOpacity(0.08),
+              color: scheme.primary.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
               '${animal.count}',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF2E7D32),
+                color: scheme.primary,
               ),
             ),
           ),
           const SizedBox(width: 8),
-          Icon(Icons.chevron_right_rounded, color: Colors.grey[400], size: 20),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: scheme.onSurfaceVariant, size: 20),
+            onSelected: (value) {
+              if (value == 'edit') _editAnimal(animal);
+              if (value == 'delete') _deleteAnimal(animal);
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit animals')),
+              PopupMenuItem(value: 'delete', child: Text('Delete animals')),
+            ],
+          ),
         ],
       ),
     );
@@ -664,28 +701,39 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   IconData _getAnimalIcon(String category) {
     switch (category.toLowerCase()) {
       case 'cattle':
+      case 'cow':
         return Icons.pets_rounded;
       case 'goats':
+      case 'goat':
         return Icons.grass_rounded;
       case 'poultry':
+      case 'chicken':
         return Icons.egg_rounded;
       case 'pigs':
+      case 'pig':
         return Icons.set_meal_rounded;
       case 'sheep':
         return Icons.agriculture_rounded;
+      case 'rabbits':
+      case 'rabbit':
+        return Icons.cruelty_free_rounded;
       case 'fish':
         return Icons.water_drop_rounded;
+      case 'horses':
+      case 'horse':
+        return Icons.bedroom_baby_rounded;
       default:
         return Icons.pets_rounded;
     }
   }
 
   Widget _buildWorkersSection(Farm farm) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -698,22 +746,22 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2E7D32).withOpacity(0.08),
+                    color: scheme.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.people_rounded,
                     size: 16,
-                    color: Color(0xFF2E7D32),
+                    color: scheme.primary,
                   ),
                 ),
                 const SizedBox(width: 10),
-                const Text(
+                Text(
                   'Farm Workers',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF1A1F36),
+                    color: scheme.onSurface,
                   ),
                 ),
                 const Spacer(),
@@ -722,7 +770,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   icon: const Icon(Icons.add_rounded, size: 16),
                   label: const Text('Add Worker'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: scheme.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -742,7 +790,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFE8E8E8)),
+          Divider(height: 1, color: scheme.outlineVariant),
 
           // Worker List
           farm.workers.isEmpty
@@ -751,7 +799,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   child: Center(
                     child: Text(
                       'No workers registered yet',
-                      style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
                     ),
                   ),
                 )
@@ -761,7 +809,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   padding: EdgeInsets.zero,
                   itemCount: farm.workers.length,
                   separatorBuilder: (_, __) =>
-                      const Divider(height: 1, color: Color(0xFFE8E8E8)),
+                      Divider(height: 1, color: scheme.outlineVariant),
                   itemBuilder: (context, index) {
                     final worker = farm.workers[index];
                     return _buildWorkerTile(worker);
@@ -773,6 +821,11 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   }
 
   Widget _buildWorkerTile(Worker worker) {
+    final scheme = Theme.of(context).colorScheme;
+    final initials = worker.name.trim().isNotEmpty
+        ? worker.name.trim().split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase()
+        : 'W';
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       child: Row(
@@ -781,16 +834,16 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withOpacity(0.08),
+              color: scheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Center(
               child: Text(
-                worker.name.split(' ').map((w) => w[0]).take(2).join(),
-                style: const TextStyle(
+                initials,
+                style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF2E7D32),
+                  color: scheme.primary,
                 ),
               ),
             ),
@@ -802,38 +855,48 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
               children: [
                 Text(
                   worker.name,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF1A1F36),
+                    color: scheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Row(
                   children: [
-                    Icon(Icons.work_rounded, color: Colors.grey[400], size: 12),
+                    Icon(Icons.work_rounded, color: scheme.onSurfaceVariant, size: 12),
                     const SizedBox(width: 4),
                     Text(
                       worker.role,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
                     ),
                     const SizedBox(width: 12),
                     Icon(
                       Icons.phone_rounded,
-                      color: Colors.grey[400],
+                      color: scheme.onSurfaceVariant,
                       size: 12,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       worker.phone,
-                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                      style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
                     ),
                   ],
                 ),
               ],
             ),
           ),
-          Icon(Icons.more_vert_rounded, color: Colors.grey[400], size: 20),
+          PopupMenuButton<String>(
+            icon: Icon(Icons.more_vert, color: scheme.onSurfaceVariant, size: 20),
+            onSelected: (value) {
+              if (value == 'edit') _editWorker(worker);
+              if (value == 'delete') _deleteWorker(worker);
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit worker')),
+              PopupMenuItem(value: 'delete', child: Text('Delete worker')),
+            ],
+          ),
         ],
       ),
     );
@@ -847,281 +910,820 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
     return total;
   }
 
-  void _showAddAnimalDialog(BuildContext context) {
-    final countController = TextEditingController();
-    String selectedType = 'Cattle';
+  Future<bool> _confirm(String title, String message) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                style: FilledButton.styleFrom(backgroundColor: Theme.of(dialogContext).colorScheme.error),
+                child: const Text('Delete'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+  }
 
-    showDialog(
+  Future<void> _editFarm(Farm farm) async {
+    final name = TextEditingController(text: farm.name);
+    final location = TextEditingController(text: farm.location);
+    final size = TextEditingController(text: farm.size);
+    final changed = await showDialog<bool>(
       context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.pets_rounded,
-                color: Color(0xFF2E7D32),
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'Add Animals',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit farm'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DropdownButtonFormField<String>(
-              value: selectedType,
-              decoration: const InputDecoration(
-                labelText: 'Animal Type *',
-                border: OutlineInputBorder(),
-              ),
-              items: const [
-                'Cattle',
-                'Goats',
-                'Sheep',
-                'Pigs',
-                'Poultry',
-                'Fish',
-                'Rabbits',
-                'Other',
-              ].map((type) {
-                return DropdownMenuItem(value: type, child: Text(type));
-              }).toList(),
-              onChanged: (value) {
-                selectedType = value ?? 'Cattle';
-              },
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: countController,
-              decoration: const InputDecoration(
-                labelText: 'Number of Animals *',
-                hintText: 'Enter count',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.number,
-            ),
+            TextField(controller: name, decoration: const InputDecoration(labelText: 'Farm name')),
+            TextField(controller: location, decoration: const InputDecoration(labelText: 'Location')),
+            TextField(controller: size, decoration: const InputDecoration(labelText: 'Size')),
           ],
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save')),
+        ],
+      ),
+    ) ?? false;
+    if (!changed || !mounted) return;
+    try {
+      final id = int.tryParse(farm.id);
+      if (id == null) throw Exception('This farm has no valid server ID.');
+      await ApiService().updateFarm(id, {
+        'name': name.text.trim(),
+        'location': location.text.trim(),
+        'size': size.text.trim(),
+      });
+      await _loadFarms();
+    } catch (e) {
+      if (mounted) _showMessage('Failed to edit farm: $e', error: true);
+    }
+  }
+
+  Future<void> _deleteFarm(Farm farm) async {
+    if (!await _confirm('Delete farm?', 'This will also remove its farm records.')) return;
+    try {
+      final id = int.tryParse(farm.id);
+      if (id == null) throw Exception('This farm has no valid server ID.');
+      await ApiService().deleteFarm(id);
+      await _loadFarms();
+    } catch (e) {
+      if (mounted) _showMessage('Failed to delete farm: $e', error: true);
+    }
+  }
+
+  String _apiAnimalType(String type) {
+    const values = {
+      'cattle': 'cattle', 'goats': 'goat', 'goat': 'goat',
+      'sheep': 'sheep', 'pigs': 'pig', 'pig': 'pig',
+      'poultry': 'poultry', 'rabbits': 'rabbit', 'rabbit': 'rabbit',
+      'horse': 'horse', 'fish': 'other', 'other': 'other',
+    };
+    return values[type.toLowerCase()] ?? 'other';
+  }
+
+  Future<void> _editAnimal(AnimalCategory animal) async {
+    final count = TextEditingController(text: animal.count.toString());
+    String selectedType = animal.name;
+    final changed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit animals'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          DropdownButtonFormField<String>(
+            initialValue: ['Cattle', 'Goats', 'Sheep', 'Pigs', 'Poultry', 'Rabbits', 'Other'].contains(selectedType) ? selectedType : 'Other',
+            items: const ['Cattle', 'Goats', 'Sheep', 'Pigs', 'Poultry', 'Rabbits', 'Other']
+                .map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+            onChanged: (value) => selectedType = value ?? selectedType,
+            decoration: const InputDecoration(labelText: 'Animal type'),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              if (countController.text.isNotEmpty) {
-                final count = int.tryParse(countController.text) ?? 0;
-                if (count > 0) {
+          TextField(controller: count, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Number')),
+        ]),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save')),
+        ],
+      ),
+    ) ?? false;
+    if (!changed || !mounted) return;
+    final newCount = int.tryParse(count.text) ?? 0;
+    if (newCount < 1) {
+      _showMessage('Enter a valid animal count.', error: true);
+      return;
+    }
+    try {
+      final farm = _farms[_selectedFarmIndex];
+      final farmId = int.tryParse(farm.id);
+      if (farmId == null || animal.ids.isEmpty) throw Exception('Animal records have no server IDs. Refresh the farm and try again.');
+      final type = _apiAnimalType(selectedType);
+      final ids = [...animal.ids];
+      for (final id in ids.take(newCount)) {
+        await ApiService().updateAnimal(int.parse(id), {'type': type, 'farm_id': farmId});
+      }
+      if (newCount > ids.length) {
+        for (var i = ids.length; i < newCount; i++) {
+          final created = await ApiService().createAnimal({
+            'identification_number': '${type}_${DateTime.now().millisecondsSinceEpoch}_$i',
+            'type': type, 'breed': 'Unknown', 'gender': 'male', 'age': 0,
+            'health_status': 'healthy', 'farm_id': farmId,
+          });
+          if (created is Map && created['id'] != null) ids.add(created['id'].toString());
+        }
+      } else if (newCount < ids.length) {
+        for (final id in ids.skip(newCount)) {
+          await ApiService().deleteAnimal(int.parse(id));
+        }
+        ids.removeRange(newCount, ids.length);
+      }
+      await _loadFarms();
+    } catch (e) {
+      if (mounted) _showMessage('Failed to edit animals: $e', error: true);
+    }
+  }
+
+  Future<void> _deleteAnimal(AnimalCategory animal) async {
+    if (!await _confirm('Delete animals?', 'Delete all ${animal.count} ${animal.name} records?')) return;
+    try {
+      if (animal.ids.isNotEmpty) {
+        for (final id in animal.ids) {
+          final intId = int.tryParse(id);
+          if (intId != null) await ApiService().deleteAnimal(intId);
+        }
+      }
+      if (mounted) {
+        setState(() {
+          _farms[_selectedFarmIndex].animals.removeWhere((a) => a.name.toLowerCase() == animal.name.toLowerCase());
+        });
+        _showMessage('Animals deleted successfully!');
+      }
+    } catch (e) {
+      if (mounted) _showMessage('Failed to delete animals: $e', error: true);
+    }
+  }
+
+  Future<void> _editWorker(Worker worker) async {
+    final name = TextEditingController(text: worker.name);
+    final role = TextEditingController(text: worker.role);
+    final phone = TextEditingController(text: worker.phone);
+    bool isSubmitting = false;
+
+    final changed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Edit worker'),
+          content: Column(mainAxisSize: MainAxisSize.min, children: [
+            TextField(controller: name, enabled: !isSubmitting, decoration: const InputDecoration(labelText: 'Full name')),
+            TextField(controller: role, enabled: !isSubmitting, decoration: const InputDecoration(labelText: 'Role')),
+            TextField(controller: phone, enabled: !isSubmitting, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone')),
+          ]),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+            FilledButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    ) ?? false;
+
+    if (!changed || !mounted) return;
+    try {
+      final id = int.tryParse(worker.id ?? '');
+      if (id != null) {
+        await ApiService().updateWorker(id, {
+          'name': name.text.trim(),
+          'role': role.text.trim(),
+          'phone': phone.text.trim(),
+        });
+      }
+      await _loadFarms();
+    } catch (e) {
+      if (mounted) _showMessage('Failed to edit worker: $e', error: true);
+    }
+  }
+
+  Future<void> _deleteWorker(Worker worker) async {
+    if (!await _confirm('Delete worker?', 'Remove ${worker.name} from this farm?')) return;
+    try {
+      final id = int.tryParse(worker.id ?? '');
+      if (id != null) {
+        await ApiService().deleteWorker(id);
+      }
+      if (mounted) {
+        setState(() {
+          _farms[_selectedFarmIndex].workers.removeWhere((w) => w.id == worker.id || w.name == worker.name);
+        });
+        _showMessage('Worker removed successfully!');
+      }
+    } catch (e) {
+      if (mounted) _showMessage('Failed to delete worker: $e', error: true);
+    }
+  }
+
+  void _showMessage(String message, {bool error = false}) {
+    final scheme = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: error ? scheme.error : scheme.primary,
+    ));
+  }
+
+  void _showAddAnimalDialog(BuildContext context) {
+    if (_farms.isEmpty) {
+      _showMessage('Please create or select a farm first.', error: true);
+      return;
+    }
+
+    final countController = TextEditingController(text: '1');
+    final tagController = TextEditingController();
+    final breedController = TextEditingController();
+    final ageController = TextEditingController();
+
+    String selectedType = 'Cattle';
+    String selectedGender = 'male';
+    String selectedHealth = 'healthy';
+    bool isBatchMode = true;
+    bool isSubmitting = false;
+    String? errorMessage;
+
+    final scheme = Theme.of(context).colorScheme;
+
+    showDialog(
+      context: context,
+      barrierDismissible: !isSubmitting,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.pets_rounded,
+                    color: scheme.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Add Animal Record',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (errorMessage != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: scheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        errorMessage!,
+                        style: TextStyle(color: scheme.onErrorContainer, fontSize: 12),
+                      ),
+                    ),
+                  ],
+
+                  // Mode Chips
+                  Row(
+                    children: [
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Batch Count'),
+                          selected: isBatchMode,
+                          onSelected: isSubmitting
+                              ? null
+                              : (selected) {
+                                  if (selected) {
+                                    setDialogState(() {
+                                      isBatchMode = true;
+                                      errorMessage = null;
+                                    });
+                                  }
+                                },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: ChoiceChip(
+                          label: const Text('Single Animal'),
+                          selected: !isBatchMode,
+                          onSelected: isSubmitting
+                              ? null
+                              : (selected) {
+                                  if (selected) {
+                                    setDialogState(() {
+                                      isBatchMode = false;
+                                      errorMessage = null;
+                                    });
+                                  }
+                                },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedType,
+                    decoration: const InputDecoration(
+                      labelText: 'Animal Type *',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.category_rounded, size: 20),
+                    ),
+                    items: const [
+                      'Cattle',
+                      'Goats',
+                      'Sheep',
+                      'Pigs',
+                      'Poultry',
+                      'Rabbits',
+                      'Fish',
+                      'Horses',
+                      'Other',
+                    ].map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                    onChanged: isSubmitting
+                        ? null
+                        : (value) {
+                            if (value != null) {
+                              setDialogState(() {
+                                selectedType = value;
+                              });
+                            }
+                          },
+                  ),
+                  const SizedBox(height: 12),
+
+                  if (isBatchMode) ...[
+                    TextFormField(
+                      controller: countController,
+                      enabled: !isSubmitting,
+                      decoration: const InputDecoration(
+                        labelText: 'Number of Animals *',
+                        hintText: 'e.g. 5',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.numbers_rounded, size: 20),
+                      ),
+                      keyboardType: TextInputType.number,
+                    ),
+                  ] else ...[
+                    TextFormField(
+                      controller: tagController,
+                      enabled: !isSubmitting,
+                      decoration: const InputDecoration(
+                        labelText: 'Tag / ID (Optional)',
+                        hintText: 'e.g., COW-102',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.qr_code_rounded, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: breedController,
+                      enabled: !isSubmitting,
+                      decoration: const InputDecoration(
+                        labelText: 'Breed (Optional)',
+                        hintText: 'e.g., Friesian, Ankole',
+                        border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.pets_rounded, size: 20),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: DropdownButtonFormField<String>(
+                            initialValue: selectedGender,
+                            decoration: const InputDecoration(
+                              labelText: 'Gender',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: const [
+                              DropdownMenuItem(value: 'male', child: Text('Male')),
+                              DropdownMenuItem(value: 'female', child: Text('Female')),
+                            ],
+                            onChanged: isSubmitting
+                                ? null
+                                : (val) {
+                                    if (val != null) setDialogState(() => selectedGender = val);
+                                  },
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: TextFormField(
+                            controller: ageController,
+                            enabled: !isSubmitting,
+                            decoration: const InputDecoration(
+                              labelText: 'Age (Years)',
+                              border: OutlineInputBorder(),
+                            ),
+                            keyboardType: TextInputType.number,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedHealth,
+                      decoration: const InputDecoration(
+                        labelText: 'Health Status',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: const [
+                        DropdownMenuItem(value: 'healthy', child: Text('Healthy')),
+                        DropdownMenuItem(value: 'sick', child: Text('Sick')),
+                        DropdownMenuItem(value: 'treatment', child: Text('Under Treatment')),
+                        DropdownMenuItem(value: 'quarantine', child: Text('Quarantine')),
+                        DropdownMenuItem(value: 'recovering', child: Text('Recovering')),
+                      ],
+                      onChanged: isSubmitting
+                          ? null
+                          : (val) {
+                              if (val != null) setDialogState(() => selectedHealth = val);
+                            },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+                child: Text('Cancel', style: TextStyle(color: scheme.onSurfaceVariant)),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting ? null : () async {
+                  final count = isBatchMode ? (int.tryParse(countController.text.trim()) ?? 0) : 1;
+                  if (count < 1) {
+                    setDialogState(() {
+                      errorMessage = 'Please enter a valid count (at least 1).';
+                    });
+                    return;
+                  }
+
+                  setDialogState(() {
+                    isSubmitting = true;
+                    errorMessage = null;
+                  });
+
                   try {
                     final farm = _farms[_selectedFarmIndex];
                     final farmId = int.tryParse(farm.id);
+                    final createdIds = <String>[];
+                    final apiType = _apiAnimalType(selectedType);
 
                     if (farmId != null) {
-                      // Create animal record in backend for each count
-                      for (int i = 0; i < count; i++) {
-                        await ApiService().createAnimal({
-                          'identification_number':
-                              '${selectedType.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}_$i',
-                          // IMPORTANT: Convert to lowercase for backend
-                          'type': selectedType.toLowerCase(),
-                          'breed': 'Unknown',
-                          'gender': 'Unknown',
-                          'age': 0,
-                          'health_status': 'healthy',
+                      if (isBatchMode) {
+                        for (int i = 0; i < count; i++) {
+                          final created = await ApiService().createAnimal({
+                            'identification_number': '${apiType}_${DateTime.now().millisecondsSinceEpoch}_$i',
+                            'type': apiType,
+                            'breed': 'Unknown',
+                            'gender': 'male',
+                            'age': 0,
+                            'health_status': 'healthy',
+                            'farm_id': farmId,
+                          });
+                          if (created is Map) {
+                            final id = created['id'] ?? (created['data'] is Map ? created['data']['id'] : null);
+                            if (id != null) createdIds.add(id.toString());
+                          }
+                        }
+                      } else {
+                        final tag = tagController.text.trim().isNotEmpty
+                            ? tagController.text.trim()
+                            : '${apiType}_${DateTime.now().millisecondsSinceEpoch}';
+                        final created = await ApiService().createAnimal({
+                          'identification_number': tag,
+                          'type': apiType,
+                          'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Unknown',
+                          'gender': selectedGender,
+                          'age': int.tryParse(ageController.text.trim()) ?? 0,
+                          'health_status': selectedHealth,
                           'farm_id': farmId,
                         });
+                        if (created is Map) {
+                          final id = created['id'] ?? (created['data'] is Map ? created['data']['id'] : null);
+                          if (id != null) createdIds.add(id.toString());
+                        }
                       }
                     }
 
-                    setState(() {
-                      final farm = _farms[_selectedFarmIndex];
-                      final existing = farm.animals.firstWhere(
-                        (a) => a.name == selectedType,
-                        orElse: () => AnimalCategory(selectedType, 0, ''),
-                      );
-
-                      if (existing.name.isNotEmpty) {
-                        // Update existing category
-                        existing.count += count;
-                      } else {
-                        // Add new category
-                        farm.animals.add(
-                          AnimalCategory(selectedType, count, ''),
+                    final normalizedCatName = Farm.normalizeCategoryName(selectedType);
+                    if (mounted) {
+                      setState(() {
+                        final currentFarm = _farms[_selectedFarmIndex];
+                        final existingIndex = currentFarm.animals.indexWhere(
+                          (a) => a.name.toLowerCase() == normalizedCatName.toLowerCase(),
                         );
-                      }
-                    });
 
-                    if (!mounted) return;
-                    Navigator.pop(context);
+                        if (existingIndex != -1) {
+                          currentFarm.animals[existingIndex].count += count;
+                          currentFarm.animals[existingIndex].ids.addAll(createdIds);
+                        } else {
+                          currentFarm.animals.add(
+                            AnimalCategory(normalizedCatName, count, '', ids: createdIds),
+                          );
+                        }
+                      });
+                    }
 
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'Animals added successfully and registered in dashboard!',
-                        ),
-                        backgroundColor: Color(0xFF2E7D32),
-                      ),
-                    );
+                    if (dialogContext.mounted) {
+                      Navigator.pop(dialogContext);
+                    }
+
+                    if (mounted) {
+                      _showMessage('$selectedType added successfully!');
+                    }
                   } catch (e) {
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Failed to add animals: $e'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
+                    setDialogState(() {
+                      isSubmitting = false;
+                      errorMessage = 'Failed to add animal: $e';
+                    });
                   }
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Add Animals'),
-          ),
-        ],
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: scheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : Text(isBatchMode ? 'Add Animals' : 'Add Single Animal'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   void _showAddWorkerDialog(BuildContext context) {
+    if (_farms.isEmpty) {
+      _showMessage('Please create or select a farm first.', error: true);
+      return;
+    }
+
     final nameController = TextEditingController();
     final roleController = TextEditingController();
     final phoneController = TextEditingController();
+    final emailController = TextEditingController();
+
+    bool isSubmitting = false;
+    String? errorMessage;
+
+    final presetRoles = [
+      'Farm Manager',
+      'Herdsman',
+      'Veterinary Tech',
+      'Feeder',
+      'Milker',
+      'General Worker',
+    ];
+
+    final scheme = Theme.of(context).colorScheme;
 
     showDialog(
       context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.08),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.person_add_rounded,
-                color: Color(0xFF2E7D32),
-                size: 20,
-              ),
+      barrierDismissible: !isSubmitting,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.person_add_rounded,
+                    color: scheme.primary,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Add Worker',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+              ],
             ),
-            const SizedBox(width: 10),
-            const Text(
-              'Add Worker',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: nameController,
-              decoration: const InputDecoration(
-                labelText: 'Full Name *',
-                hintText: 'Enter worker name',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: roleController,
-              decoration: const InputDecoration(
-                labelText: 'Role *',
-                hintText: 'e.g., Farm Manager',
-                border: OutlineInputBorder(),
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextFormField(
-              controller: phoneController,
-              decoration: const InputDecoration(
-                labelText: 'Phone Number *',
-                hintText: 'e.g., +256 772 123 456',
-                border: OutlineInputBorder(),
-              ),
-              keyboardType: TextInputType.phone,
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text('Cancel', style: TextStyle(color: Colors.grey[600])),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (nameController.text.isNotEmpty &&
-                  roleController.text.isNotEmpty &&
-                  phoneController.text.isNotEmpty) {
-                try {
-                  final farm = _farms[_selectedFarmIndex];
-                  final farmId = int.tryParse(farm.id);
-
-                  if (farmId != null) {
-                    await ApiService().createWorker({
-                      'farm_id': farmId,
-                      'name': nameController.text,
-                      'role': roleController.text,
-                      'phone': phoneController.text,
-                    });
-                  }
-
-                  setState(() {
-                    _farms[_selectedFarmIndex].workers.add(
-                      Worker(
-                        nameController.text,
-                        roleController.text,
-                        phoneController.text,
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (errorMessage != null) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: scheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    );
-                  });
-
-                  if (!mounted) return;
-                  Navigator.pop(context);
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Worker added successfully and registered in dashboard!',
+                      child: Text(
+                        errorMessage!,
+                        style: TextStyle(color: scheme.onErrorContainer, fontSize: 12),
                       ),
-                      backgroundColor: Color(0xFF2E7D32),
                     ),
-                  );
-                } catch (e) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('Failed to add worker: $e'),
-                      backgroundColor: Colors.red,
+                  ],
+
+                  TextFormField(
+                    controller: nameController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(
+                      labelText: 'Full Name *',
+                      hintText: 'e.g. John Okello',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.person_rounded, size: 20),
                     ),
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2E7D32),
-              foregroundColor: Colors.white,
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: roleController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(
+                      labelText: 'Role / Position *',
+                      hintText: 'e.g. Farm Manager',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.badge_rounded, size: 20),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: presetRoles.map((role) {
+                      final isSelected = roleController.text == role;
+                      return ChoiceChip(
+                        label: Text(role, style: const TextStyle(fontSize: 11)),
+                        selected: isSelected,
+                        onSelected: isSubmitting
+                            ? null
+                            : (_) {
+                                setDialogState(() {
+                                  roleController.text = role;
+                                });
+                              },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: phoneController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(
+                      labelText: 'Phone Number *',
+                      hintText: 'e.g., +256 772 123 456',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.phone_rounded, size: 20),
+                    ),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextFormField(
+                    controller: emailController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(
+                      labelText: 'Email Address (Optional)',
+                      hintText: 'e.g., john@example.com',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.email_rounded, size: 20),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                  ),
+                ],
+              ),
             ),
-            child: const Text('Add Worker'),
-          ),
-        ],
+            actions: [
+              TextButton(
+                onPressed: isSubmitting ? null : () => Navigator.pop(dialogContext),
+                child: Text('Cancel', style: TextStyle(color: scheme.onSurfaceVariant)),
+              ),
+              ElevatedButton(
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        final name = nameController.text.trim();
+                        final role = roleController.text.trim();
+                        final phone = phoneController.text.trim();
+                        final email = emailController.text.trim();
+
+                        if (name.isEmpty || role.isEmpty || phone.isEmpty) {
+                          setDialogState(() {
+                            errorMessage = 'Please fill in Name, Role, and Phone Number.';
+                          });
+                          return;
+                        }
+
+                        setDialogState(() {
+                          isSubmitting = true;
+                          errorMessage = null;
+                        });
+
+                        try {
+                          final farm = _farms[_selectedFarmIndex];
+                          final farmId = int.tryParse(farm.id);
+                          String? newWorkerId;
+
+                          if (farmId != null) {
+                            final created = await ApiService().createWorker({
+                              'farm_id': farmId,
+                              'name': name,
+                              'role': role,
+                              'phone': phone,
+                              if (email.isNotEmpty) 'email': email,
+                            });
+
+                            if (created is Map) {
+                              final directId = created['id'];
+                              final nested = created['data'];
+                              final nestedId = nested is Map ? nested['id'] : null;
+                              newWorkerId = (directId ?? nestedId)?.toString();
+                            }
+                          }
+
+                          if (mounted) {
+                            setState(() {
+                              _farms[_selectedFarmIndex].workers.add(
+                                    Worker(
+                                      id: newWorkerId,
+                                      name: name,
+                                      role: role,
+                                      phone: phone,
+                                    ),
+                                  );
+                            });
+                          }
+
+                          if (dialogContext.mounted) {
+                            Navigator.pop(dialogContext);
+                          }
+
+                          if (mounted) {
+                            _showMessage('Worker added successfully!');
+                          }
+                        } catch (e) {
+                          setDialogState(() {
+                            isSubmitting = false;
+                            errorMessage = 'Failed to add worker: $e';
+                          });
+                        }
+                      },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: scheme.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                child: isSubmitting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Text('Add Worker'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1166,17 +1768,13 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
         title: const Text(
           'Create New Farm',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
           ),
         ),
         leading: IconButton(
@@ -1191,7 +1789,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF2E7D32),
+                color: Colors.white,
               ),
             ),
           ),
@@ -1317,14 +1915,15 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: Theme.of(context).cardColor,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: const Color(0xFFE8E8E8)),
+                  border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                 ),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: 8,
                   children: _availableFacilities.map((facility) {
+                    final scheme = Theme.of(context).colorScheme;
                     final isSelected = _selectedFacilities.contains(facility);
                     return FilterChip(
                       label: Text(
@@ -1332,7 +1931,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w500,
-                          color: isSelected ? Colors.white : Colors.grey[700],
+                          color: isSelected ? Colors.white : scheme.onSurfaceVariant,
                         ),
                       ),
                       selected: isSelected,
@@ -1345,13 +1944,13 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                           }
                         });
                       },
-                      backgroundColor: Colors.white,
-                      selectedColor: const Color(0xFF2E7D32),
+                      backgroundColor: Theme.of(context).cardColor,
+                      selectedColor: scheme.primary,
                       shape: StadiumBorder(
                         side: BorderSide(
                           color: isSelected
-                              ? const Color(0xFF2E7D32)
-                              : Colors.grey[300]!,
+                              ? scheme.primary
+                              : scheme.outlineVariant,
                         ),
                       ),
                     );
@@ -1368,7 +1967,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                 child: ElevatedButton(
                   onPressed: _saveFarm,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
+                    backgroundColor: Theme.of(context).colorScheme.primary,
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -1391,36 +1990,37 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
   }
 
   Widget _buildImageSection() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.image_rounded,
-                color: Color(0xFF2E7D32),
+                color: scheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Farm Image',
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                 ),
               ),
               const Spacer(),
               Text(
                 'Optional',
-                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+                style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
               ),
             ],
           ),
@@ -1431,9 +2031,9 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
               height: 120,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: Colors.grey[100],
+                color: scheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[300]!),
+                border: Border.all(color: scheme.outlineVariant),
               ),
               child: _farmImage != null
                   ? ClipRRect(
@@ -1450,14 +2050,14 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
                         Icon(
                           Icons.add_photo_alternate_rounded,
                           size: 40,
-                          color: Colors.grey[400],
+                          color: scheme.onSurfaceVariant,
                         ),
                         const SizedBox(height: 8),
                         Text(
                           'Tap to add farm image',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[500],
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -1470,23 +2070,24 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
   }
 
   Widget _buildSectionHeader(IconData icon, String title) {
+    final scheme = Theme.of(context).colorScheme;
     return Row(
       children: [
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: const Color(0xFF2E7D32).withOpacity(0.08),
+            color: scheme.primary.withValues(alpha: 0.08),
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(icon, size: 16, color: const Color(0xFF2E7D32)),
+          child: Icon(icon, size: 16, color: scheme.primary),
         ),
         const SizedBox(width: 10),
         Text(
           title,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 15,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
           ),
         ),
       ],
@@ -1501,11 +2102,12 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
     String? Function(String?)? validator,
     int maxLines = 1,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: TextFormField(
         controller: controller,
@@ -1514,20 +2116,20 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
-          labelStyle: const TextStyle(
+          hintStyle: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+          labelStyle: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
           ),
-          prefixIcon: Icon(icon, size: 20, color: const Color(0xFF2E7D32)),
+          prefixIcon: Icon(icon, size: 20, color: scheme.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
             borderSide: BorderSide.none,
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+            borderSide: BorderSide(color: scheme.primary, width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
@@ -1552,9 +2154,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
           _farmImage = File(image.path);
         });
       }
-    } catch (e) {
-      // Handle error
-    }
+    } catch (_) {}
   }
 
   Future<void> _saveFarm() async {
@@ -1590,14 +2190,15 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
 
       if (!mounted) return;
 
+      final scheme = Theme.of(context).colorScheme;
       Navigator.pop(context, createdFarm);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+        SnackBar(
+          content: const Text(
             'Farm created successfully and registered in dashboard!',
           ),
-          backgroundColor: Color(0xFF2E7D32),
+          backgroundColor: scheme.primary,
         ),
       );
     } catch (e) {
@@ -1605,7 +2206,7 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Farm could not be saved: $e'),
-          backgroundColor: Colors.red,
+          backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
     }

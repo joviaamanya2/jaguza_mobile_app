@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:jaguza_app/services/api_service.dart';
 import '../Gestation tracker/gestation_tracker.dart';
 
 // Add to pubspec.yaml: image_picker: ^1.0.7
@@ -16,14 +17,68 @@ class _ProfileTabState extends State<ProfileTab> {
   File? _profileImage;
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
+  bool _isLoadingProfile = true;
+  int _animalCount = 0;
+  int _reportCount = 0;
+  int _savedCount = 0;
 
-  // User data - would come from Signup/Signin screens
-  String _userName = 'John Mukasa';
-  String _userEmail = 'john.mukasa@email.com';
-  String _userPhone = '+256 772 123 456';
-  String _userLocation = 'Wakiso, Uganda';
-  String _userFarmType = 'Poultry & Cattle';
-  String _userFarmSize = '5 acres';
+  String _userName = 'Loading profile...';
+  String _userEmail = '';
+  String _userPhone = '';
+  String _userLocation = 'Location not set';
+  String _userFarmType = 'Farm type not set';
+  String _userFarmSize = 'Farm size not set';
+  String _userRole = 'farmer';
+  bool _isVerified = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    try {
+      final api = ApiService();
+      final results = await Future.wait<dynamic>([
+        api.get('user'),
+        api.getAnimals(),
+        api.getReports(),
+      ]);
+      final user = results[0] is Map
+          ? Map<String, dynamic>.from(results[0] as Map)
+          : <String, dynamic>{};
+      final farms = user['farms'] is List ? user['farms'] as List : const [];
+
+      if (!mounted) return;
+      setState(() {
+        _userName = (user['name'] ?? user['full_name'] ?? '').toString();
+        if (_userName.trim().isEmpty) _userName = 'Jaguza Farmer';
+        _userEmail = (user['email'] ?? '').toString();
+        _userPhone = (user['phone_number'] ?? '').toString();
+        _userRole = (user['role'] ?? 'farmer').toString();
+        if (_userRole.trim().isEmpty) _userRole = 'farmer';
+        _isVerified = user['is_verified'] == true;
+        _userLocation = (user['farm_location'] ?? '').toString();
+        if (_userLocation.trim().isEmpty && farms.isNotEmpty && farms.first is Map) {
+          _userLocation = (farms.first['location'] ?? 'Location not set').toString();
+        }
+        if (_userLocation.trim().isEmpty) _userLocation = 'Location not set';
+        _userFarmType = (user['farm_name'] ?? user['farm_type'] ?? 'Farm name not set').toString();
+        _userFarmSize = (user['farm_size'] ?? '').toString();
+        if (_userFarmSize.trim().isEmpty && farms.isNotEmpty && farms.first is Map) {
+          _userFarmSize = (farms.first['size'] ?? 'Farm size not set').toString();
+        }
+        if (_userFarmSize.trim().isEmpty) _userFarmSize = 'Farm size not set';
+        _animalCount = results[1] is List ? (results[1] as List).length : 0;
+        _reportCount = results[2] is List ? (results[2] as List).length : 0;
+        _isLoadingProfile = false;
+      });
+    } catch (e) {
+      debugPrint('Profile load error: $e');
+      if (mounted) setState(() => _isLoadingProfile = false);
+    }
+  }
 
   Future<void> _pickImage(ImageSource source) async {
     Navigator.pop(context);
@@ -40,24 +95,25 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   void _showImagePicker() {
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               width: 40, height: 4,
-              decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+              decoration: BoxDecoration(color: scheme.outlineVariant, borderRadius: BorderRadius.circular(2)),
             ),
             const SizedBox(height: 20),
-            const Text('Update Profile Photo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+            Text('Update Profile Photo', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface)),
             const SizedBox(height: 20),
             Row(
               children: [
@@ -70,8 +126,8 @@ class _ProfileTabState extends State<ProfileTab> {
             if (_profileImage != null)
               TextButton.icon(
                 onPressed: () => setState(() => _profileImage = null),
-                icon: const Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
-                label: const Text('Remove Photo', style: TextStyle(color: Colors.red, fontSize: 13, fontWeight: FontWeight.w600)),
+                icon: Icon(Icons.delete_outline_rounded, size: 16, color: scheme.error),
+                label: Text('Remove Photo', style: TextStyle(color: scheme.error, fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             const SizedBox(height: 8),
           ],
@@ -81,9 +137,10 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Widget _imagePickOption(IconData icon, String title, String subtitle, VoidCallback onTap) {
+    final scheme = Theme.of(context).colorScheme;
     return Expanded(
       child: Material(
-        color: const Color(0xFF2E7D32).withOpacity(0.06),
+        color: scheme.primary.withValues(alpha: 0.06),
         borderRadius: BorderRadius.circular(14),
         child: InkWell(
           borderRadius: BorderRadius.circular(14),
@@ -94,13 +151,13 @@ class _ProfileTabState extends State<ProfileTab> {
               children: [
                 Container(
                   width: 48, height: 48,
-                  decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
-                  child: Icon(icon, color: const Color(0xFF2E7D32), size: 24),
+                  decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)),
+                  child: Icon(icon, color: scheme.primary, size: 24),
                 ),
                 const SizedBox(height: 10),
-                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+                Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: scheme.onSurface)),
                 const SizedBox(height: 2),
-                Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[500]), textAlign: TextAlign.center),
+                Text(subtitle, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant), textAlign: TextAlign.center),
               ],
             ),
           ),
@@ -129,18 +186,43 @@ class _ProfileTabState extends State<ProfileTab> {
       if (farmType != null) _userFarmType = farmType;
       if (farmSize != null) _userFarmSize = farmSize;
     });
+    _saveProfileToBackend();
+  }
+
+  Future<void> _saveProfileToBackend() async {
+    try {
+      await ApiService().put('user/profile', {
+        'name': _userName,
+        'phone_number': _userPhone,
+        'farm_name': _userFarmType,
+        'farm_location': _userLocation,
+      });
+      if (mounted) _showMessage('Profile updated successfully');
+    } catch (e) {
+      if (mounted) _showMessage('Profile could not be updated: $e', error: true);
+    }
+  }
+
+  void _showMessage(String message, {bool error = false}) {
+    final scheme = Theme.of(context).colorScheme;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(message),
+      backgroundColor: error ? scheme.error : scheme.primary,
+      behavior: SnackBarBehavior.floating,
+    ));
   }
 
   void _showChangePasswordDialog() {
+    final scheme = Theme.of(context).colorScheme;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => ChangePasswordDialog(
         onPasswordChanged: () {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Password changed successfully'),
-              backgroundColor: Color(0xFF2E7D32),
+            SnackBar(
+              content: const Text('Password changed successfully'),
+              backgroundColor: scheme.primary,
               behavior: SnackBarBehavior.floating,
             ),
           );
@@ -152,7 +234,6 @@ class _ProfileTabState extends State<ProfileTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
         child: Column(
@@ -162,17 +243,17 @@ class _ProfileTabState extends State<ProfileTab> {
             _buildStatsRow(),
             const SizedBox(height: 16),
             _buildMenuSection('My Farm', [
-              MenuItem(icon: Icons.pets_rounded, title: 'My Animals', subtitle: '12 animals registered', color: const Color(0xFF6D4C41), count: '12', screen: const MyAnimalsScreen()),
-              MenuItem(icon: Icons.coronavirus_rounded, title: 'Health Records', subtitle: 'Track vaccinations & treatments', color: const Color(0xFFE53935), count: '8', screen: const HealthRecordsScreen()),
-              MenuItem(icon: Icons.pregnant_woman_rounded, title: 'Gestation Tracking', subtitle: '3 active pregnancies', color: const Color(0xFFEC407A), count: '3', screen: const GestationTrackerScreen()),
+              MenuItem(icon: Icons.pets_rounded, title: 'My Animals', subtitle: 'Animals registered in your account', color: const Color(0xFF6D4C41), count: '$_animalCount', screen: const MyAnimalsScreen()),
+              MenuItem(icon: Icons.coronavirus_rounded, title: 'Health Records', subtitle: 'Track vaccinations & treatments', color: const Color(0xFFE53935), count: '$_reportCount', screen: const HealthRecordsScreen()),
+              MenuItem(icon: Icons.pregnant_woman_rounded, title: 'Gestation Tracking', subtitle: 'Monitor active pregnancies', color: const Color(0xFFEC407A), screen: const GestationTrackerScreen()),
             ]),
             _buildMenuSection('Activity', [
-              MenuItem(icon: Icons.history_rounded, title: 'My Reports', subtitle: 'Disease reports submitted', color: const Color(0xFF1E88E5), count: '5', screen: const MyReportsScreen()),
-              MenuItem(icon: Icons.star_rounded, title: 'Saved Articles', subtitle: 'Bookmarked posts', color: const Color(0xFFFFA000), count: '14', screen: const SavedArticlesScreen()),
-              MenuItem(icon: Icons.chat_rounded, title: 'Chat History', subtitle: 'Previous AI conversations', color: const Color(0xFF8E24AA), count: '23', screen: const ChatHistoryScreen()),
+              MenuItem(icon: Icons.history_rounded, title: 'My Reports', subtitle: 'Disease reports submitted', color: const Color(0xFF1E88E5), count: '$_reportCount', screen: const MyReportsScreen()),
+              MenuItem(icon: Icons.star_rounded, title: 'Saved Articles', subtitle: 'Bookmarked posts', color: const Color(0xFFFFA000), count: '$_savedCount', screen: const SavedArticlesScreen()),
+              MenuItem(icon: Icons.chat_rounded, title: 'Chat History', subtitle: 'Previous AI conversations', color: const Color(0xFF8E24AA), screen: const ChatHistoryScreen()),
             ]),
             _buildMenuSection('Settings', [
-              MenuItem(icon: Icons.lock_rounded, title: 'Change Password', subtitle: 'Update your account password', color: const Color(0xFF2E7D32), screen: null, onTap: _showChangePasswordDialog),
+              MenuItem(icon: Icons.lock_rounded, title: 'Change Password', subtitle: 'Update your account password', color: Theme.of(context).colorScheme.primary, screen: null, onTap: _showChangePasswordDialog),
               MenuItem(icon: Icons.notifications_rounded, title: 'Notifications', subtitle: 'Manage your alerts', color: const Color(0xFFF59E0B), screen: const NotificationsScreen()),
               MenuItem(icon: Icons.help_rounded, title: 'Help & Support', subtitle: 'FAQs and contact us', color: const Color(0xFF3B82F6), screen: const HelpSupportScreen()),
             ]),
@@ -192,9 +273,10 @@ class _ProfileTabState extends State<ProfileTab> {
         .join()
         .toUpperCase();
     if (initials.isEmpty) initials = 'U';
+    final scheme = Theme.of(context).colorScheme;
 
     return Container(
-      color: const Color(0xFF2E7D32),
+      color: scheme.primary,
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       child: Column(
         children: [
@@ -204,7 +286,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 onTap: () => Navigator.pop(context),
                 child: Container(
                   width: 40, height: 40,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                   child: const Icon(Icons.arrow_back_rounded, color: Colors.white, size: 20),
                 ),
               ),
@@ -223,7 +305,7 @@ class _ProfileTabState extends State<ProfileTab> {
                 ),
                 child: Container(
                   width: 40, height: 40,
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.12), borderRadius: BorderRadius.circular(10)),
+                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                   child: const Icon(Icons.edit_rounded, color: Colors.white, size: 18),
                 ),
               ),
@@ -256,8 +338,8 @@ class _ProfileTabState extends State<ProfileTab> {
                   bottom: -2, right: -2,
                   child: Container(
                     width: 30, height: 30,
-                    decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: const Color(0xFF2E7D32), width: 2)),
-                    child: const Icon(Icons.camera_alt_rounded, color: Color(0xFF2E7D32), size: 14),
+                    decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, border: Border.all(color: scheme.primary, width: 2)),
+                    child: Icon(Icons.camera_alt_rounded, color: scheme.primary, size: 14),
                   ),
                 ),
               ],
@@ -266,9 +348,9 @@ class _ProfileTabState extends State<ProfileTab> {
           const SizedBox(height: 12),
           Text(_userName, style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text(_userLocation, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12.5)),
+          Text(_userLocation, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12.5)),
           const SizedBox(height: 4),
-          Text(_userEmail, style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11)),
+          Text(_userEmail, style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 11)),
           const SizedBox(height: 10),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
@@ -277,7 +359,10 @@ class _ProfileTabState extends State<ProfileTab> {
               children: [
                 const Icon(Icons.verified_rounded, color: Color(0xFF66BB6A), size: 14),
                 const SizedBox(width: 4),
-                Text('Verified Farmer', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 11.5, fontWeight: FontWeight.w600)),
+                Text(
+                  _isVerified ? 'Verified ${_userRole[0].toUpperCase()}${_userRole.substring(1)}' : '${_userRole[0].toUpperCase()}${_userRole.substring(1)} account',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 11.5, fontWeight: FontWeight.w600),
+                ),
               ],
             ),
           ),
@@ -291,31 +376,32 @@ class _ProfileTabState extends State<ProfileTab> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Row(
         children: [
-          _statCard('Animals', '12', Icons.pets_rounded, const Color(0xFF6D4C41), () => _navigateTo(const MyAnimalsScreen())),
+          _statCard('Animals', '$_animalCount', Icons.pets_rounded, const Color(0xFF6D4C41), () => _navigateTo(const MyAnimalsScreen())),
           const SizedBox(width: 10),
-          _statCard('Reports', '5', Icons.coronavirus_rounded, const Color(0xFFE53935), () => _navigateTo(const MyReportsScreen())),
+          _statCard('Reports', '$_reportCount', Icons.coronavirus_rounded, const Color(0xFFE53935), () => _navigateTo(const MyReportsScreen())),
           const SizedBox(width: 10),
-          _statCard('Saved', '14', Icons.bookmark_rounded, const Color(0xFFFFA000), () => _navigateTo(const SavedArticlesScreen())),
+          _statCard('Saved', '$_savedCount', Icons.bookmark_rounded, const Color(0xFFFFA000), () => _navigateTo(const SavedArticlesScreen())),
         ],
       ),
     );
   }
 
   Widget _statCard(String label, String value, IconData icon, Color color, VoidCallback onTap) {
+    final scheme = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 14),
-          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE8E8E8))),
+          decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(12), border: Border.all(color: scheme.outlineVariant)),
           child: Column(
             children: [
-              Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+              Container(width: 36, height: 36, decoration: BoxDecoration(color: color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
                 child: Icon(icon, color: color, size: 18)),
               const SizedBox(height: 6),
-              Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+              Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: scheme.onSurface)),
               const SizedBox(height: 2),
-              Text(label, style: TextStyle(fontSize: 10.5, color: Colors.grey[500], fontWeight: FontWeight.w500)),
+              Text(label, style: TextStyle(fontSize: 10.5, color: scheme.onSurfaceVariant, fontWeight: FontWeight.w500)),
             ],
           ),
         ),
@@ -324,16 +410,17 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   Widget _buildMenuSection(String title, List<MenuItem> items) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(padding: const EdgeInsets.only(left: 4, bottom: 8),
-            child: Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+            child: Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: scheme.onSurface)),
           ),
           Container(
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE8E8E8))),
+            decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: scheme.outlineVariant)),
             child: Column(
               children: List.generate(items.length, (index) {
                 final item = items[index];
@@ -347,22 +434,22 @@ class _ProfileTabState extends State<ProfileTab> {
                       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
                       child: Row(
                         children: [
-                          Container(width: 38, height: 38, decoration: BoxDecoration(color: item.color.withOpacity(0.08), borderRadius: BorderRadius.circular(10)),
+                          Container(width: 38, height: 38, decoration: BoxDecoration(color: item.color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(10)),
                             child: Icon(item.icon, color: item.color, size: 18)),
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(item.title, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+                              Text(item.title, style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: scheme.onSurface)),
                               const SizedBox(height: 1),
-                              Text(item.subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+                              Text(item.subtitle, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
                             ]),
                           ),
                           if (item.count != null) ...[
-                            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: item.color.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: item.color.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
                               child: Text(item.count!, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: item.color))),
                             const SizedBox(width: 8),
                           ],
-                          Icon(Icons.chevron_right_rounded, color: Colors.grey[300], size: 20),
+                          Icon(Icons.chevron_right_rounded, color: scheme.onSurfaceVariant, size: 20),
                         ],
                       ),
                     ),
@@ -448,6 +535,7 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       title: Row(
@@ -455,22 +543,22 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF2E7D32).withOpacity(0.1),
+              color: scheme.primary.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.lock_rounded,
-              color: Color(0xFF2E7D32),
+              color: scheme.primary,
               size: 20,
             ),
           ),
           const SizedBox(width: 12),
-          const Text(
+          Text(
             'Change Password',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1F36),
+              color: scheme.onSurface,
             ),
           ),
         ],
@@ -536,15 +624,15 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.pop(context),
-          child: const Text(
+          child: Text(
             'Cancel',
-            style: TextStyle(color: Color(0xFF6B7280)),
+            style: TextStyle(color: scheme.onSurfaceVariant),
           ),
         ),
         ElevatedButton(
           onPressed: _isLoading ? null : _submit,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF2E7D32),
+            backgroundColor: scheme.primary,
             foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -578,15 +666,16 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
     VoidCallback toggleVisibility, {
     required String? Function(String?)? validator,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return TextFormField(
       controller: controller,
       obscureText: obscure,
       validator: validator,
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: TextStyle(fontSize: 13, color: Colors.grey[600]),
+        labelStyle: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
         filled: true,
-        fillColor: const Color(0xFFF6F8FA),
+        fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide.none,
@@ -597,27 +686,27 @@ class _ChangePasswordDialogState extends State<ChangePasswordDialog> {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+          borderSide: BorderSide(color: scheme.primary, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1),
+          borderSide: BorderSide(color: scheme.error, width: 1),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
-          borderSide: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+          borderSide: BorderSide(color: scheme.error, width: 1.5),
         ),
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         suffixIcon: IconButton(
           icon: Icon(
             obscure ? Icons.visibility_off_rounded : Icons.visibility_rounded,
-            color: Colors.grey[400],
+            color: scheme.onSurfaceVariant,
             size: 20,
           ),
           onPressed: toggleVisibility,
         ),
       ),
-      style: const TextStyle(fontSize: 14, color: Color(0xFF1A1F36)),
+      style: TextStyle(fontSize: 14, color: scheme.onSurface),
     );
   }
 }
@@ -690,9 +779,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
     Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Profile updated successfully'),
-        backgroundColor: Color(0xFF2E7D32),
+      SnackBar(
+        content: const Text('Profile updated successfully'),
+        backgroundColor: Theme.of(context).colorScheme.primary,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -700,18 +789,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1F36),
         elevation: 0,
         title: const Text(
           'Edit Profile',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36)
           )
         ),
         leading: IconButton(
@@ -724,7 +810,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             child: const Text(
               'Save',
               style: TextStyle(
-                color: Color(0xFF2E7D32),
+                color: Colors.white,
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -751,7 +837,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 icon: const Icon(Icons.save_rounded),
                 label: const Text('Save Changes'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: scheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)
@@ -767,19 +853,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   }
 
   Widget _editField(String label, TextEditingController controller, {TextInputType keyboardType = TextInputType.text}) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: TextField(
         controller: controller,
         keyboardType: keyboardType,
         decoration: InputDecoration(
           labelText: label,
-          labelStyle: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          labelStyle: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
@@ -804,26 +891,27 @@ class MyAnimalsScreen extends StatelessWidget {
       {'name': 'Broiler Batch 12', 'type': 'Poultry', 'breed': 'Cobb 500', 'age': '4 weeks', 'status': 'Growing', 'color': const Color(0xFFE65100)},
     ];
     return _DetailScaffold(title: 'My Animals', subtitle: '12 animals registered', icon: Icons.pets_rounded, color: const Color(0xFF6D4C41),
-      children: animals.map((a) => _animalCard(a)).toList());
+      children: animals.map((a) => _animalCard(a, context)).toList());
   }
 
-  Widget _animalCard(Map<String, dynamic> a) {
+  Widget _animalCard(Map<String, dynamic> a, BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE8E8E8))),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: scheme.outlineVariant)),
       child: Row(
         children: [
-          Container(width: 48, height: 48, decoration: BoxDecoration(color: (a['color'] as Color).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+          Container(width: 48, height: 48, decoration: BoxDecoration(color: (a['color'] as Color).withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
             child: Icon(Icons.pets_rounded, color: a['color'] as Color, size: 22)),
           const SizedBox(width: 12),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(a['name'] as String, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+            Text(a['name'] as String, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface)),
             const SizedBox(height: 2),
-            Text('${a['breed']} • ${a['age']}', style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            Text('${a['breed']} • ${a['age']}', style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
           ])),
-          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: const Color(0xFF2E7D32).withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
-            child: Text(a['status'] as String, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF2E7D32))),
+          Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: scheme.primary.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
+            child: Text(a['status'] as String, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: scheme.primary)),
       )],
       ),
     );
@@ -838,6 +926,7 @@ class HealthRecordsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final records = [
       {'date': '15 Jan 2025', 'animal': 'Bessie', 'type': 'Vaccination', 'detail': 'FMD Vaccine (Booster)', 'vet': 'Dr. Okello', 'status': 'Completed', 'color': const Color(0xFF2E7D32)},
       {'date': '10 Jan 2025', 'animal': 'Layer Flock A', 'type': 'Deworming', 'detail': 'Albendazole 10% - All birds', 'vet': 'Self-administered', 'status': 'Completed', 'color': const Color(0xFF1E88E5)},
@@ -848,31 +937,31 @@ class HealthRecordsScreen extends StatelessWidget {
       children: records.map((r) => Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE8E8E8))),
+        decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: scheme.outlineVariant)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Row(children: [
             Container(width: 8, height: 8, decoration: BoxDecoration(color: r['color'] as Color, shape: BoxShape.circle)),
             const SizedBox(width: 8),
             Text(r['type'] as String, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: r['color'] as Color)),
             const Spacer(),
-            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: (r['color'] as Color).withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+            Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3), decoration: BoxDecoration(color: (r['color'] as Color).withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
               child: Text(r['status'] as String, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: r['color'] as Color)),
         )]),
           const SizedBox(height: 8),
-          Text(r['detail'] as String, style: const TextStyle(fontSize: 13, color: Color(0xFF424242), height: 1.4)),
+          Text(r['detail'] as String, style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant, height: 1.4)),
           const SizedBox(height: 10),
           Row(children: [
-            Icon(Icons.calendar_today_rounded, size: 13, color: Colors.grey[400]),
+            Icon(Icons.calendar_today_rounded, size: 13, color: scheme.onSurfaceVariant),
             const SizedBox(width: 4),
-            Text(r['date'] as String, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            Text(r['date'] as String, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
             const SizedBox(width: 16),
-            Icon(Icons.pets_rounded, size: 13, color: Colors.grey[400]),
+            Icon(Icons.pets_rounded, size: 13, color: scheme.onSurfaceVariant),
             const SizedBox(width: 4),
-            Text(r['animal'] as String, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            Text(r['animal'] as String, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
             const Spacer(),
-            Icon(Icons.person_rounded, size: 13, color: Colors.grey[400]),
+            Icon(Icons.person_rounded, size: 13, color: scheme.onSurfaceVariant),
             const SizedBox(width: 4),
-            Text(r['vet'] as String, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+            Text(r['vet'] as String, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
           ]),
         ]),
       )).toList());
@@ -887,6 +976,7 @@ class MyReportsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final reports = [
       {'date': '18 Jan 2025', 'disease': 'Suspected FMD', 'animal': 'Bessie (Cattle)', 'symptoms': 'Fever, blisters on mouth, excessive salivation', 'severity': 'High', 'status': 'Under Review', 'statusColor': Colors.orange},
       {'date': '12 Jan 2025', 'disease': 'Coccidiosis', 'animal': 'Layer Flock A (Poultry)', 'symptoms': 'Diarrhea, weight loss, ruffled feathers', 'severity': 'Medium', 'status': 'Diagnosed', 'statusColor': const Color(0xFF1E88E5)},
@@ -934,9 +1024,9 @@ class MyReportsScreen extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: const Color(0xFFE8E8E8))
+            border: Border.all(color: scheme.outlineVariant)
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -946,17 +1036,17 @@ class MyReportsScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       r['disease'] as String,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1F36)
+                        color: scheme.onSurface
                       )
                     )
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: (r['statusColor'] as Color).withOpacity(0.1),
+                      color: (r['statusColor'] as Color).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8)
                     ),
                     child: Text(
@@ -976,28 +1066,28 @@ class MyReportsScreen extends StatelessWidget {
                   Icon(
                     Icons.pets_rounded,
                     size: 13,
-                    color: Colors.grey[400]
+                    color: scheme.onSurfaceVariant
                   ),
                   const SizedBox(width: 4),
                   Text(
                     r['animal'] as String,
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey[500]
+                      color: scheme.onSurfaceVariant
                     )
                   ),
                   const Spacer(),
                   Icon(
                     Icons.warning_rounded,
                     size: 13,
-                    color: Colors.grey[400]
+                    color: scheme.onSurfaceVariant
                   ),
                   const SizedBox(width: 4),
                   Text(
                     'Severity: ${r['severity']}',
                     style: TextStyle(
                       fontSize: 11,
-                      color: Colors.grey[500]
+                      color: scheme.onSurfaceVariant
                     )
                   ),
                 ],
@@ -1005,9 +1095,9 @@ class MyReportsScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 r['symptoms'] as String,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 12,
-                  color: Color(0xFF424242),
+                  color: scheme.onSurfaceVariant,
                   height: 1.4
                 )
               ),
@@ -1016,7 +1106,7 @@ class MyReportsScreen extends StatelessWidget {
                 r['date'] as String,
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[400]
+                  color: scheme.onSurfaceVariant
                 )
               ),
             ],
@@ -1035,13 +1125,14 @@ class SavedArticlesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final articles = [
       {'title': 'How to Prevent FMD in Cattle', 'category': 'Disease Prevention', 'date': '16 Jan 2025', 'readTime': '5 min'},
       {'title': 'Feeding Strategies for Dry Season', 'category': 'Nutrition', 'date': '14 Jan 2025', 'readTime': '8 min'},
       {'title': 'Understanding Poultry Biosecurity', 'category': 'Management', 'date': '10 Jan 2025', 'readTime': '6 min'},
       {'title': 'Goat Breeding Best Practices', 'category': 'Breeding', 'date': '08 Jan 2025', 'readTime': '7 min'},
     ];
-    
+
     return _DetailScaffold(
       title: 'Saved Articles',
       subtitle: '14 bookmarked posts',
@@ -1051,19 +1142,19 @@ class SavedArticlesScreen extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE8E8E8))
+          border: Border.all(color: scheme.outlineVariant)
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               a['title'] as String,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
                 height: 1.3
               )
             ),
@@ -1073,7 +1164,7 @@ class SavedArticlesScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFA000).withOpacity(0.08),
+                    color: const Color(0xFFFFA000).withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6)
                   ),
                   child: Text(
@@ -1090,7 +1181,7 @@ class SavedArticlesScreen extends StatelessWidget {
                   '${a['readTime']} read',
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[400]
+                    color: scheme.onSurfaceVariant
                   )
                 ),
                 const SizedBox(width: 12),
@@ -1098,7 +1189,7 @@ class SavedArticlesScreen extends StatelessWidget {
                   a['date'] as String,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[400]
+                    color: scheme.onSurfaceVariant
                   )
                 ),
               ],
@@ -1118,13 +1209,14 @@ class ChatHistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     final chats = [
       {'title': 'FMD symptoms in my cattle', 'date': '18 Jan 2025', 'preview': 'Based on the symptoms you described...'},
       {'title': 'Poultry feed formulation help', 'date': '15 Jan 2025', 'preview': 'For 100 layers, you need approximately...'},
       {'title': 'Goat vaccination schedule', 'date': '12 Jan 2025', 'preview': 'Here is the recommended vaccination...'},
       {'title': 'Mastitis treatment options', 'date': '05 Jan 2025', 'preview': 'For mild mastitis, I recommend...'},
     ];
-    
+
     return _DetailScaffold(
       title: 'Chat History',
       subtitle: '23 AI conversations',
@@ -1134,9 +1226,9 @@ class ChatHistoryScreen extends StatelessWidget {
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: const Color(0xFFE8E8E8))
+          border: Border.all(color: scheme.outlineVariant)
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1147,7 +1239,7 @@ class ChatHistoryScreen extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF8E24AA).withOpacity(0.1),
+                    color: const Color(0xFF8E24AA).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Icon(
@@ -1160,10 +1252,10 @@ class ChatHistoryScreen extends StatelessWidget {
                 Expanded(
                   child: Text(
                     c['title'] as String,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1F36)
+                      color: scheme.onSurface
                     )
                   )
                 ),
@@ -1171,7 +1263,7 @@ class ChatHistoryScreen extends StatelessWidget {
                   c['date'] as String,
                   style: TextStyle(
                     fontSize: 11,
-                    color: Colors.grey[400]
+                    color: scheme.onSurfaceVariant
                   )
                 ),
               ],
@@ -1181,7 +1273,7 @@ class ChatHistoryScreen extends StatelessWidget {
               c['preview'] as String,
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey[500]
+                color: scheme.onSurfaceVariant
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -1202,33 +1294,33 @@ class NotificationsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(backgroundColor: Colors.white, foregroundColor: const Color(0xFF1A1F36), elevation: 0,
-        title: const Text('Notifications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+      appBar: AppBar(elevation: 0,
+        title: const Text('Notifications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20), onPressed: () => Navigator.pop(context))),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        _notifToggle('Disease Alerts', 'Get notified about disease outbreaks in your area', true),
-        _notifToggle('Health Reminders', 'Vaccination and deworming reminders', true),
-        _notifToggle('Report Updates', 'Status updates on your submitted reports', true),
-        _notifToggle('AI Chat Replies', 'Responses from AI diagnosis assistant', false),
-        _notifToggle('Marketplace', 'Price alerts and new product listings', false),
-        _notifToggle('Community Updates', 'New posts and discussions', true),
+        _notifToggle(context, 'Disease Alerts', 'Get notified about disease outbreaks in your area', true),
+        _notifToggle(context, 'Health Reminders', 'Vaccination and deworming reminders', true),
+        _notifToggle(context, 'Report Updates', 'Status updates on your submitted reports', true),
+        _notifToggle(context, 'AI Chat Replies', 'Responses from AI diagnosis assistant', false),
+        _notifToggle(context, 'Marketplace', 'Price alerts and new product listings', false),
+        _notifToggle(context, 'Community Updates', 'New posts and discussions', true),
       ]),
     );
   }
 
-  Widget _notifToggle(String title, String subtitle, bool initial) {
+  Widget _notifToggle(BuildContext context, String title, String subtitle, bool initial) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(14), border: Border.all(color: const Color(0xFFE8E8E8))),
+      decoration: BoxDecoration(color: Theme.of(context).cardColor, borderRadius: BorderRadius.circular(14), border: Border.all(color: scheme.outlineVariant)),
       child: Row(children: [
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1A1F36))),
+          Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface)),
           const SizedBox(height: 2),
-          Text(subtitle, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+          Text(subtitle, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
         ])),
-        Switch(value: initial, activeColor: const Color(0xFF2E7D32), onChanged: (val) {}),
+        Switch(value: initial, activeColor: scheme.primary, onChanged: (val) {}),
       ]),
     );
   }
@@ -1242,18 +1334,15 @@ class HelpSupportScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF1A1F36),
         elevation: 0,
         title: const Text(
           'Help & Support',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36)
           )
         ),
         leading: IconButton(
@@ -1269,26 +1358,26 @@ class HelpSupportScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.06),
+                color: scheme.primary.withValues(alpha: 0.06),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                  color: const Color(0xFF2E7D32).withOpacity(0.15)
+                  color: scheme.primary.withValues(alpha: 0.15)
                 )
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.headset_mic_rounded,
-                    color: const Color(0xFF2E7D32),
+                    color: scheme.primary,
                     size: 22
                   ),
                   const SizedBox(width: 12),
-                  const Expanded(
+                  Expanded(
                     child: Text(
                       'Need help? Contact our support team directly.',
                       style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF2E7D32),
+                        color: scheme.primary,
                         fontWeight: FontWeight.w500
                       )
                     )
@@ -1297,12 +1386,12 @@ class HelpSupportScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
+            Text(
               'Frequently Asked Questions',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1F36)
+                color: scheme.onSurface
               )
             ),
             const SizedBox(height: 12),
@@ -1310,31 +1399,31 @@ class HelpSupportScreen extends StatelessWidget {
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFE8E8E8))
+                border: Border.all(color: scheme.outlineVariant)
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.help_outline_rounded,
                     size: 18,
-                    color: Colors.grey[400]
+                    color: scheme.onSurfaceVariant
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       q,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF1A1F36)
+                        color: scheme.onSurface
                       )
                     )
                   ),
                   Icon(
                     Icons.chevron_right_rounded,
                     size: 18,
-                    color: Colors.grey[300]
+                    color: scheme.onSurfaceVariant
                   ),
                 ],
               ),
@@ -1348,7 +1437,7 @@ class HelpSupportScreen extends StatelessWidget {
                 icon: const Icon(Icons.email_rounded),
                 label: const Text('Contact Support'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF2E7D32),
+                  backgroundColor: scheme.primary,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)
@@ -1365,11 +1454,11 @@ class HelpSupportScreen extends StatelessWidget {
                 icon: const Icon(Icons.phone_rounded, size: 18),
                 label: const Text('Call Us'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: scheme.primary,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)
                   ),
-                  side: const BorderSide(color: Color(0xFF2E7D32))
+                  side: BorderSide(color: scheme.primary)
                 )
               ),
             ),
@@ -1395,13 +1484,13 @@ class _DetailScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
-      appBar: AppBar(backgroundColor: Colors.white, foregroundColor: const Color(0xFF1A1F36), elevation: 0,
+      appBar: AppBar(elevation: 0,
         title: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: Color(0xFF1A1F36))),
+          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey[500])),
+          Text(subtitle, style: TextStyle(fontSize: 12, color: scheme.onPrimary.withValues(alpha: 0.85))),
         ]),
         leading: IconButton(icon: const Icon(Icons.arrow_back_ios_new, size: 20), onPressed: () => Navigator.pop(context))),
       body: SingleChildScrollView(physics: const BouncingScrollPhysics(), padding: const EdgeInsets.all(16), child: Column(children: children)),

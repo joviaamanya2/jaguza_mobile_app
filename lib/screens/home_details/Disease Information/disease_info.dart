@@ -10,6 +10,7 @@ import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/swine_fever.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/vibrosis.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/white_muscle_disease.dart';
+import 'package:jaguza_app/services/api_service.dart';
 class AnimalDiseasesScreen extends StatefulWidget {
   const AnimalDiseasesScreen({super.key});
 
@@ -189,6 +190,71 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadBackendDiseases();
+  }
+
+  Future<void> _loadBackendDiseases() async {
+    try {
+      final records = await ApiService().getDiseases();
+      final diseases = records.whereType<Map>().map((raw) {
+        final disease = Map<String, dynamic>.from(raw);
+        final severity = '${disease['severity'] ?? 'medium'}'.toLowerCase();
+        final species = '${disease['species_affected'] ?? 'Livestock'}';
+        final category = _diseaseCategory(species);
+        return DiseaseItem(
+          title: '${disease['name'] ?? 'Disease'}',
+          animal: species,
+          severity: _titleCase(severity),
+          severityColor: _severityColor(severity),
+          icon: Icons.medical_information_rounded,
+          category: category,
+          description: '${disease['symptoms'] ?? disease['description'] ?? ''}',
+          screen: _PlaceholderDetailScreen(
+            title: '${disease['name'] ?? 'Disease'}',
+          ),
+        );
+      }).toList();
+      if (mounted && diseases.isNotEmpty) {
+        setState(() {
+          _allDiseases
+            ..clear()
+            ..addAll(diseases);
+        });
+      }
+    } catch (_) {
+      // Keep the built-in catalog available if the server is temporarily unavailable.
+    }
+  }
+
+  String _diseaseCategory(String species) {
+    final value = species.toLowerCase();
+    if (value.contains('poultry') || value.contains('chicken') || value.contains('bird')) {
+      return 'Poultry';
+    }
+    if (value.contains('pig') || value.contains('swine')) return 'Swine';
+    if (value.contains('sheep') || value.contains('goat')) return 'Small Ruminants';
+    return 'Cattle';
+  }
+
+  Color _severityColor(String severity) {
+    switch (severity) {
+      case 'critical':
+      case 'high':
+        return const Color(0xFFE53935);
+      case 'medium':
+        return const Color(0xFFFFA000);
+      default:
+        return const Color(0xFF2E7D32);
+    }
+  }
+
+  String _titleCase(String value) => value.isEmpty
+      ? value
+      : '${value[0].toUpperCase()}${value.substring(1)}';
+
   List<DiseaseItem> get _filteredDiseases {
     return _allDiseases.where((d) {
       final matchesSearch = d.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
@@ -207,7 +273,6 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Column(
           children: [
@@ -227,30 +292,31 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   }
 
   Widget _buildHeader() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
-      color: const Color(0xFF2E7D32),
+      color: scheme.primary,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       child: Row(
         children: [
           _iconCircle(icon: Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
           const SizedBox(width: 14),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Animal Diseases',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: scheme.onPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2),
                 Text(
                   'Comprehensive disease database',
                   style: TextStyle(
-                    color: Colors.white70,
+                    color: scheme.onPrimary.withValues(alpha: 0.7),
                     fontSize: 12,
                   ),
                 ),
@@ -264,16 +330,17 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   }
 
   Widget _iconCircle({required IconData icon, required VoidCallback onTap}) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.15),
+          color: scheme.onPrimary.withValues(alpha: 0.15),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(icon, color: Colors.white, size: 22),
+        child: Icon(icon, color: scheme.onPrimary, size: 22),
       ),
     );
   }
@@ -288,7 +355,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
               icon: Icons.biotech_rounded,
               title: 'Know Diseases',
               subtitle: 'Learn & prevent',
-              color: const Color(0xFF2E7D32),
+              color: Theme.of(context).colorScheme.primary,
               onTap: () {},
             ),
           ),
@@ -304,14 +371,15 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
     required Color color,
     required VoidCallback onTap,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.15)),
+          border: Border.all(color: color.withValues(alpha: 0.15)),
         ),
         child: Row(
           children: [
@@ -319,7 +387,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: color.withOpacity(0.12),
+                color: color.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 20),
@@ -340,7 +408,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.grey[600],
+                      color: scheme.onSurfaceVariant,
                       fontSize: 11,
                     ),
                   ),
@@ -349,7 +417,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.grey[400],
+              color: scheme.onSurfaceVariant,
               size: 20,
             ),
           ],
@@ -359,15 +427,16 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   }
 
   Widget _buildSearchBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: scheme.surface,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -378,15 +447,15 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search diseases, symptoms, animals...',
-            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 13),
-            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF9CA3AF), size: 20),
+            hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+            prefixIcon: Icon(Icons.search_rounded, color: scheme.onSurfaceVariant, size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
-                    child: Icon(Icons.close_rounded, color: Colors.grey[400], size: 18),
+                    child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
                   )
                 : null,
             border: InputBorder.none,
@@ -398,6 +467,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   }
 
   Widget _buildCategoryFilters() {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       height: 36,
       child: ListView.separated(
@@ -414,16 +484,16 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF2E7D32) : Colors.white,
+                color: isActive ? scheme.primary : scheme.surface,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isActive ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                  color: isActive ? scheme.primary : scheme.outlineVariant,
                 ),
               ),
               child: Text(
                 cat,
                 style: TextStyle(
-                  color: isActive ? Colors.white : const Color(0xFF6B7280),
+                  color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -438,18 +508,19 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   Widget _buildDiseaseList() {
     final diseases = _filteredDiseases;
     if (diseases.isEmpty) {
+      final scheme = Theme.of(context).colorScheme;
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.search_off_rounded, size: 48, color: Colors.grey[400]),
+            Icon(Icons.search_off_rounded, size: 48, color: scheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               'No diseases found',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[600],
+                color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 4),
@@ -457,7 +528,7 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
               'Try a different search or category',
               style: TextStyle(
                 fontSize: 13,
-                color: Colors.grey[400],
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -482,6 +553,7 @@ class DiseaseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -491,9 +563,9 @@ class DiseaseCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: scheme.surface,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE8E8E8)),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -502,7 +574,7 @@ class DiseaseCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: item.severityColor.withOpacity(0.08),
+                color: item.severityColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -518,10 +590,10 @@ class DiseaseCard extends StatelessWidget {
                 children: [
                   Text(
                     item.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1F36),
+                      color: scheme.onSurface,
                     ),
                   ),
                   const SizedBox(height: 4),
@@ -529,22 +601,22 @@ class DiseaseCard extends StatelessWidget {
                     item.description,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
-                      color: Color(0xFF6B7280),
+                      color: scheme.onSurfaceVariant,
                       height: 1.4,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      Icon(Icons.pets_rounded, size: 12, color: Colors.grey[500]),
+                      Icon(Icons.pets_rounded, size: 12, color: scheme.onSurfaceVariant),
                       const SizedBox(width: 4),
                       Text(
                         item.animal,
                         style: TextStyle(
                           fontSize: 11,
-                          color: Colors.grey[500],
+                          color: scheme.onSurfaceVariant,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
@@ -560,7 +632,7 @@ class DiseaseCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: item.severityColor.withOpacity(0.08),
+                    color: item.severityColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -575,7 +647,7 @@ class DiseaseCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Icon(
                   Icons.chevron_right_rounded,
-                  color: Colors.grey[400],
+                  color: scheme.onSurfaceVariant,
                   size: 20,
                 ),
               ],
@@ -621,11 +693,9 @@ class _PlaceholderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
         elevation: 0,
         title: Text(title),
       ),
@@ -633,14 +703,14 @@ class _PlaceholderDetailScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.medical_information_rounded, size: 64, color: Colors.grey[300]),
+            Icon(Icons.medical_information_rounded, size: 64, color: scheme.onSurfaceVariant),
             const SizedBox(height: 16),
             Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
             const SizedBox(height: 8),
@@ -648,7 +718,7 @@ class _PlaceholderDetailScreen extends StatelessWidget {
               'Disease details coming soon',
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey[400],
+                color: scheme.onSurfaceVariant,
               ),
             ),
           ],

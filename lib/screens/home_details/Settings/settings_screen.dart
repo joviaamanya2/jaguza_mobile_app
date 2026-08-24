@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:jaguza_app/services/language_service.dart';
+import 'package:jaguza_app/services/app_localizations.dart';
+import 'package:jaguza_app/services/theme_service.dart';
 
 // Import your Profile/Account screen
 import 'package:jaguza_app/screens/home_details/Profile/profile_screen.dart';
@@ -15,7 +17,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   // ── Toggle states 
   bool _pushNotifications = true;
-  bool _darkMode = false;
+  bool get _darkMode => ThemeService.isDark;
 
   // ── Selected values 
   String _selectedLanguage = 'English';
@@ -64,16 +66,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: _kBg,
+        backgroundColor: theme.scaffoldBackgroundColor,
         body: Column(
           children: [
-            _buildHeader(),
+            _buildHeader(context),
             Expanded(
               child: SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -82,11 +85,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Account section ─────────────────────────────────
-                    _buildSectionLabel('Account'),
+                    _buildSectionLabel(context.tr('Account')),
                     _buildAccountCard(),
 
                     // ── Notifications ────────────────────────────────────
-                    _buildSectionLabel('Notifications'),
+                    _buildSectionLabel(context.tr('Notifications')),
                     _buildCard([
                       _toggleRow(
                         icon: Icons.notifications_active_rounded,
@@ -100,7 +103,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ]),
 
                     // ── Preferences ──────────────────────────────────────
-                    _buildSectionLabel('Preferences'),
+                    _buildSectionLabel(context.tr('Preferences')),
                     _buildCard([
                       _dropdownRow(
                         icon: Icons.language_rounded,
@@ -122,7 +125,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ]),
 
                     // ── App Settings ─────────────────────────────────────
-                    _buildSectionLabel('App Settings'),
+                    _buildSectionLabel(context.tr('App Settings')),
                     _buildCard([
                       _toggleRow(
                         icon: Icons.dark_mode_rounded,
@@ -130,7 +133,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         title: 'Dark Mode',
                         subtitle: 'Switch to dark interface',
                         value: _darkMode,
-                        onChanged: (v) => setState(() => _darkMode = v),
+                        onChanged: (v) => ThemeService.setDarkMode(v),
                       ),
                       _divider(),
                       _tapRow(
@@ -161,7 +164,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ]),
 
                     // ── Support ──────────────────────────────────────────
-                    _buildSectionLabel('Support'),
+                    _buildSectionLabel(context.tr('Support')),
                     _buildCard([
                       _tapRow(
                         icon: Icons.help_outline_rounded,
@@ -178,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ]),
 
                     // ── App info ─────────────────────────────────────────
-                    _buildSectionLabel('About'),
+                    _buildSectionLabel(context.tr('About')),
                     _buildCard([
                       _tapRow(
                         icon: Icons.info_outline_rounded,
@@ -243,7 +246,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   // ─── Header ────────
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -257,14 +260,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
         bottom: false,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-          child: const Row(
+          child: Row(
             children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Settings',
+                      context.tr('Settings'),
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 24,
@@ -274,7 +277,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      'Manage your app preferences',
+                      context.tr('Manage your app preferences'),
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 13,
@@ -292,6 +295,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ─── Account card (Manage Account) ─────────────────────────────────────────
   Widget _buildAccountCard() {
+    final theme = Theme.of(context);
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -304,9 +308,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         child: Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: _kCard,
+            color: theme.cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _kBorder),
+            border: Border.all(color: theme.dividerColor.withOpacity(0.35)),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withOpacity(0.04),
@@ -341,18 +345,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Manage Account',
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
-                        color: _kText,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 3),
                     Text(
                       'View and edit your profile settings',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
                         color: _kSubtext,
                       ),
@@ -360,9 +364,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
               ),
-              const Icon(
+              Icon(
                 Icons.chevron_right_rounded,
-                color: Color(0xFFD1D5DB),
+                color: theme.dividerColor,
                 size: 28,
               ),
             ],
@@ -374,14 +378,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // ─── Helpers ────
   Widget _buildSectionLabel(String label) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
       child: Text(
         label.toUpperCase(),
-        style: const TextStyle(
+        style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.w700,
-          color: _kSubtext,
+          color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 1.1,
         ),
       ),
@@ -389,13 +394,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildCard(List<Widget> children) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
         decoration: BoxDecoration(
-          color: _kCard,
+          color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: theme.dividerColor.withOpacity(0.35)),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -409,11 +415,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _divider() => const Divider(
+  Widget _divider() => Divider(
         height: 1,
         indent: 56,
         endIndent: 16,
-        color: Color(0xFFF0F2F5),
+        color: Theme.of(context).dividerColor.withOpacity(0.35),
       );
 
   Widget _iconBox(IconData icon, Color color) {
@@ -436,6 +442,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
@@ -447,13 +454,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(title,
-                    style: const TextStyle(
+                    style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
-                        color: _kText)),
+                        color: theme.colorScheme.onSurface)),
                 const SizedBox(height: 2),
                 Text(subtitle,
-                    style: const TextStyle(fontSize: 12, color: _kSubtext)),
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: theme.colorScheme.onSurfaceVariant)),
               ],
             ),
           ),
@@ -478,6 +487,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Color? titleColor,
     bool showChevron = true,
   }) {
+    final theme = Theme.of(context);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
@@ -495,25 +505,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: titleColor ?? _kText)),
+                          color: titleColor ?? theme.colorScheme.onSurface)),
                   const SizedBox(height: 2),
                   Text(subtitle,
-                      style: const TextStyle(
-                          fontSize: 12, color: _kSubtext)),
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurfaceVariant)),
                 ],
               ),
             ),
             if (trailingText != null) ...[
               Text(trailingText,
-                  style: const TextStyle(
+                  style: TextStyle(
                       fontSize: 12,
-                      color: _kSubtext,
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500)),
               const SizedBox(width: 6),
             ],
             if (showChevron)
-              const Icon(Icons.chevron_right_rounded,
-                  color: Color(0xFFD1D5DB), size: 20),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.dividerColor, size: 20),
           ],
         ),
       ),
@@ -528,6 +539,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     required List<String> options,
     required ValueChanged<String?> onChanged,
   }) {
+    final theme = Theme.of(context);
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
       child: Row(
@@ -536,19 +548,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(width: 14),
           Expanded(
             child: Text(title,
-                style: const TextStyle(
+                style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: _kText)),
+                    color: theme.colorScheme.onSurface)),
           ),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
               value: value,
               isDense: true,
-              icon: const Icon(Icons.arrow_drop_down_rounded,
-                  color: _kSubtext, size: 20),
-              style: const TextStyle(
-                  fontSize: 13, color: _kSubtext, fontWeight: FontWeight.w500),
+              icon: Icon(Icons.arrow_drop_down_rounded,
+                  color: theme.colorScheme.onSurfaceVariant, size: 20),
+              style: TextStyle(
+                  fontSize: 13,
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w500),
               onChanged: onChanged,
               items: [
                 for (final opt in options)
@@ -657,11 +671,12 @@ class _InfoSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: EdgeInsets.fromLTRB(
           24, 24, 24, 24 + MediaQuery.of(context).viewInsets.bottom),
-      decoration: const BoxDecoration(
-        color: Colors.white,
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Column(
@@ -681,15 +696,15 @@ class _InfoSheet extends StatelessWidget {
           ),
           const SizedBox(height: 20),
           Text(title,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: Color(0xFF1A1F36))),
+                  color: theme.colorScheme.onSurface)),
           const SizedBox(height: 14),
           Text(body,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF6B7280),
+                  color: theme.colorScheme.onSurfaceVariant,
                   height: 1.65)),
           const SizedBox(height: 24),
           SizedBox(

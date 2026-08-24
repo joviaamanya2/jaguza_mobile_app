@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:jaguza_app/services/api_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class VideoScreen extends StatefulWidget {
   const VideoScreen({super.key});
@@ -11,6 +13,7 @@ class _VideoScreenState extends State<VideoScreen> {
   String _selectedCategory = 'All';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  bool _isLoading = true;
 
   final List<String> _categories = [
     'All',
@@ -97,6 +100,82 @@ class _VideoScreenState extends State<VideoScreen> {
     ),
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadVideos();
+  }
+
+  Future<void> _loadVideos() async {
+    try {
+      final response = await ApiService().getVideos();
+      final loaded = response.whereType<Map>().map((raw) {
+        final item = Map<String, dynamic>.from(raw);
+        final categoryValue = item['category'];
+        final category = categoryValue is Map
+            ? '${categoryValue['name'] ?? 'General'}'
+            : '${categoryValue ?? 'General'}';
+        final color = _categoryColor(category);
+        return VideoItem(
+          id: '${item['id'] ?? ''}',
+          title: '${item['title'] ?? 'Jaguza video'}',
+          description: '${item['description'] ?? ''}',
+          category: category,
+          duration: '${item['duration'] ?? '—'}',
+          views: int.tryParse('${item['views_count'] ?? 0}') ?? 0,
+          date: '${item['created_at'] ?? ''}'.split('T').first,
+          thumbnailColor: color,
+          icon: _categoryIcon(category),
+          isFeatured: item['is_featured'] == true,
+          videoUrl: item['video_url']?.toString(),
+          thumbnailUrl: item['thumbnail_url']?.toString(),
+        );
+      }).where((video) => video.id.isNotEmpty).toList();
+      if (!mounted) return;
+      setState(() {
+        _videos
+          ..clear()
+          ..addAll(loaded);
+        _categories
+          ..clear()
+          ..add('All')
+          ..addAll(loaded.map((video) => video.category).toSet());
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Video load error: $e');
+      if (mounted) {
+        setState(() {
+          _videos.clear();
+          _categories
+            ..clear()
+            ..add('All');
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Color _categoryColor(String category) {
+    switch (category.toLowerCase()) {
+      case 'poultry': return const Color(0xFFFF8F00);
+      case 'cattle': return const Color(0xFF1E88E5);
+      case 'pig': case 'pigs': return const Color(0xFFD84315);
+      case 'goat': case 'goats': return const Color(0xFF8E24AA);
+      default: return const Color(0xFF2E7D32);
+    }
+  }
+
+  IconData _categoryIcon(String category) {
+    switch (category.toLowerCase()) {
+      case 'poultry': return Icons.egg_rounded;
+      case 'cattle': return Icons.pets_rounded;
+      case 'pig': case 'pigs': return Icons.set_meal_rounded;
+      case 'goat': case 'goats': return Icons.grass_rounded;
+      default: return Icons.play_circle_fill_rounded;
+    }
+  }
+
   List<VideoItem> get _filteredVideos {
     final query = _searchQuery.toLowerCase();
     return _videos.where((video) {
@@ -119,18 +198,16 @@ class _VideoScreenState extends State<VideoScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Jaguza Videos',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
+            color: scheme.onPrimary,
           ),
         ),
         leading: IconButton(
@@ -153,7 +230,12 @@ class _VideoScreenState extends State<VideoScreen> {
           _buildSearchBar(),
           _buildCategoryChips(),
           Expanded(
-            child: ListView(
+            child: _isLoading
+                ? Center(child: CircularProgressIndicator(color: scheme.primary))
+                : RefreshIndicator(
+                    color: scheme.primary,
+                    onRefresh: _loadVideos,
+                    child: ListView(
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
               children: [
@@ -163,7 +245,8 @@ class _VideoScreenState extends State<VideoScreen> {
                 ],
                 _buildVideoList(),
               ],
-            ),
+                    ),
+                  ),
           ),
         ],
       ),
@@ -174,28 +257,29 @@ class _VideoScreenState extends State<VideoScreen> {
   //  SEARCH BAR
   // ═══════════════════════════════════════
   Widget _buildSearchBar() {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFE8E8E8)),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         child: TextField(
           controller: _searchController,
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search videos...',
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF2E7D32), size: 20),
+            hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+            prefixIcon: Icon(Icons.search_rounded, color: scheme.primary, size: 20),
             suffixIcon: _searchQuery.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
-                    child: Icon(Icons.close_rounded, color: Colors.grey[400], size: 18),
+                    child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
                   )
                 : null,
             border: InputBorder.none,
@@ -210,6 +294,7 @@ class _VideoScreenState extends State<VideoScreen> {
   //  CATEGORY CHIPS
   // ═══════════════════════════════════════
   Widget _buildCategoryChips() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       height: 42,
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -225,16 +310,16 @@ class _VideoScreenState extends State<VideoScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
               decoration: BoxDecoration(
-                color: isActive ? const Color(0xFF2E7D32) : Colors.white,
+                color: isActive ? scheme.primary : Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: isActive ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                  color: isActive ? scheme.primary : scheme.outlineVariant,
                 ),
               ),
               child: Text(
                 cat,
                 style: TextStyle(
-                  color: isActive ? Colors.white : Colors.grey[600],
+                  color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
                 ),
@@ -251,6 +336,7 @@ class _VideoScreenState extends State<VideoScreen> {
   // ═══════════════════════════════════════
   Widget _buildFeaturedSection() {
     if (_featuredVideos.isEmpty) return const SizedBox.shrink();
+    final scheme = Theme.of(context).colorScheme;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -260,22 +346,22 @@ class _VideoScreenState extends State<VideoScreen> {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.08),
+                color: scheme.primary.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.star_rounded,
                 size: 16,
-                color: Color(0xFF2E7D32),
+                color: scheme.primary,
               ),
             ),
             const SizedBox(width: 8),
-            const Text(
+            Text(
               'Featured Videos',
               style: TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
           ],
@@ -295,6 +381,7 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   Widget _buildFeaturedCard(VideoItem video) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => _showVideoDetails(context, video),
       child: SizedBox(
@@ -310,11 +397,19 @@ class _VideoScreenState extends State<VideoScreen> {
               ),
               child: Stack(
                 children: [
+                  if (video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(video.thumbnailUrl!, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                      ),
+                    ),
                   Center(
                     child: Icon(
                       video.icon,
                       size: 40,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                   ),
                   Positioned(
@@ -323,7 +418,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
+                        color: Colors.black.withValues(alpha: 0.6),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -342,7 +437,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32),
+                        color: scheme.primary,
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: const Row(
@@ -371,10 +466,10 @@ class _VideoScreenState extends State<VideoScreen> {
             const SizedBox(height: 6),
             Text(
               video.title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
@@ -382,23 +477,23 @@ class _VideoScreenState extends State<VideoScreen> {
             const SizedBox(height: 2),
             Row(
               children: [
-                Icon(Icons.visibility_rounded, size: 10, color: Colors.grey[400]),
+                Icon(Icons.visibility_rounded, size: 10, color: scheme.onSurfaceVariant),
                 const SizedBox(width: 3),
                 Text(
                   _formatViews(video.views),
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey[500],
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
                 const SizedBox(width: 6),
-                Icon(Icons.access_time_rounded, size: 10, color: Colors.grey[400]),
+                Icon(Icons.access_time_rounded, size: 10, color: scheme.onSurfaceVariant),
                 const SizedBox(width: 3),
                 Text(
                   video.duration,
                   style: TextStyle(
                     fontSize: 10,
-                    color: Colors.grey[500],
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -413,22 +508,23 @@ class _VideoScreenState extends State<VideoScreen> {
   //  VIDEO LIST
   // ═══════════════════════════════════════
   Widget _buildVideoList() {
+    final scheme = Theme.of(context).colorScheme;
     final videos = _filteredVideos;
-    
+
     if (videos.isEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(40),
           child: Column(
             children: [
-              Icon(Icons.video_library_rounded, size: 64, color: Colors.grey[300]),
+              Icon(Icons.video_library_rounded, size: 64, color: scheme.outlineVariant),
               const SizedBox(height: 16),
               Text(
                 'No videos found',
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
-                  color: Colors.grey[600],
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 8),
@@ -436,7 +532,7 @@ class _VideoScreenState extends State<VideoScreen> {
                 'Try adjusting your search or category',
                 style: TextStyle(
                   fontSize: 13,
-                  color: Colors.grey[400],
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -451,15 +547,16 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   Widget _buildVideoCard(VideoItem video) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () => _showVideoDetails(context, video),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: const Color(0xFFE8E8E8)),
+          border: Border.all(color: scheme.outlineVariant),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -473,11 +570,19 @@ class _VideoScreenState extends State<VideoScreen> {
               ),
               child: Stack(
                 children: [
+                  if (video.thumbnailUrl != null && video.thumbnailUrl!.isNotEmpty)
+                    Positioned.fill(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(video.thumbnailUrl!, fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+                      ),
+                    ),
                   Center(
                     child: Icon(
                       video.icon,
                       size: 28,
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                     ),
                   ),
                   Positioned(
@@ -486,7 +591,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.7),
+                        color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(
@@ -505,7 +610,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(3),
                       decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.5),
+                        color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: const Icon(
@@ -525,10 +630,10 @@ class _VideoScreenState extends State<VideoScreen> {
                 children: [
                   Text(
                     video.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1F36),
+                      color: scheme.onSurface,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -538,7 +643,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     video.description,
                     style: TextStyle(
                       fontSize: 10,
-                      color: Colors.grey[500],
+                      color: scheme.onSurfaceVariant,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -551,7 +656,7 @@ class _VideoScreenState extends State<VideoScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: video.thumbnailColor.withOpacity(0.1),
+                          color: video.thumbnailColor.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text(
@@ -566,13 +671,13 @@ class _VideoScreenState extends State<VideoScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.visibility_rounded, size: 10, color: Colors.grey[400]),
+                          Icon(Icons.visibility_rounded, size: 10, color: scheme.onSurfaceVariant),
                           const SizedBox(width: 2),
                           Text(
                             _formatViews(video.views),
                             style: TextStyle(
                               fontSize: 9,
-                              color: Colors.grey[500],
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -580,13 +685,13 @@ class _VideoScreenState extends State<VideoScreen> {
                       Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.calendar_today_rounded, size: 9, color: Colors.grey[400]),
+                          Icon(Icons.calendar_today_rounded, size: 9, color: scheme.onSurfaceVariant),
                           const SizedBox(width: 2),
                           Text(
                             video.date,
                             style: TextStyle(
                               fontSize: 9,
-                              color: Colors.grey[500],
+                              color: scheme.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -598,7 +703,7 @@ class _VideoScreenState extends State<VideoScreen> {
             ),
             Icon(
               Icons.chevron_right_rounded,
-              color: Colors.grey[400],
+              color: scheme.onSurfaceVariant,
               size: 18,
             ),
           ],
@@ -611,15 +716,16 @@ class _VideoScreenState extends State<VideoScreen> {
   //  VIDEO DETAILS DIALOG
   // ═══════════════════════════════════════
   void _showVideoDetails(BuildContext context, VideoItem video) {
+    final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.85,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           children: [
@@ -628,7 +734,7 @@ class _VideoScreenState extends State<VideoScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: scheme.outlineVariant,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -652,7 +758,7 @@ class _VideoScreenState extends State<VideoScreen> {
                             child: Icon(
                               video.icon,
                               size: 56,
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                             ),
                           ),
                           Center(
@@ -660,7 +766,7 @@ class _VideoScreenState extends State<VideoScreen> {
                               width: 56,
                               height: 56,
                               decoration: BoxDecoration(
-                                color: const Color(0xFF2E7D32).withOpacity(0.8),
+                                color: scheme.primary.withValues(alpha: 0.8),
                                 shape: BoxShape.circle,
                               ),
                               child: const Icon(
@@ -676,7 +782,7 @@ class _VideoScreenState extends State<VideoScreen> {
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.7),
+                                color: Colors.black.withValues(alpha: 0.7),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(
@@ -692,21 +798,21 @@ class _VideoScreenState extends State<VideoScreen> {
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 14),
-                    
+
                     // Title
                     Text(
                       video.title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF1A1F36),
+                        color: scheme.onSurface,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 6),
-                    
+
                     // Meta Info
                     Wrap(
                       spacing: 8,
@@ -715,7 +821,7 @@ class _VideoScreenState extends State<VideoScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: video.thumbnailColor.withOpacity(0.1),
+                            color: video.thumbnailColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -730,13 +836,13 @@ class _VideoScreenState extends State<VideoScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.visibility_rounded, size: 12, color: Colors.grey[400]),
+                            Icon(Icons.visibility_rounded, size: 12, color: scheme.onSurfaceVariant),
                             const SizedBox(width: 3),
                             Text(
                               _formatViews(video.views),
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.grey[500],
+                                color: scheme.onSurfaceVariant,
                               ),
                             ),
                           ],
@@ -744,29 +850,29 @@ class _VideoScreenState extends State<VideoScreen> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.calendar_today_rounded, size: 10, color: Colors.grey[400]),
+                            Icon(Icons.calendar_today_rounded, size: 10, color: scheme.onSurfaceVariant),
                             const SizedBox(width: 3),
                             Text(
                               video.date,
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.grey[500],
+                                color: scheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 14),
-                    
+
                     // Description
-                    const Text(
+                    Text(
                       'Description',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1F36),
+                        color: scheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -774,24 +880,31 @@ class _VideoScreenState extends State<VideoScreen> {
                       video.description,
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.grey[600],
+                        color: scheme.onSurfaceVariant,
                         height: 1.5,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Action Buttons
                     Row(
                       children: [
                         Expanded(
                           child: ElevatedButton.icon(
-                            onPressed: () {},
+                            onPressed: video.videoUrl == null || video.videoUrl!.isEmpty
+                                ? null
+                                : () async {
+                                    await launchUrl(
+                                      Uri.parse(video.videoUrl!),
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  },
                             icon: const Icon(Icons.share_rounded, size: 16),
-                            label: const Text('Share'),
+                            label: const Text('Watch'),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF2E7D32),
-                              foregroundColor: Colors.white,
+                              backgroundColor: scheme.primary,
+                              foregroundColor: scheme.onPrimary,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
@@ -807,28 +920,28 @@ class _VideoScreenState extends State<VideoScreen> {
                             icon: const Icon(Icons.favorite_border_rounded, size: 16),
                             label: const Text('Save'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: const Color(0xFF2E7D32),
+                              foregroundColor: scheme.primary,
                               padding: const EdgeInsets.symmetric(vertical: 10),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              side: const BorderSide(color: Color(0xFF2E7D32)),
+                              side: BorderSide(color: scheme.primary),
                               textStyle: const TextStyle(fontSize: 12),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    
+
                     const SizedBox(height: 12),
-                    
+
                     // Related Videos
-                    const Text(
+                    Text(
                       'Related Videos',
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF1A1F36),
+                        color: scheme.onSurface,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -846,6 +959,7 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   Widget _buildRelatedVideoCard(VideoItem video) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () {
         Navigator.pop(context);
@@ -855,7 +969,7 @@ class _VideoScreenState extends State<VideoScreen> {
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: const Color(0xFFF5F5F5),
+          color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
@@ -871,7 +985,7 @@ class _VideoScreenState extends State<VideoScreen> {
                 child: Icon(
                   video.icon,
                   size: 20,
-                  color: Colors.white.withOpacity(0.3),
+                  color: Colors.white.withValues(alpha: 0.3),
                 ),
               ),
             ),
@@ -882,10 +996,10 @@ class _VideoScreenState extends State<VideoScreen> {
                 children: [
                   Text(
                     video.title,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
-                      color: Color(0xFF1A1F36),
+                      color: scheme.onSurface,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
@@ -895,7 +1009,7 @@ class _VideoScreenState extends State<VideoScreen> {
                     '${video.duration} • ${_formatViews(video.views)} views',
                     style: TextStyle(
                       fontSize: 9,
-                      color: Colors.grey[500],
+                      color: scheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -934,6 +1048,8 @@ class VideoItem {
   final Color thumbnailColor;
   final IconData icon;
   final bool isFeatured;
+  final String? videoUrl;
+  final String? thumbnailUrl;
 
   VideoItem({
     required this.id,
@@ -946,5 +1062,7 @@ class VideoItem {
     required this.thumbnailColor,
     required this.icon,
     required this.isFeatured,
+    this.videoUrl,
+    this.thumbnailUrl,
   });
 }

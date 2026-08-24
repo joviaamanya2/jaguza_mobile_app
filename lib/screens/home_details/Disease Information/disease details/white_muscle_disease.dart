@@ -5,18 +5,34 @@ class WhiteMuscleDiseaseDetail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final headingStyle = TextStyle(
+      fontSize: 24,
+      fontWeight: FontWeight.w800,
+      color: scheme.onSurface,
+      height: 1.3,
+    );
+    final labelStyle = TextStyle(
+      fontSize: 12,
+      fontWeight: FontWeight.w700,
+      color: scheme.primary,
+      letterSpacing: 1.2,
+    );
+    final bodyStyle = TextStyle(
+      fontSize: 15,
+      color: scheme.onSurfaceVariant,
+      height: 1.6,
+    );
+
     return Scaffold(
-      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'White Muscle Disease',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Colors.black87,
+            color: scheme.onPrimary,
           ),
         ),
         leading: IconButton(
@@ -35,167 +51,122 @@ class WhiteMuscleDiseaseDetail extends StatelessWidget {
                 width: 120,
                 height: 120,
                 decoration: BoxDecoration(
-                  color: const Color(0xFFE8F5E9),
+                  color: scheme.primaryContainer,
                   borderRadius: BorderRadius.circular(60),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.fitness_center_rounded,
                   size: 60,
-                  color: Color(0xFF2E7D32),
+                  color: scheme.primary,
                 ),
               ),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Title
-            const Text(
-              'White Muscle Disease',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF1A1A1A),
-                height: 1.3,
-              ),
-            ),
-            
+            Text('White Muscle Disease', style: headingStyle),
+
             const SizedBox(height: 24),
-            
+
             // Section Label
-            const Text(
-              'DESCRIPTION',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF2E7D32),
-                letterSpacing: 1.2,
-              ),
-            ),
-            
+            Text('DESCRIPTION', style: labelStyle),
+
             const SizedBox(height: 12),
-            
+
             // Body Text
-            const Text(
+            Text(
               'White muscle disease is a nutritional myopathy caused by a deficiency of selenium or vitamin E in young ruminants. It leads to the degeneration of skeletal and cardiac muscle fibers.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 16),
-            
-            const Text(
+
+            Text(
               'The condition primarily affects calves, lambs, and piglets. It often strikes fast-growing, young animals and can manifest in two main forms: a congenital form affecting newborns, and a delayed form appearing a few weeks after birth.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 16),
-            
-            const Text(
+
+            Text(
               'Affected animals show general weakness, stiffness, and a reluctance to move. In severe cases where the heart muscle is damaged, it can cause sudden death without any prior visible warning signs.',
-              style: TextStyle(
-                fontSize: 15,
-                color: Color(0xFF555555),
-                height: 1.6,
-              ),
+              style: bodyStyle,
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Simple plain info row without shadows
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.pets_rounded,
-                    color: Color(0xFF2E7D32),
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Most Common In',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Calves, lambs, and piglets',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+            _InfoRow(
+              scheme: scheme,
+              icon: Icons.pets_rounded,
+              label: 'Most Common In',
+              value: 'Calves, lambs, and piglets',
             ),
-            
+
             const SizedBox(height: 12),
-            
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF9F9F9),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Row(
-                children: [
-                  Icon(
-                    Icons.science_rounded,
-                    color: Color(0xFF2E7D32),
-                    size: 20,
-                  ),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Primary Cause',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF333333),
-                          ),
-                        ),
-                        SizedBox(height: 2),
-                        Text(
-                          'Selenium & Vitamin E deficiency',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Color(0xFF777777),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
+
+            _InfoRow(
+              scheme: scheme,
+              icon: Icons.science_rounded,
+              label: 'Primary Cause',
+              value: 'Selenium & Vitamin E deficiency',
             ),
 
             const SizedBox(height: 40),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _InfoRow extends StatelessWidget {
+  final ColorScheme scheme;
+  final IconData icon;
+  final String label;
+  final String value;
+
+  const _InfoRow({
+    required this.scheme,
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: scheme.primary, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

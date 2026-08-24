@@ -144,10 +144,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -181,6 +178,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
   }
 
   Widget _buildDecisionCard(DecisionTopic topic) {
+    final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
       onTap: () {
         Navigator.push(
@@ -193,11 +191,11 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withValues(alpha: 0.08),
               blurRadius: 6,
               offset: const Offset(0, 2),
             ),
@@ -211,10 +209,10 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
               child: Text(
                 topic.title,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                 ),
               ),
             ),
@@ -232,11 +230,11 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
                     height: 180,
-                    color: Colors.grey[300],
-                    child: const Icon(
+                    color: scheme.surfaceContainerHighest,
+                    child: Icon(
                       Icons.image_not_supported,
                       size: 50,
-                      color: Colors.grey,
+                      color: scheme.onSurfaceVariant,
                     ),
                   );
                 },
@@ -250,7 +248,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   height: 1.5,
-                  color: Colors.grey[600],
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -269,11 +267,9 @@ class TopicDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF2E7D32),
-        foregroundColor: Colors.white,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
@@ -299,7 +295,7 @@ class TopicDetailScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -311,11 +307,11 @@ class TopicDetailScreen extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) {
                   return Container(
-                    color: Colors.grey[300],
-                    child: const Icon(
+                    color: scheme.surfaceContainerHighest,
+                    child: Icon(
                       Icons.image_not_supported,
                       size: 80,
-                      color: Colors.grey,
+                      color: scheme.onSurfaceVariant,
                     ),
                   );
                 },
@@ -330,19 +326,19 @@ class TopicDetailScreen extends StatelessWidget {
                   // Title with icon
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.sports_handball,
-                        color: Color(0xFF2E7D32),
+                        color: scheme.primary,
                         size: 28,
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           topic.title,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w700,
-                            color: Color(0xFF1A1F36),
+                            color: scheme.onSurface,
                           ),
                         ),
                       ),
@@ -353,11 +349,11 @@ class TopicDetailScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -366,20 +362,20 @@ class TopicDetailScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Row(
+                        Row(
                           children: [
                             Icon(
                               Icons.info_outline,
-                              color: Color(0xFF2E7D32),
+                              color: scheme.primary,
                               size: 20,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
                               'Overview',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1A1F36),
+                                color: scheme.onSurface,
                               ),
                             ),
                           ],
@@ -390,7 +386,7 @@ class TopicDetailScreen extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 15,
                             height: 1.6,
-                            color: Colors.grey[700],
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -401,11 +397,11 @@ class TopicDetailScreen extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: Theme.of(context).cardColor,
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -418,16 +414,16 @@ class TopicDetailScreen extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.check_circle,
-                              color: const Color(0xFF2E7D32),
+                              color: scheme.primary,
                               size: 22,
                             ),
                             const SizedBox(width: 8),
-                            const Text(
+                            Text(
                               'Key Points',
                               style: TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1A1F36),
+                                color: scheme.onSurface,
                               ),
                             ),
                           ],
@@ -443,9 +439,9 @@ class TopicDetailScreen extends StatelessWidget {
                                   margin: const EdgeInsets.only(top: 6, right: 12),
                                   width: 8,
                                   height: 8,
-                                  decoration: const BoxDecoration(
+                                  decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: Color(0xFF2E7D32),
+                                    color: scheme.primary,
                                   ),
                                 ),
                                 Expanded(
@@ -454,7 +450,7 @@ class TopicDetailScreen extends StatelessWidget {
                                     style: TextStyle(
                                       fontSize: 14,
                                       height: 1.5,
-                                      color: Colors.grey[700],
+                                      color: scheme.onSurfaceVariant,
                                     ),
                                   ),
                                 ),
@@ -474,13 +470,13 @@ class TopicDetailScreen extends StatelessWidget {
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          const Color(0xFF2E7D32).withOpacity(0.1),
-                          const Color(0xFF2E7D32).withOpacity(0.05),
+                          scheme.primary.withValues(alpha: 0.1),
+                          scheme.primary.withValues(alpha: 0.05),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF2E7D32).withOpacity(0.2),
+                        color: scheme.primary.withValues(alpha: 0.2),
                       ),
                     ),
                     child: Column(
@@ -488,9 +484,9 @@ class TopicDetailScreen extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.lightbulb_outline,
-                              color: Color(0xFF2E7D32),
+                              color: scheme.primary,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -499,7 +495,7 @@ class TopicDetailScreen extends StatelessWidget {
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: const Color(0xFF2E7D32),
+                                color: scheme.primary,
                               ),
                             ),
                           ],
@@ -508,10 +504,10 @@ class TopicDetailScreen extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               '• ',
                               style: TextStyle(
-                                color: Color(0xFF2E7D32),
+                                color: scheme.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -521,7 +517,7 @@ class TopicDetailScreen extends StatelessWidget {
                                 'Seasonal management planning is crucial for sheep. Adjust feeding, breeding, and health programs based on seasonal changes to optimize flock performance.',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey[700],
+                                  color: scheme.onSurfaceVariant,
                                   height: 1.5,
                                 ),
                               ),
@@ -532,10 +528,10 @@ class TopicDetailScreen extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               '• ',
                               style: TextStyle(
-                                color: Color(0xFF2E7D32),
+                                color: scheme.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -545,7 +541,7 @@ class TopicDetailScreen extends StatelessWidget {
                                 'Implement rotational grazing to improve pasture utilization and reduce parasite loads.',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey[700],
+                                  color: scheme.onSurfaceVariant,
                                   height: 1.5,
                                 ),
                               ),
@@ -556,10 +552,10 @@ class TopicDetailScreen extends StatelessWidget {
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               '• ',
                               style: TextStyle(
-                                color: Color(0xFF2E7D32),
+                                color: scheme.primary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -569,7 +565,7 @@ class TopicDetailScreen extends StatelessWidget {
                                 'Regular hoof trimming prevents footrot and mobility issues.',
                                 style: TextStyle(
                                   fontSize: 13,
-                                  color: Colors.grey[700],
+                                  color: scheme.onSurfaceVariant,
                                   height: 1.5,
                                 ),
                               ),
@@ -587,15 +583,15 @@ class TopicDetailScreen extends StatelessWidget {
                         child: ElevatedButton.icon(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Share feature coming soon'),
-                                backgroundColor: Color(0xFF2E7D32),
+                              SnackBar(
+                                content: const Text('Share feature coming soon'),
+                                backgroundColor: scheme.primary,
                               ),
                             );
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF2E7D32),
-                            foregroundColor: Colors.white,
+                            backgroundColor: scheme.primary,
+                            foregroundColor: scheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -613,19 +609,19 @@ class TopicDetailScreen extends StatelessWidget {
                         child: OutlinedButton.icon(
                           onPressed: () {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Bookmark feature coming soon'),
-                                backgroundColor: Color(0xFF2E7D32),
+                              SnackBar(
+                                content: const Text('Bookmark feature coming soon'),
+                                backgroundColor: scheme.primary,
                               ),
                             );
                           },
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF2E7D32),
+                            foregroundColor: scheme.primary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            side: const BorderSide(color: Color(0xFF2E7D32)),
+                            side: BorderSide(color: scheme.primary),
                           ),
                           icon: const Icon(Icons.bookmark_border, size: 20),
                           label: const Text(

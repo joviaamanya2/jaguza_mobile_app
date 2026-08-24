@@ -68,13 +68,12 @@ class _SplashScreenState extends State<SplashScreen>
       await apiService.loadTokens();
 
       final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('access_token');
       final savedLanguage = prefs.getString('language_code');
 
       if (!mounted) return;
       setState(() => _hasNavigated = true);
 
-      if (token != null && token.isNotEmpty) {
+      if (apiService.isAuthenticated) {
         if (savedLanguage != null && savedLanguage.isNotEmpty) {
           Navigator.pushReplacement(
             context,

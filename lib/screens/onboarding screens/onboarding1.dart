@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import './onboarding2.dart';
 import '../auth_screens/login_screen.dart';
+import '../../services/app_localizations.dart';
 
 class OnboardingScreen1 extends StatefulWidget {
   const OnboardingScreen1({super.key});
@@ -66,8 +67,8 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: Colors.white,
       body: SafeArea(
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 500),
@@ -97,10 +98,10 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
                           minimumSize: Size.zero,
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
-                        child: const Text(
-                          'Skip',
+                        child: Text(
+                          context.tr('Skip'),
                           style: TextStyle(
-                            color: Color(0xFF2E7D32),
+                            color: scheme.primary,
                             fontSize: 14,
                             fontWeight: FontWeight.w600,
                           ),
@@ -118,7 +119,7 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
                     borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1B7A45).withValues(alpha: 0.12),
+                        color: scheme.primary.withValues(alpha: 0.12),
                         blurRadius: 24,
                         offset: const Offset(0, 10),
                       ),
@@ -138,13 +139,13 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
                 const SizedBox(height: 48),
 
                 // Title
-                const Text(
-                  'Track Your Herd',
+                Text(
+                  context.tr('Track Your Herd'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 27,
                     fontWeight: FontWeight.w800,
-                    color: Color(0xFF1A1A1A),
+                    color: scheme.onSurface,
                     height: 1.2,
                   ),
                 ),
@@ -152,12 +153,12 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
                 const SizedBox(height: 14),
 
                 // Subtitle
-                const Text(
-                  'Know where your livestock are in real time\nwith simple GPS tracking.',
+                Text(
+                  context.tr('Know where your livestock are in real time\nwith simple GPS tracking.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 15,
-                    color: Color(0xFF888888),
+                    color: scheme.onSurfaceVariant,
                     height: 1.6,
                   ),
                 ),
@@ -178,13 +179,13 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
                       width: double.infinity,
                       height: 54,
                       decoration: BoxDecoration(
-                        color: const Color(0xFF2E7D32),
+                        color: scheme.primary,
                         borderRadius: BorderRadius.circular(16),
                         // boxShadow property removed
                       ),
-                      child: const Center(
+                      child: Center(
                         child: Text(
-                          'Next',
+                          context.tr('Next'),
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -207,12 +208,13 @@ class _OnboardingScreen1State extends State<OnboardingScreen1>
   }
 
   Widget _buildDot(bool isActive) {
+    final scheme = Theme.of(context).colorScheme;
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
       width: isActive ? 28 : 8,
       height: 8,
       decoration: BoxDecoration(
-        color: isActive ? const Color(0xFF2E7D32) : const Color(0xFFDDE8E3),
+        color: isActive ? scheme.primary : scheme.outlineVariant,
         borderRadius: BorderRadius.circular(4),
       ),
     );

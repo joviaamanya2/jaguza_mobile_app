@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:jaguza_app/services/api_service.dart';
 
 class CreateAdvertScreen extends StatefulWidget {
   const CreateAdvertScreen({super.key});
@@ -29,7 +30,8 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   bool _showNameOnAdvert = true;
   bool _showContactOnAdvert = true;
   String _selectedMediaType = 'image'; // 'image' or 'video'
-  
+  bool _isSubmitting = false;
+
   final ImagePicker _picker = ImagePicker();
   
   final List<String> _plans = ['Basic', 'Standard', 'Premium', 'Enterprise'];
@@ -37,18 +39,16 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
         elevation: 0,
-        title: const Text(
+        title: Text(
           'Create Advert',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1F36),
+            color: scheme.onPrimary,
           ),
         ),
         leading: IconButton(
@@ -57,7 +57,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _submitAdvert,
+            onPressed: _isSubmitting ? null : _submitAdvert,
             child: const Text(
               'Submit',
               style: TextStyle(
@@ -224,7 +224,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _submitAdvert,
+                  onPressed: _isSubmitting ? null : _submitAdvert,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFFF57C00),
                     foregroundColor: Colors.white,
@@ -233,14 +233,23 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                     ),
                     elevation: 2,
                   ),
-                  child: const Text(
-                    'SUBMIT ADVERT',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 1,
-                    ),
-                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'SUBMIT ADVERT',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1,
+                          ),
+                        ),
                 ),
               ),
               
@@ -261,7 +270,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
       style: GoogleFonts.inter(
         fontSize: 16,
         fontWeight: FontWeight.w700,
-        color: const Color(0xFF1A1F36),
+        color: Theme.of(context).colorScheme.onSurface,
       ),
     );
   }
@@ -270,12 +279,13 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   //  PLAN SELECTOR
   // ═══════════════════════════════════════
   Widget _buildPlanSelector() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Wrap(
         spacing: 8,
@@ -291,10 +301,10 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
+                color: isSelected ? scheme.primary : Theme.of(context).cardColor,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
-                  color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                  color: isSelected ? scheme.primary : scheme.outlineVariant,
                 ),
               ),
               child: Text(
@@ -302,7 +312,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? Colors.white : Colors.grey[700],
+                  color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -316,12 +326,13 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   //  MEDIA TYPE SELECTOR
   // ═══════════════════════════════════════
   Widget _buildMediaTypeSelector() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -349,6 +360,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
     required String value,
     required bool isSelected,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Expanded(
       child: GestureDetector(
         onTap: () {
@@ -365,7 +377,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF2E7D32) : Colors.transparent,
+            color: isSelected ? scheme.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -374,7 +386,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
               Icon(
                 icon,
                 size: 20,
-                color: isSelected ? Colors.white : Colors.grey[600],
+                color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
               ),
               const SizedBox(width: 8),
               Text(
@@ -382,7 +394,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? Colors.white : Colors.grey[600],
+                  color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -403,11 +415,12 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
     int maxLines = 1,
     String? Function(String?)? validator,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: TextFormField(
         controller: controller,
@@ -418,17 +431,17 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
           hintText: hint,
           hintStyle: TextStyle(
             fontSize: 13,
-            color: Colors.grey[400],
+            color: scheme.onSurfaceVariant,
           ),
-          labelStyle: const TextStyle(
+          labelStyle: TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
           ),
           prefixIcon: Icon(
             icon,
             size: 20,
-            color: const Color(0xFF2E7D32),
+            color: scheme.primary,
           ),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -436,7 +449,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+            borderSide: BorderSide(color: scheme.primary, width: 2),
           ),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         ),
@@ -448,30 +461,31 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   //  IMAGE UPLOADER
   // ═══════════════════════════════════════
   Widget _buildImageUploader() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.image_rounded,
-                color: Color(0xFF2E7D32),
+                color: scheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Advert Image (Optional)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                 ),
               ),
               const Spacer(),
@@ -479,7 +493,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 'Optional',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[500],
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -491,9 +505,9 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
               height: 100,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE8E8E8), style: BorderStyle.solid),
+                border: Border.all(color: scheme.outlineVariant, style: BorderStyle.solid),
               ),
               child: _advertImage != null
                   ? ClipRRect(
@@ -510,7 +524,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                         Icon(
                           Icons.cloud_upload_rounded,
                           size: 32,
-                          color: Colors.grey[400],
+                          color: scheme.onSurfaceVariant,
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -518,14 +532,14 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF2E7D32),
+                            color: scheme.primary,
                           ),
                         ),
                         Text(
                           'PNG, JPG, JPEG up to 5MB',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[500],
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -539,7 +553,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 Icon(
                   Icons.check_circle_rounded,
                   size: 16,
-                  color: const Color(0xFF2E7D32),
+                  color: scheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -547,7 +561,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                     _advertImage!.path.split('/').last,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[700],
+                      color: scheme.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -561,7 +575,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                   child: Icon(
                     Icons.close_rounded,
                     size: 18,
-                    color: Colors.grey[500],
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -576,30 +590,31 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   //  VIDEO UPLOADER
   // ═══════════════════════════════════════
   Widget _buildVideoUploader() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.videocam_rounded,
-                color: Color(0xFF2E7D32),
+                color: scheme.primary,
                 size: 20,
               ),
               const SizedBox(width: 8),
-              const Text(
+              Text(
                 'Advert Video (Optional)',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                 ),
               ),
               const Spacer(),
@@ -607,7 +622,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 'Optional',
                 style: TextStyle(
                   fontSize: 11,
-                  color: Colors.grey[500],
+                  color: scheme.onSurfaceVariant,
                 ),
               ),
             ],
@@ -619,9 +634,9 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
               height: 100,
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFF5F5F5),
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: const Color(0xFFE8E8E8), style: BorderStyle.solid),
+                border: Border.all(color: scheme.outlineVariant, style: BorderStyle.solid),
               ),
               child: _advertVideo != null
                   ? Center(
@@ -631,14 +646,14 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                           Icon(
                             Icons.play_circle_fill_rounded,
                             size: 48,
-                            color: const Color(0xFF2E7D32),
+                            color: scheme.primary,
                           ),
                           const SizedBox(height: 4),
                           Text(
                             _advertVideo!.path.split('/').last,
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey[700],
+                              color: scheme.onSurfaceVariant,
                             ),
                             overflow: TextOverflow.ellipsis,
                             textAlign: TextAlign.center,
@@ -652,7 +667,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                         Icon(
                           Icons.cloud_upload_rounded,
                           size: 32,
-                          color: Colors.grey[400],
+                          color: scheme.onSurfaceVariant,
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -660,14 +675,14 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: const Color(0xFF2E7D32),
+                            color: scheme.primary,
                           ),
                         ),
                         Text(
                           'MP4, MOV up to 50MB',
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[500],
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -681,7 +696,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 Icon(
                   Icons.check_circle_rounded,
                   size: 16,
-                  color: const Color(0xFF2E7D32),
+                  color: scheme.primary,
                 ),
                 const SizedBox(width: 8),
                 Expanded(
@@ -689,7 +704,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                     _advertVideo!.path.split('/').last,
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[700],
+                      color: scheme.onSurfaceVariant,
                     ),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -703,7 +718,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                   child: Icon(
                     Icons.close_rounded,
                     size: 18,
-                    color: Colors.grey[500],
+                    color: scheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -718,25 +733,26 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   //  COUNTRY SELECTOR
   // ═══════════════════════════════════════
   Widget _buildCountrySelector() {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<String>(
           value: _selectedCountry,
           isExpanded: true,
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Color(0xFF1A1F36),
+            color: scheme.onSurface,
           ),
           icon: Icon(
             Icons.arrow_drop_down_rounded,
-            color: Colors.grey[600],
+            color: scheme.onSurfaceVariant,
           ),
           items: _countries.map((country) {
             return DropdownMenuItem(
@@ -746,7 +762,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                   Icon(
                     Icons.location_on_rounded,
                     size: 16,
-                    color: const Color(0xFF2E7D32),
+                    color: scheme.primary,
                   ),
                   const SizedBox(width: 8),
                   Text(country),
@@ -774,29 +790,30 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
     required bool value,
     required ValueChanged<bool> onChanged,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE8E8E8)),
+        border: Border.all(color: scheme.outlineVariant),
       ),
       child: Row(
         children: [
           Icon(
             value ? Icons.visibility_rounded : Icons.visibility_off_rounded,
             size: 20,
-            color: value ? const Color(0xFFF57C00) : Colors.grey[400],
+            color: value ? const Color(0xFFF57C00) : scheme.onSurfaceVariant,
           ),
           const SizedBox(width: 12),
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF1A1F36),
+                color: scheme.onSurface,
               ),
             ),
           ),
@@ -804,8 +821,8 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
             value: value,
             onChanged: onChanged,
             activeThumbColor: const Color(0xFFF57C00),
-            inactiveThumbColor: Colors.grey[400],
-            inactiveTrackColor: Colors.grey[300],
+            inactiveThumbColor: scheme.onSurfaceVariant,
+            inactiveTrackColor: scheme.surfaceContainerHighest,
           ),
         ],
       ),
@@ -857,37 +874,86 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   // ═══════════════════════════════════════
   //  SUBMIT
   // ═══════════════════════════════════════
-  void _submitAdvert() {
-    if (_formKey.currentState!.validate()) {
-      // Show success dialog
-      showDialog(
+  static const Map<String, int> _planDurationDays = {
+    'Basic': 7,
+    'Standard': 14,
+    'Premium': 30,
+    'Enterprise': 60,
+  };
+
+  Future<void> _submitAdvert() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final now = DateTime.now();
+      final durationDays = _planDurationDays[_selectedPlan] ?? 7;
+      final endDate = now.add(Duration(days: durationDays));
+
+      final descriptionBuffer = StringBuffer(_descriptionController.text.trim());
+      if (_remarksController.text.trim().isNotEmpty) {
+        descriptionBuffer.write('\n\nAdditional remarks: ${_remarksController.text.trim()}');
+      }
+      descriptionBuffer.write(
+        '\n\nSubmitted by: ${_fullNameController.text.trim()} '
+        '(${_contactController.text.trim()}), Country: $_selectedCountry',
+      );
+
+      await ApiService().createAdvertisement(
+        {
+          'title': _titleController.text.trim(),
+          'description': descriptionBuffer.toString(),
+          'type': _selectedMediaType == 'video' ? 'video' : 'banner',
+          if (_urlController.text.trim().isNotEmpty) 'link_url': _urlController.text.trim(),
+          'start_date': now.toIso8601String(),
+          'end_date': endDate.toIso8601String(),
+        },
+        imageFile: _advertImage,
+        videoFile: _advertVideo,
+      );
+
+      if (!mounted) return;
+      _showSuccessDialog();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not submit advert: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  void _showSuccessDialog() {
+    final scheme = Theme.of(context).colorScheme;
+    showDialog(
         context: context,
         builder: (context) => AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          backgroundColor: Colors.white,
           title: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF57C00).withOpacity(0.08),
+                  color: const Color(0xFFF57C00).withValues(alpha: 0.08),
                   shape: BoxShape.circle,
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.check_rounded,
-                  color: Color(0xFF2E7D32),
+                  color: scheme.primary,
                   size: 24,
                 ),
               ),
               const SizedBox(width: 10),
-              const Text(
+              Text(
                 'Success!',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                 ),
               ),
             ],
@@ -896,18 +962,18 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Your advert has been submitted successfully!',
                 style: TextStyle(
                   fontSize: 14,
-                  color: Color(0xFF1A1F36),
+                  color: scheme.onSurface,
                 ),
               ),
               const SizedBox(height: 12),
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
+                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
@@ -941,10 +1007,10 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
           ],
         ),
       );
-    }
   }
 
   Widget _buildSummaryRow(String label, String value) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -954,15 +1020,15 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
             label,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.grey[600],
+              color: scheme.onSurfaceVariant,
             ),
           ),
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF1A1F36),
+              color: scheme.onSurface,
             ),
           ),
         ],

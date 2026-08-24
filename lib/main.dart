@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:jaguza_app/screens/splash_screen.dart';
 import 'package:jaguza_app/services/language_service.dart';
+import 'package:jaguza_app/services/app_localizations.dart';
+import 'package:jaguza_app/services/theme_service.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await ThemeService.initialize();
 
   SystemChrome.setSystemUIOverlayStyle(
     const SystemUiOverlayStyle(
@@ -52,6 +55,7 @@ class _MyAppState extends State<MyApp> {
       return const MaterialApp(
         debugShowCheckedModeBanner: false,
         localizationsDelegates: [
+          AppLocalizations.delegate,
           GlobalMaterialLocalizations.delegate,
           GlobalWidgetsLocalizations.delegate,
           GlobalCupertinoLocalizations.delegate,
@@ -72,17 +76,24 @@ class _MyAppState extends State<MyApp> {
 
     return ValueListenableBuilder<Locale>(
       valueListenable: LanguageService.localeNotifier,
-      builder: (context, locale, _) => MaterialApp(
+      builder: (context, locale, _) => ValueListenableBuilder<ThemeMode>(
+        valueListenable: ThemeService.mode,
+        builder: (context, themeMode, _) => MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Jaguza Livestock',
       locale: locale,
+      themeMode: themeMode,
+      theme: _lightTheme,
+      darkTheme: _darkTheme,
       // Add these to provide MaterialLocalizations
       localizationsDelegates: const [
+        AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [
+      supportedLocales: LanguageService.supportedLocales,
+      /* const [
         Locale('en'), // English
         Locale('fr'), // French
         Locale('es'), // Spanish
@@ -152,7 +163,7 @@ class _MyAppState extends State<MyApp> {
         Locale('sr'), // Serbian
         Locale('sq'), // Albanian
         Locale('mk'), // Macedonian
-      ],
+      ], */
       localeResolutionCallback: (Locale? locale, Iterable<Locale> supportedLocales) {
         if (locale == null) return const Locale('en');
         
@@ -165,6 +176,75 @@ class _MyAppState extends State<MyApp> {
       },
       home: const SplashScreen(),
     ),
+      ),
+    );
+  }
+
+  static ThemeData get _lightTheme {
+    final colorScheme = ColorScheme.fromSeed(seedColor: const Color(0xFF1E7B4E));
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.light,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFFF4F6F8),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1E7B4E),
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      inputDecorationTheme: _inputTheme(colorScheme),
+    );
+  }
+
+  static ThemeData get _darkTheme {
+    final colorScheme = ColorScheme.fromSeed(
+      seedColor: const Color(0xFF45B97C),
+      brightness: Brightness.dark,
+    );
+    return ThemeData(
+      useMaterial3: true,
+      brightness: Brightness.dark,
+      colorScheme: colorScheme,
+      scaffoldBackgroundColor: const Color(0xFF101714),
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF163D2A),
+        foregroundColor: Colors.white,
+        systemOverlayStyle: SystemUiOverlayStyle.light,
+      ),
+      cardTheme: CardThemeData(
+        color: const Color(0xFF1A2520),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      inputDecorationTheme: _inputTheme(colorScheme, fillColor: const Color(0xFF1A2520)),
+    );
+  }
+
+  static InputDecorationTheme _inputTheme(ColorScheme colorScheme, {Color? fillColor}) {
+    OutlineInputBorder border(Color color, {double width = 1}) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return InputDecorationTheme(
+      filled: true,
+      fillColor: fillColor ?? colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      hintStyle: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 14),
+      enabledBorder: border(colorScheme.outlineVariant),
+      focusedBorder: border(colorScheme.primary, width: 1.5),
+      errorBorder: border(colorScheme.error),
+      focusedErrorBorder: border(colorScheme.error, width: 1.5),
     );
   }
 }
