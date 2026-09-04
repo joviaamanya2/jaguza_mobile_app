@@ -21,8 +21,8 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
   String? _selectedSymptom;
   
   // Media files
-  List<XFile> _images = [];
-  List<XFile> _videos = [];
+  final List<XFile> _images = [];
+  final List<XFile> _videos = [];
   XFile? _audioFile;
   
   final ImagePicker _picker = ImagePicker();
@@ -426,7 +426,7 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           hint: Text(
             hint,
             style: TextStyle(color: scheme.onSurfaceVariant),

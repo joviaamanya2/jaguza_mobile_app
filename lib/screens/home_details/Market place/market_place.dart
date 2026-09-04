@@ -1,6 +1,11 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:jaguza_app/data/uganda_markets.dart';
 import 'package:jaguza_app/services/api_service.dart';
 import 'package:jaguza_app/models/user.dart';
 
@@ -31,8 +36,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Green Valley Farm',
       location: 'Wakiso',
       rating: 4.8,
-      imageAsset: 'assets/chicken.png',
-      imageUrl: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/Poultry.png',
       inStock: 50,
       description: 'Healthy local chickens raised on organic feed',
     ),
@@ -45,8 +49,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Milk Masters Ltd',
       location: 'Mbarara',
       rating: 4.9,
-      imageAsset: 'assets/milk.png',
-      imageUrl: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/marketplace/milk.jpg',
       inStock: 100,
       description: 'Fresh pasteurized milk from healthy Friesian cows',
     ),
@@ -59,8 +62,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Elite Cattle Farm',
       location: 'Jinja',
       rating: 4.7,
-      imageAsset: 'assets/cattle.png',
-      imageUrl: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/marketplace/cattle.jpg',
       inStock: 5,
       description: 'High quality Friesian heifer, vaccinated and dewormed',
     ),
@@ -73,8 +75,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Jaguza Feeds Ltd',
       location: 'Kampala',
       rating: 4.6,
-      imageAsset: 'assets/feed.png',
-      imageUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/marketplace/feed.jpg',
       inStock: 200,
       description: 'Balanced layer feed with 18% protein content',
     ),
@@ -87,8 +88,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Mukono Goat Farm',
       location: 'Mukono',
       rating: 4.5,
-      imageAsset: 'assets/goat.png',
-      imageUrl: 'https://images.unsplash.com/photo-1484557985045-edf25e08da73?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/Goat.png',
       inStock: 15,
       description: 'Healthy mature Boer goats for breeding or meat',
     ),
@@ -101,8 +101,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Green Harvest Farm',
       location: 'Entebbe',
       rating: 4.8,
-      imageAsset: 'assets/feed.png',
-      imageUrl: 'https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/marketplace/feed.jpg',
       inStock: 30,
       description: 'Organic feed for pigs',
     ),
@@ -115,8 +114,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Pork Masters',
       location: 'Gulu',
       rating: 4.4,
-      imageAsset: 'assets/pig.png',
-      imageUrl: 'https://images.unsplash.com/photo-1516467508483-a7212febe31a?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/Pigs.png',
       inStock: 20,
       description: 'Healthy weaner pigs, 8 weeks old, vaccinated',
     ),
@@ -129,8 +127,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       seller: 'Happy Hens Farm',
       location: 'Kampala',
       rating: 4.7,
-      imageAsset: 'assets/eggs.png',
-      imageUrl: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&h=300&fit=crop',
+      imageAsset: 'lib/assets/images/marketplace/eggs.jpg',
       inStock: 150,
       description: 'Fresh free-range eggs from healthy hens',
     ),
@@ -139,49 +136,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   bool _isLoadingMarketplace = false;
   int? _currentUserId;
 
-  // Sample markets with location-based pricing
-  final List<Market> _nearbyMarkets = [
-    Market(
-      name: 'Kampala Livestock Market',
-      location: 'Nakawa, Kampala',
-      distance: '2.5 km',
-      rating: 4.2,
-      activeHours: '6:00 AM - 6:00 PM',
-      products: ['Cattle', 'Goats', 'Sheep', 'Poultry'],
-      priceRange: 'Premium',
-      averagePrice: 'UGX 2,800,000',
-    ),
-    Market(
-      name: 'Wandegeya Farm Products Market',
-      location: 'Wandegeya, Kampala',
-      distance: '4.0 km',
-      rating: 4.5,
-      activeHours: '7:00 AM - 7:00 PM',
-      products: ['Vegetables', 'Fruits', 'Dairy', 'Grains'],
-      priceRange: 'Mid-Range',
-      averagePrice: 'UGX 1,200,000',
-    ),
-    Market(
-      name: 'Jinja Livestock Trading Center',
-      location: 'Jinja Town',
-      distance: '8.0 km',
-      rating: 4.0,
-      activeHours: '5:30 AM - 5:30 PM',
-      products: ['Cattle', 'Pigs', 'Poultry', 'Feed'],
-      priceRange: 'Standard',
-      averagePrice: 'UGX 2,100,000',
-    ),
-    Market(
-      name: 'Mbarara Cattle Market',
-      location: 'Mbarara Town',
-      distance: '12.0 km',
-      rating: 4.3,
-      activeHours: '6:00 AM - 5:00 PM',
-      products: ['Cattle', 'Goats', 'Sheep', 'Dairy'],
-      priceRange: 'Standard',
-      averagePrice: 'UGX 2,500,000',
-    ),
-  ];
+  // ---- Nearby markets (real Uganda markets, sorted by GPS distance) ----
+  Position? _position;
+  bool _locationDenied = false;
+  bool _loadingMarkets = true;
+  bool _marketsFromServer = false;
+  List<_MarketView> _markets = [];
+
+  // ---- Livestock/produce prices ----
+  bool _loadingPrices = true;
+  bool _pricesFromServer = false;
+  List<MarketPrice> _prices = kReferencePrices;
 
   // Sample sold products
   final List<SoldProduct> _soldProducts = [
@@ -231,6 +196,158 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     super.initState();
     _loadCurrentUser();
     _loadMarketplaceListings();
+    _initMarketsAndPrices();
+  }
+
+  Future<void> _initMarketsAndPrices() async {
+    await _resolveLocation();
+    await Future.wait([_loadMarkets(), _loadPrices()]);
+  }
+
+  Future<void> _resolveLocation() async {
+    try {
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) setState(() => _locationDenied = true);
+        return;
+      }
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        if (mounted) setState(() => _locationDenied = true);
+        return;
+      }
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.medium,
+        timeLimit: const Duration(seconds: 12),
+      );
+      if (mounted) {
+        setState(() {
+          _position = position;
+          _locationDenied = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _locationDenied = true);
+    }
+  }
+
+  Future<void> _loadMarkets() async {
+    if (mounted) setState(() => _loadingMarkets = true);
+    List<_MarketView> views = [];
+    bool fromServer = false;
+    try {
+      final raw = await ApiService().getMarkets(
+        lat: _position?.latitude,
+        lng: _position?.longitude,
+      );
+      if (raw.isNotEmpty) {
+        views = raw
+            .whereType<Map>()
+            .map((m) => _MarketView.fromServer(
+                  Map<String, dynamic>.from(m),
+                  _position,
+                ))
+            .toList();
+        fromServer = true;
+      }
+    } catch (_) {
+      // No markets endpoint yet / offline: fall back to the bundled list.
+    }
+    if (views.isEmpty) {
+      views = kUgandaMarkets.map((m) {
+        final km = _position == null
+            ? null
+            : Geolocator.distanceBetween(
+                  _position!.latitude,
+                  _position!.longitude,
+                  m.lat,
+                  m.lng,
+                ) /
+                1000;
+        return _MarketView.fromLocal(m, km);
+      }).toList();
+    }
+    if (_position != null) {
+      views.sort((a, b) {
+        if (a.distanceKm == null && b.distanceKm == null) return 0;
+        if (a.distanceKm == null) return 1;
+        if (b.distanceKm == null) return -1;
+        return a.distanceKm!.compareTo(b.distanceKm!);
+      });
+    }
+    if (mounted) {
+      setState(() {
+        _markets = views;
+        _marketsFromServer = fromServer;
+        _loadingMarkets = false;
+      });
+    }
+  }
+
+  Future<void> _loadPrices() async {
+    if (mounted) setState(() => _loadingPrices = true);
+    try {
+      final raw = await ApiService().getMarketPrices(
+        lat: _position?.latitude,
+        lng: _position?.longitude,
+      );
+      final prices = raw.whereType<Map>().map((p) {
+        final j = Map<String, dynamic>.from(p);
+        final low = int.tryParse(
+                '${j['low'] ?? j['min_price'] ?? j['price'] ?? 0}') ??
+            0;
+        final high = int.tryParse(
+                '${j['high'] ?? j['max_price'] ?? j['price'] ?? low}') ??
+            low;
+        return MarketPrice(
+          item: '${j['item'] ?? j['name'] ?? 'Item'}',
+          category: '${j['category'] ?? 'Other'}',
+          low: low,
+          high: high,
+          unit: '${j['unit'] ?? 'per unit'}',
+          trend: j['trend'] as String?,
+        );
+      }).toList();
+      if (prices.isNotEmpty) {
+        if (mounted) {
+          setState(() {
+            _prices = prices;
+            _pricesFromServer = true;
+            _loadingPrices = false;
+          });
+        }
+        return;
+      }
+    } catch (_) {
+      // No market-prices endpoint yet / offline: fall back to reference data.
+    }
+    if (mounted) {
+      setState(() {
+        _prices = kReferencePrices;
+        _pricesFromServer = false;
+        _loadingPrices = false;
+      });
+    }
+  }
+
+  Future<void> _openInMaps(_MarketView view) async {
+    final query = view.lat != null && view.lng != null
+        ? '${view.lat},${view.lng}'
+        : Uri.encodeComponent('${view.name}, Uganda');
+    final uri = Uri.parse(
+      'https://www.google.com/maps/search/?api=1&query=$query',
+    );
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open maps app.')),
+      );
+    }
   }
 
   Future<void> _loadCurrentUser() async {
@@ -665,42 +782,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
             child: Stack(
               children: [
-                product.imageFile != null
-                    ? ClipRRect(
-                        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                        child: Image.file(
-                          product.imageFile!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                          height: 100,
-                        ),
-                      )
-                    : product.imageUrl != null
-                        ? ClipRRect(
-                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                            child: Image.network(
-                              product.imageUrl!,
-                              fit: BoxFit.cover,
-                              width: double.infinity,
-                              height: 100,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Center(
-                                  child: Icon(
-                                    _getProductIcon(product.category),
-                                    size: 40,
-                                    color: scheme.primary.withValues(alpha: 0.3),
-                                  ),
-                                );
-                              },
-                            ),
-                          )
-                        : Center(
-                            child: Icon(
-                              _getProductIcon(product.category),
-                              size: 40,
-                              color: scheme.primary.withValues(alpha: 0.3),
-                            ),
-                          ),
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(12)),
+                    child: _buildProductImage(product, scheme),
+                  ),
+                ),
                 // Available/Sold Badge at Top Right
                 Positioned(
                   top: 6,
@@ -892,100 +980,144 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   // ============= ANIMAL PRICES =============
   Widget _buildAnimalPrices() {
     final scheme = Theme.of(context).colorScheme;
-    final priceData = [
-      {'animal': 'Friesian Heifer', 'price': '2,500,000 - 3,500,000', 'unit': 'per animal', 'trend': 'up', 'market': 'Kampala'},
-      {'animal': 'Broiler Chicken', 'price': '25,000 - 30,000', 'unit': 'per bird', 'trend': 'stable', 'market': 'Wakiso'},
-      {'animal': 'Local Goat', 'price': '150,000 - 250,000', 'unit': 'per goat', 'trend': 'up', 'market': 'Mbarara'},
-      {'animal': 'Weaner Pig', 'price': '100,000 - 150,000', 'unit': 'per piglet', 'trend': 'down', 'market': 'Jinja'},
-      {'animal': 'Layer (Point of Lay)', 'price': '20,000 - 25,000', 'unit': 'per bird', 'trend': 'stable', 'market': 'Kampala'},
-      {'animal': 'Fresh Milk', 'price': '2,500 - 3,500', 'unit': 'per litre', 'trend': 'up', 'market': 'Mbarara'},
-      {'animal': 'Sheep (Mature)', 'price': '120,000 - 180,000', 'unit': 'per sheep', 'trend': 'stable', 'market': 'Gulu'},
-      {'animal': 'Rabbit (Breeder)', 'price': '30,000 - 50,000', 'unit': 'per rabbit', 'trend': 'up', 'market': 'Entebbe'},
-    ];
 
-    return SingleChildScrollView(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF8E1),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFFFFE082)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_rounded, color: Colors.orange[700], size: 18),
-                const SizedBox(width: 8),
-                const Expanded(
-                  child: Text(
-                    'Prices are based on current market trends at major trading centers.',
-                    style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w500),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
+    if (_loadingPrices) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-          // Market Selector
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: scheme.outlineVariant),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.location_on_rounded, color: scheme.primary, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'Market: ',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
+    final grouped = <String, List<MarketPrice>>{};
+    for (final p in _prices) {
+      grouped.putIfAbsent(p.category, () => []).add(p);
+    }
+    final nearestMarket = _markets.isNotEmpty ? _markets.first : null;
+
+    return RefreshIndicator(
+      onRefresh: _loadPrices,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: _pricesFromServer
+                    ? scheme.primary.withValues(alpha: 0.08)
+                    : const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: _pricesFromServer
+                      ? scheme.primary.withValues(alpha: 0.3)
+                      : const Color(0xFFFFE082),
                 ),
-                Expanded(
-                  child: Text(
-                    'Kampala Central Market',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: scheme.primary,
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    _pricesFromServer ? Icons.wifi_tethering_rounded : Icons.info_rounded,
+                    color: _pricesFromServer ? scheme.primary : Colors.orange[700],
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _pricesFromServer
+                          ? 'Live prices reported to Jaguza from markets across Uganda.'
+                          : 'No live price feed reachable right now — showing indicative reference ranges (reviewed $kReferencePricesUpdated). Actual prices vary by market and season.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _pricesFromServer ? scheme.primary : Colors.orange[900],
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
                   ),
-                ),
-                Icon(Icons.arrow_drop_down_rounded, color: scheme.onSurfaceVariant),
-              ],
+                ],
+              ),
             ),
-          ),
-          
-          const SizedBox(height: 16),
-          ...priceData.map((data) => _buildPriceCard(data)),
-        ],
+            if (nearestMarket != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: scheme.outlineVariant),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.location_on_rounded, color: scheme.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            nearestMarket.name,
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: scheme.onSurface,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            nearestMarket.distanceKm != null
+                                ? 'Nearest reference market · ${_formatDistance(nearestMarket.distanceKm!)}'
+                                : 'Nearest reference market',
+                            style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 16),
+            for (final category in grouped.keys) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  category,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.onSurfaceVariant,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+              ),
+              ...grouped[category]!.map((p) => _buildPriceCard(p)),
+              const SizedBox(height: 8),
+            ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildPriceCard(Map<String, String> data) {
+  Widget _buildPriceCard(MarketPrice data) {
     final scheme = Theme.of(context).colorScheme;
     Color trendColor;
     IconData trendIcon;
-    if (data['trend'] == 'up') {
-      trendColor = Colors.green;
-      trendIcon = Icons.trending_up_rounded;
-    } else if (data['trend'] == 'down') {
-      trendColor = Colors.red;
-      trendIcon = Icons.trending_down_rounded;
-    } else {
-      trendColor = Colors.orange;
-      trendIcon = Icons.trending_flat_rounded;
+    String trendLabel;
+    switch (data.trend) {
+      case 'up':
+        trendColor = Colors.green;
+        trendIcon = Icons.trending_up_rounded;
+        trendLabel = 'Rising';
+        break;
+      case 'down':
+        trendColor = Colors.red;
+        trendIcon = Icons.trending_down_rounded;
+        trendLabel = 'Falling';
+        break;
+      default:
+        trendColor = Colors.orange;
+        trendIcon = Icons.trending_flat_rounded;
+        trendLabel = 'Stable';
     }
 
     return Container(
@@ -1006,7 +1138,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
-              _getAnimalIcon(data['animal']!),
+              _getProductIcon(data.category),
               size: 20,
               color: scheme.primary,
             ),
@@ -1017,7 +1149,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  data['animal']!,
+                  data.item,
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -1026,7 +1158,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${data['unit']!} • ${data['market']}',
+                  data.unit,
                   style: TextStyle(
                     fontSize: 11,
                     color: scheme.onSurfaceVariant,
@@ -1039,32 +1171,31 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'UGX ${data['price']}',
+                data.low == data.high
+                    ? 'UGX ${_formatPrice(data.low)}'
+                    : 'UGX ${_formatPrice(data.low)} - ${_formatPrice(data.high)}',
                 style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: scheme.primary,
                 ),
               ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    trendIcon,
-                    size: 14,
-                    color: trendColor,
-                  ),
-                  const SizedBox(width: 2),
-                  Text(
-                    data['trend'] == 'up' ? 'Rising' : data['trend'] == 'down' ? 'Falling' : 'Stable',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w500,
-                      color: trendColor,
+              if (data.trend != null)
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(trendIcon, size: 14, color: trendColor),
+                    const SizedBox(width: 2),
+                    Text(
+                      trendLabel,
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.w500,
+                        color: trendColor,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
             ],
           ),
         ],
@@ -1074,18 +1205,63 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   // ============= NEARBY MARKETS =============
   Widget _buildNearbyMarkets() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
-      child: ListView.separated(
-        physics: const BouncingScrollPhysics(),
-        itemCount: _nearbyMarkets.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (context, index) => _buildMarketCard(_nearbyMarkets[index]),
+    final scheme = Theme.of(context).colorScheme;
+
+    if (_loadingMarkets) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return RefreshIndicator(
+      onRefresh: _initMarketsAndPrices,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 80),
+        children: [
+          if (_locationDenied)
+            Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFFFF8E1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFFFE082)),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.my_location_rounded, color: Colors.orange[700], size: 18),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Location is off, so markets are shown by region instead of distance.',
+                      style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: _initMarketsAndPrices,
+                    child: const Text('Enable', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                  ),
+                ],
+              ),
+            )
+          else if (_position != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(
+                '${_markets.length} markets sorted by distance from you'
+                '${_marketsFromServer ? '' : ' · Jaguza reference list'}',
+                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+              ),
+            ),
+          for (final market in _markets) ...[
+            _buildMarketCard(market),
+            const SizedBox(height: 12),
+          ],
+        ],
       ),
     );
   }
 
-  Widget _buildMarketCard(Market market) {
+  Widget _buildMarketCard(_MarketView market) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
@@ -1098,6 +1274,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 44,
@@ -1137,45 +1314,34 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        Icon(Icons.timer_rounded, size: 12, color: scheme.onSurfaceVariant),
-                        const SizedBox(width: 3),
-                        Text(
-                          market.distance,
-                          style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-                        ),
                       ],
                     ),
                   ],
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.star_rounded, size: 12, color: Colors.amber[600]),
-                    Text(
-                      market.rating.toString(),
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: scheme.onSurfaceVariant,
-                      ),
+              if (market.distanceKm != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: scheme.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _formatDistance(market.distanceKm!),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.primary,
                     ),
-                  ],
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: market.products.map((product) {
+            children: market.trades.map((trade) {
               return Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
@@ -1183,7 +1349,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  product,
+                  trade,
                   style: TextStyle(
                     fontSize: 10,
                     color: scheme.primary,
@@ -1196,11 +1362,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           const SizedBox(height: 8),
           Row(
             children: [
-              Icon(Icons.access_time_rounded, size: 12, color: scheme.onSurfaceVariant),
+              Icon(Icons.event_rounded, size: 12, color: scheme.onSurfaceVariant),
               const SizedBox(width: 4),
               Expanded(
                 child: Text(
-                  market.activeHours,
+                  market.schedule,
                   style: TextStyle(
                     fontSize: 11,
                     color: scheme.onSurfaceVariant,
@@ -1208,24 +1374,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  market.priceRange!,
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.blue[700],
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
               ElevatedButton.icon(
-                onPressed: () {},
+                onPressed: () => _openInMaps(market),
                 icon: const Icon(Icons.directions_rounded, size: 16),
                 label: const Text('Navigate'),
                 style: ElevatedButton.styleFrom(
@@ -1330,7 +1480,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   const SizedBox(height: 12),
                   
                   DropdownButtonFormField<String>(
-                    value: selectedCategory,
+                    initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category *',
                       border: OutlineInputBorder(),
@@ -1688,6 +1838,85 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
+  // Bundled fallback photo for each category so a card always shows a real
+  // image instantly, even offline or while a network image is still loading.
+  String _categoryImageAsset(String category) {
+    switch (category.toLowerCase()) {
+      case 'cattle':
+      case 'livestock':
+        return 'lib/assets/images/marketplace/cattle.jpg';
+      case 'dairy':
+        return 'lib/assets/images/marketplace/milk.jpg';
+      case 'poultry':
+        return 'lib/assets/images/Poultry.png';
+      case 'goats':
+        return 'lib/assets/images/Goat.png';
+      case 'pigs':
+        return 'lib/assets/images/Pigs.png';
+      case 'sheep':
+        return 'lib/assets/images/Sheep.png';
+      case 'feed':
+        return 'lib/assets/images/marketplace/feed.jpg';
+      default:
+        return 'lib/assets/images/marketplace/cattle.jpg';
+    }
+  }
+
+  Widget _categoryImage(Product product) => Image.asset(
+        _categoryImageAsset(product.category),
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        cacheWidth: 400,
+      );
+
+  // Renders the product photo. Local assets and freshly picked files paint
+  // immediately; network images are cached to disk after the first load and
+  // fall back to the bundled category photo on error.
+  Widget _buildProductImage(Product product, ColorScheme scheme) {
+    if (product.imageFile != null) {
+      return Image.file(
+        product.imageFile!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        cacheWidth: 400,
+      );
+    }
+
+    final asset = product.imageAsset;
+    if (asset != null && asset.startsWith('lib/assets/')) {
+      return Image.asset(
+        asset,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        cacheWidth: 400,
+        errorBuilder: (_, __, ___) => _categoryImage(product),
+      );
+    }
+
+    final url = product.imageUrl;
+    if (url != null && url.startsWith('http')) {
+      return CachedNetworkImage(
+        imageUrl: url,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+        memCacheWidth: 400,
+        fadeInDuration: const Duration(milliseconds: 200),
+        placeholder: (_, __) => Shimmer.fromColors(
+          baseColor: scheme.surfaceContainerHighest,
+          highlightColor: scheme.surface,
+          child: Container(color: scheme.surfaceContainerHighest),
+        ),
+        errorWidget: (_, __, ___) => _categoryImage(product),
+      );
+    }
+
+    return _categoryImage(product);
+  }
+
   IconData _getProductIcon(String category) {
     switch (category) {
       case 'Cattle':
@@ -1698,6 +1927,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         return Icons.pets_rounded;
       case 'Pigs':
         return Icons.cruelty_free_rounded;
+      case 'Sheep':
+        return Icons.pets_rounded;
       case 'Dairy':
         return Icons.local_drink_rounded;
       case 'Feed':
@@ -1709,23 +1940,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     }
   }
 
-  IconData _getAnimalIcon(String animal) {
-    if (animal.toLowerCase().contains('cattle') || animal.toLowerCase().contains('heifer') || animal.toLowerCase().contains('cow')) {
-      return Icons.agriculture_rounded;
-    } else if (animal.toLowerCase().contains('chicken') || animal.toLowerCase().contains('layer') || animal.toLowerCase().contains('broiler')) {
-      return Icons.egg_rounded;
-    } else if (animal.toLowerCase().contains('goat')) {
-      return Icons.pets_rounded;
-    } else if (animal.toLowerCase().contains('pig')) {
-      return Icons.cruelty_free_rounded;
-    } else if (animal.toLowerCase().contains('milk') || animal.toLowerCase().contains('dairy')) {
-      return Icons.local_drink_rounded;
-    } else if (animal.toLowerCase().contains('sheep')) {
-      return Icons.pets_rounded;
-    } else if (animal.toLowerCase().contains('rabbit')) {
-      return Icons.cruelty_free_rounded;
-    }
-    return Icons.category_rounded;
+  /// "800 m away" below 1 km, otherwise "12.4 km away".
+  String _formatDistance(double km) {
+    if (km < 1) return '${(km * 1000).round()} m away';
+    return '${km.toStringAsFixed(1)} km away';
   }
 
   Widget _buildEmptyState({required IconData icon, required String title, required String subtitle}) {
@@ -1802,26 +2020,63 @@ class CartItem {
   });
 }
 
-class Market {
+/// A market ready to render, whether it came from the backend or the
+/// bundled Uganda reference list.
+class _MarketView {
   final String name;
   final String location;
-  final String distance;
-  final double rating;
-  final String activeHours;
-  final List<String> products;
-  final String? priceRange;
-  final String? averagePrice;
+  final String schedule;
+  final List<String> trades;
+  final double? distanceKm;
+  final double? lat;
+  final double? lng;
 
-  Market({
+  const _MarketView({
     required this.name,
     required this.location,
-    required this.distance,
-    required this.rating,
-    required this.activeHours,
-    required this.products,
-    this.priceRange,
-    this.averagePrice,
+    required this.schedule,
+    required this.trades,
+    this.distanceKm,
+    this.lat,
+    this.lng,
   });
+
+  factory _MarketView.fromLocal(UgandaMarket m, double? distanceKm) {
+    return _MarketView(
+      name: m.name,
+      location: '${m.district} · ${m.region} Region',
+      schedule: m.schedule,
+      trades: m.trades,
+      distanceKm: distanceKm,
+      lat: m.lat,
+      lng: m.lng,
+    );
+  }
+
+  factory _MarketView.fromServer(Map<String, dynamic> j, Position? pos) {
+    final lat = double.tryParse('${j['lat'] ?? j['latitude'] ?? ''}');
+    final lng = double.tryParse('${j['lng'] ?? j['longitude'] ?? ''}');
+    double? distanceKm = double.tryParse('${j['distance_km'] ?? ''}');
+    if (distanceKm == null && pos != null && lat != null && lng != null) {
+      distanceKm = Geolocator.distanceBetween(
+            pos.latitude,
+            pos.longitude,
+            lat,
+            lng,
+          ) /
+          1000;
+    }
+    final trades = j['trades'];
+    return _MarketView(
+      name: '${j['name'] ?? 'Market'}',
+      location: '${j['district'] ?? j['location'] ?? 'Uganda'}',
+      schedule: '${j['schedule'] ?? j['hours'] ?? 'Check locally'}',
+      trades: trades is List ? trades.map((e) => '$e').toList() : const [],
+      distanceKm: distanceKm,
+      lat: lat,
+      lng: lng,
+    );
+  }
 }
 
 class SoldProduct {

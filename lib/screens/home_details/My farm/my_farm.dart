@@ -36,21 +36,19 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
       final response = await apiService.getFarms();
       final loadedFarms = <Farm>[];
 
-      if (response is List) {
-        for (final item in response) {
-          if (item is Map) {
-            final farmData = Map<String, dynamic>.from(item);
-            final farm = Farm.fromJson(farmData);
-            final farmOwnerId = farmData['user_id'] ?? farmData['owner_id'];
-            final currentUserId = _currentUser?.id;
+      for (final item in response) {
+        if (item is Map) {
+          final farmData = Map<String, dynamic>.from(item);
+          final farm = Farm.fromJson(farmData);
+          final farmOwnerId = farmData['user_id'] ?? farmData['owner_id'];
+          final currentUserId = _currentUser?.id;
 
-            if (currentUserId != null && farmOwnerId != null) {
-              if (farmOwnerId.toString() == currentUserId.toString()) {
-                loadedFarms.add(farm);
-              }
-            } else if (farm.owner.isNotEmpty || loadedFarms.isEmpty) {
+          if (currentUserId != null && farmOwnerId != null) {
+            if (farmOwnerId.toString() == currentUserId.toString()) {
               loadedFarms.add(farm);
             }
+          } else if (farm.owner.isNotEmpty || loadedFarms.isEmpty) {
+            loadedFarms.add(farm);
           }
         }
       }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class PigDecisionScreen extends StatefulWidget {
   const PigDecisionScreen({super.key});
@@ -26,7 +28,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Housing & Facilities',
       description:
           'Proper housing is essential for pig health, productivity, and welfare. Good facility design reduces stress, prevents diseases, and improves feed efficiency and growth rates.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/8/83/Pig_styes_at_One_Ash_Grange_Farm_-_geograph.org.uk_-_1805950.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/White_domestic_pig_resting_in_a_wooden_pigsty_in_Kanungu_District%2C_Uganda.jpg/960px-White_domestic_pig_resting_in_a_wooden_pigsty_in_Kanungu_District%2C_Uganda.jpg',
       details: [
         'Space requirement: 8-30 sq ft per pig (age dependent)',
         'Proper ventilation: 20-30 air changes per hour',
@@ -52,7 +54,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Health Management & Disease Prevention',
       description:
           'Maintaining herd health through vaccination, biosecurity, and regular monitoring prevents costly diseases and improves productivity. A proactive health program is essential for success.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/US_Navy_081006-N-5642P-330_U.S._Public_Health_Service_Lt._Cmdr._Julie_Sinclair%2C_a_veterinarian_embarked_aboard_the_amphibious_assault_ship_USS_Kearsarge_%28LHD_3%29%2C_administers_a_vaccination_to_a_pig_during_a_community_service_pro.jpg/960px-thumbnail.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/98/Muyimbwa_spraying_his_pig.jpg/960px-Muyimbwa_spraying_his_pig.jpg',
       details: [
         'Vaccination: PRRS, Swine Flu, E. coli, PCV2, Mycoplasma',
         'Biosecurity: All-in-all-out production systems',
@@ -78,7 +80,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Farrowing Management',
       description:
           'Farrowing is the most critical phase in pig production. Proper management during farrowing and lactation ensures high piglet survival rates and sow productivity.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Piglets_Nursing_in_a_Farrowing_Crate.jpg/960px-Piglets_Nursing_in_a_Farrowing_Crate.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f9/Sow_%28female_domestic_pig%29_nursing_her_piglets_in_Kihihi%2C_Kanungu%2CUganda.jpg/960px-Sow_%28female_domestic_pig%29_nursing_her_piglets_in_Kihihi%2C_Kanungu%2CUganda.jpg',
       details: [
         'Farrowing crate: Prevents piglet crushing',
         'Litter size: 10-14 piglets per litter (average)',
@@ -117,7 +119,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Waste Management',
       description:
           'Effective waste management is crucial for environmental sustainability, regulatory compliance, and farm economics. Proper manure handling can also be a valuable nutrient source.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Slurry_Spreader_-_geograph.org.uk_-_1897086.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Slurry_Spreader_-_geograph.org.uk_-_1897086.jpg/960px-Slurry_Spreader_-_geograph.org.uk_-_1897086.jpg',
       details: [
         'Manure: 1-2 cubic yards per finishing pig per year',
         'Storage: Covered pits, lagoons, or composting',
@@ -143,7 +145,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Understanding market dynamics and choosing the right marketing channels helps maximize returns from pork production. Multiple revenue streams can improve farm profitability.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/0/09/Auctioning_pigs_at_Frank_Sheroan%27s_closing-out_sale_-_DPLA_-_ce608454ea7943ef957e9acc67982e79.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/A_pig_farmer_showing_his_pigs.jpg/960px-A_pig_farmer_showing_his_pigs.jpg',
       details: [
         'Market hogs: Contract production vs. spot market',
         'Breeding stock: Sales to other producers',
@@ -235,22 +237,25 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 180,
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 50,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             // Description at the bottom
@@ -313,20 +318,23 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             Padding(

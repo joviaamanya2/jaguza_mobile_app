@@ -67,7 +67,6 @@ dependencies:
   # Utilities
 
   connectivity_plus: ^6.1.4
-  flutter_native_splash: ^2.4.5
   
   # Push Notifications
   firebase_core: ^4.1.0
@@ -83,6 +82,7 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.14.1
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
@@ -90,6 +90,18 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^5.0.0
+
+# App launcher icon (run: dart run flutter_launcher_icons)
+flutter_launcher_icons:
+  image_path: "assets/icon/app_icon.png"
+  android: true
+  ios: true
+  remove_alpha_ios: true
+  adaptive_icon_background: "#35B850"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  web:
+    generate: true
+    image_path: "assets/icon/app_icon.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -116,6 +128,7 @@ flutter:
     - lib/assets/images/detail image/sheep/breeding in sheep.jpg
     - lib/assets/images/detail image/sheep/finances.jpg
     - lib/assets/images/image.png
+    - lib/assets/images/marketplace/
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

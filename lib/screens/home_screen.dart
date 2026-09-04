@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:jaguza_app/services/api_service.dart';
 import 'package:jaguza_app/screens/home_details/Decision%20support/decison_support.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
 import 'package:jaguza_app/screens/home_details/Gestation%20tracker/gestation_tracker.dart';
@@ -498,53 +497,6 @@ class HomeTab extends StatefulWidget {
 
 class _HomeTabState extends State<HomeTab> {
   bool _showAd = true;
-  bool _isLoadingDashboardContent = true;
-  List<_DashboardContentItem> _dashboardContent = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDashboardContent();
-  }
-
-  Future<void> _loadDashboardContent() async {
-    final content = <_DashboardContentItem>[];
-    try {
-      final resources = await ApiService().getDecisionSupport();
-      content.addAll(resources.whereType<Map>().take(4).map((item) {
-        final data = Map<String, dynamic>.from(item);
-        return _DashboardContentItem(
-          title: '${data['title'] ?? 'Farming resource'}',
-          subtitle: '${data['summary'] ?? data['content'] ?? 'Practical farming guidance'}',
-          icon: Icons.menu_book_rounded,
-          color: const Color(0xFF2E7D32),
-          screen: const DecisionSupportScreen(),
-        );
-      }));
-    } catch (e) {
-      debugPrint('Dashboard resources load error: $e');
-    }
-    try {
-      final videos = await ApiService().getVideos();
-      content.addAll(videos.whereType<Map>().where((item) => item['is_published'] != false).take(4).map((item) {
-        final data = Map<String, dynamic>.from(item);
-        return _DashboardContentItem(
-          title: '${data['title'] ?? 'Educational video'}',
-          subtitle: 'Watch the latest Jaguza farming video',
-          icon: Icons.play_circle_fill_rounded,
-          color: const Color(0xFF1565C0),
-          screen: const VideoScreen(),
-        );
-      }));
-    } catch (e) {
-      debugPrint('Dashboard videos load error: $e');
-    }
-    if (!mounted) return;
-    setState(() {
-      _dashboardContent = content;
-      _isLoadingDashboardContent = false;
-    });
-  }
 
   void _dismissAd() => setState(() => _showAd = false);
 
@@ -569,10 +521,6 @@ class _HomeTabState extends State<HomeTab> {
             _buildAIQuestionBox(),
             const SizedBox(height: 24),
             _buildFeatureGrid(),
-            if (_isLoadingDashboardContent || _dashboardContent.isNotEmpty) ...[
-              const SizedBox(height: 24),
-              _buildDashboardContent(),
-            ],
             if (_showAd) ...[
               const SizedBox(height: 20),
               _buildAdvertiseBanner(),
@@ -800,76 +748,6 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
-  Widget _buildDashboardContent() {
-    final scheme = Theme.of(context).colorScheme;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              const Expanded(
-                child: Text(
-                  'From the dashboard',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-                ),
-              ),
-              TextButton(
-                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExploreScreen())),
-                child: const Text('View all'),
-              ),
-            ],
-          ),
-        ),
-        if (_isLoadingDashboardContent)
-          Padding(
-            padding: const EdgeInsets.all(20),
-            child: Center(child: CircularProgressIndicator(color: scheme.primary)),
-          )
-        else
-          SizedBox(
-            height: 142,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              scrollDirection: Axis.horizontal,
-              itemCount: _dashboardContent.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (context, index) {
-                final item = _dashboardContent[index];
-                return GestureDetector(
-                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.screen)),
-                  child: Container(
-                    width: 230,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).cardColor,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: scheme.outlineVariant),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(color: item.color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
-                          child: Icon(item.icon, color: item.color, size: 20),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 4),
-                        Text(item.subtitle, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-      ],
-    );
-  }
 
   Widget _buildFeatureGrid() {
     final features = [
@@ -1160,23 +1038,6 @@ class _FeatureCardState extends State<_FeatureCard> {
       }
     }
   }
-}
-
-// Updated FeatureItem - removed icon property
-class _DashboardContentItem {
-  final String title;
-  final String subtitle;
-  final IconData icon;
-  final Color color;
-  final Widget screen;
-
-  const _DashboardContentItem({
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-    required this.color,
-    required this.screen,
-  });
 }
 
 class FeatureItem {

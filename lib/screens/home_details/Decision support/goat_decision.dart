@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class GoatDecisionScreen extends StatefulWidget {
   const GoatDecisionScreen({super.key});
@@ -209,22 +211,25 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 180,
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 50,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             // Description at the bottom
@@ -288,20 +293,23 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             Padding(

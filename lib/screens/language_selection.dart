@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import '../services/language_service.dart';
 import '../services/app_localizations.dart';

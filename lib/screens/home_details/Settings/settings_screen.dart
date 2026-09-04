@@ -231,7 +231,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         '© 2025 Jaguar Farm Tech · All rights reserved',
                         style: TextStyle(
                           fontSize: 11,
-                          color: _kSubtext.withOpacity(0.6),
+                          color: _kSubtext.withValues(alpha: 0.6),
                         ),
                       ),
                     ),
@@ -310,10 +310,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
           decoration: BoxDecoration(
             color: theme.cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: theme.dividerColor.withOpacity(0.35)),
+            border: Border.all(color: theme.dividerColor.withValues(alpha: 0.35)),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -401,10 +401,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
         decoration: BoxDecoration(
           color: theme.cardColor,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: theme.dividerColor.withOpacity(0.35)),
+          border: Border.all(color: theme.dividerColor.withValues(alpha: 0.35)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -419,7 +419,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         height: 1,
         indent: 56,
         endIndent: 16,
-        color: Theme.of(context).dividerColor.withOpacity(0.35),
+        color: Theme.of(context).dividerColor.withValues(alpha: 0.35),
       );
 
   Widget _iconBox(IconData icon, Color color) {
@@ -427,7 +427,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       width: 36,
       height: 36,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.12),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Icon(icon, color: color, size: 19),

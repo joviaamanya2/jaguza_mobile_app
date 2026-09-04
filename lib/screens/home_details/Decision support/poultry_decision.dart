@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class PoultryDecisionScreen extends StatefulWidget {
   const PoultryDecisionScreen({super.key});
@@ -13,7 +15,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Breed Selection',
       description:
           'Choosing the right poultry breed is fundamental to your farming success. Consider your primary purpose (eggs, meat, or dual-purpose), climate adaptation, disease resistance, and market demand in your region.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/2/29/DkCornishHen.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d3/Improved_Kenyan_Kienyeji_Chickens.jpg/960px-Improved_Kenyan_Kienyeji_Chickens.jpg',
       details: [
         'Layer breeds: Isa Brown, Lohmann, Hy-Line, Leghorn',
         'Broiler breeds: Ross, Cobb, Hubbard, Arbor Acres',
@@ -26,7 +28,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Housing & Infrastructure',
       description:
           'Proper housing is essential for poultry health, productivity, and welfare. Good housing design protects birds from predators, weather, and diseases while optimizing production.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/2/2e/Wells_Poultry_Housing_-_Large_Chicken_Coop_and_Run.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/A_brood_of_hens_in_a_coop_at_Mlinza_Farm_01.jpg/960px-A_brood_of_hens_in_a_coop_at_Mlinza_Farm_01.jpg',
       details: [
         'Space: 1-2 sq ft per bird (layers), 0.5-1 sq ft (broilers)',
         'Ventilation: 4-8 air changes per hour minimum',
@@ -65,7 +67,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Layer Management',
       description:
           'Layer management focuses on optimizing egg production, quality, and consistency while maintaining hen health and welfare. Proper management extends laying cycles and improves profitability.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/2/22/A_hen_with_an_egg.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/A_hen_with_an_egg.jpg/960px-A_hen_with_an_egg.jpg',
       details: [
         'Peak production: 90-95% at 26-32 weeks of age',
         'Annual production: 280-320 eggs per hen per year',
@@ -91,7 +93,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Breeder Management',
       description:
           'Breeder flock management focuses on producing high-quality hatching eggs through proper nutrition, housing, and health management. Genetic improvement drives productivity.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Hens_and_rooster_395_Kirjava_kukko_ja_kana_C.JPG',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Nabbaale_in_her_broiler_poultry_farm.jpg/960px-Nabbaale_in_her_broiler_poultry_farm.jpg',
       details: [
         'Age at first lay: 20-24 weeks',
         'Hen to rooster ratio: 8-10 hens per rooster',
@@ -130,7 +132,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Waste Management',
       description:
           'Poultry manure is a valuable fertilizer resource. Proper management transforms waste into profit while ensuring environmental compliance and sustainability.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/9/9a/Chicken-deep-litter.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/9a/Chicken-deep-litter.jpg/960px-Chicken-deep-litter.jpg',
       details: [
         'Manure production: 4-6 lbs per 100 birds per day',
         'Composting: 2-3 months for quality fertilizer',
@@ -248,22 +250,25 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 180,
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 50,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             // Description at the bottom
@@ -327,20 +332,23 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             Padding(

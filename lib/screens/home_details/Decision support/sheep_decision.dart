@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class SheepDecisionScreen extends StatefulWidget {
   const SheepDecisionScreen({super.key});
@@ -26,7 +28,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Housing & Shelter',
       description:
           'Proper housing protects sheep from predators, extreme weather, and diseases. Good shelter design promotes health, reduces stress, and improves wool quality and productivity.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/New_sheep_barn_and_lambing_shed%2C_Pershore_Bridge_-_geograph.org.uk_-_6051639.jpg/960px-New_sheep_barn_and_lambing_shed%2C_Pershore_Bridge_-_geograph.org.uk_-_6051639.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/ae/Sheep_Kraal_in_Karamoja_01.jpg/960px-Sheep_Kraal_in_Karamoja_01.jpg',
       details: [
         'Space requirement: 15-20 sq ft per sheep',
         'Good ventilation to prevent respiratory issues',
@@ -39,7 +41,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Feeding & Nutrition',
       description:
           'Sheep are ruminants that require a balanced diet for optimal health, wool production, growth, and reproduction. Proper nutrition is key to profitability.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Sheep_grazing_-_geograph.org.uk_-_139102.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Sheep_grazing_-_geograph.org.uk_-_139102.jpg/960px-Sheep_grazing_-_geograph.org.uk_-_139102.jpg',
       details: [
         'Forage: 70-80% of diet (pasture, hay, silage)',
         'Quality hay and grazing management',
@@ -52,7 +54,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Health Management & Disease Prevention',
       description:
           'Sheep health management includes vaccination, deworming, foot care, and regular monitoring. A proactive health program prevents diseases and reduces economic losses.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Shepherd_watching_his_flock_grazing_at_Xaghra%2C_Gozo.jpg/960px-Shepherd_watching_his_flock_grazing_at_Xaghra%2C_Gozo.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cb/Uganda%2C_US_come_together_for_animal_education_110907-F-WA639-003.jpg/960px-Uganda%2C_US_come_together_for_animal_education_110907-F-WA639-003.jpg',
       details: [
         'Vaccination: FMD, Sheep Pox, Brucellosis, Enterotoxemia',
         'Deworming schedule: Every 3-4 months (rotational)',
@@ -130,7 +132,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Understanding market trends and finding the right channels helps maximize profits whether selling lamb meat, wool, or breeding stock. Value-added products can increase revenue.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Sheep_auction%2C_Newport_Cattle_Market_-_geograph.org.uk_-_1038044.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/Sheep_auction%2C_Newport_Cattle_Market_-_geograph.org.uk_-_1038044.jpg/960px-Sheep_auction%2C_Newport_Cattle_Market_-_geograph.org.uk_-_1038044.jpg',
       details: [
         'Lamb meat: Butcheries, direct sales, processors',
         'Wool marketing: Wool cooperatives, direct buyers',
@@ -222,22 +224,25 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 180,
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 50,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             // Description at the bottom
@@ -301,20 +306,23 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             Padding(

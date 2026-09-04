@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class RabbitDecisionScreen extends StatefulWidget {
   const RabbitDecisionScreen({super.key});
@@ -26,7 +28,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Housing & Caging Systems',
       description:
           'Proper housing is crucial for rabbit health, productivity, and welfare. Good cage design prevents diseases, reduces stress, and improves feed efficiency and growth rates.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Rabbit_in_hutch.jpg/960px-Rabbit_in_hutch.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/A_colony_of_rabbits_in_their_hutch_at_Mlinza_Farm_01.jpg/960px-A_colony_of_rabbits_in_their_hutch_at_Mlinza_Farm_01.jpg',
       details: [
         'Cage space: 2-6 sq ft per rabbit (breed dependent)',
         'Wire cage floors: 1/2 x 1 inch mesh (prevents sore hocks)',
@@ -235,22 +237,25 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 height: 180,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    height: 180,
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 50,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  height: 180,
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 50,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             // Description at the bottom
@@ -314,20 +319,23 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.network(
-                topic.image,
+              child: CachedNetworkImage(
+                imageUrl: topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) {
-                  return Container(
-                    color: scheme.surfaceContainerHighest,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      size: 80,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  );
-                },
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: scheme.surfaceContainerHighest,
+                  highlightColor: scheme.surface,
+                  child: Container(color: scheme.surfaceContainerHighest),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: scheme.surfaceContainerHighest,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    size: 80,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               ),
             ),
             Padding(

@@ -332,7 +332,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
             border: Border.all(color: scheme.outlineVariant),
           ),
           child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         hint: Text(
           hint,
           style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),

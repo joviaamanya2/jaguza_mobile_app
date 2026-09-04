@@ -20,7 +20,7 @@ class _ProfileTabState extends State<ProfileTab> {
   bool _isLoadingProfile = true;
   int _animalCount = 0;
   int _reportCount = 0;
-  int _savedCount = 0;
+  final int _savedCount = 0;
 
   String _userName = 'Loading profile...';
   String _userEmail = '';
@@ -1320,7 +1320,7 @@ class NotificationsScreen extends StatelessWidget {
           const SizedBox(height: 2),
           Text(subtitle, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
         ])),
-        Switch(value: initial, activeColor: scheme.primary, onChanged: (val) {}),
+        Switch(value: initial, activeThumbColor: scheme.primary, onChanged: (val) {}),
       ]),
     );
   }

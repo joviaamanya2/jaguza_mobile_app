@@ -1230,6 +1230,31 @@ class ApiService {
     await delete('marketplace/$id');
   }
 
+  // ========== MARKET PRICES & NEARBY MARKETS API ==========
+  // Both endpoints are optional on the backend today. Callers fall back to
+  // the bundled reference data (lib/data/uganda_markets.dart) when these
+  // throw (404, offline, etc).
+
+  /// Live livestock/produce price ranges. When [lat]/[lng] are supplied the
+  /// backend may return prices from the nearest trading centre.
+  Future<List<dynamic>> getMarketPrices({double? lat, double? lng}) async {
+    var endpoint = 'market-prices';
+    if (lat != null && lng != null) {
+      endpoint += '?lat=$lat&lng=$lng';
+    }
+    return _extractList(await get(endpoint));
+  }
+
+  /// Physical livestock/produce markets. When [lat]/[lng] are supplied the
+  /// backend may return each market's distance from that point.
+  Future<List<dynamic>> getMarkets({double? lat, double? lng}) async {
+    var endpoint = 'markets';
+    if (lat != null && lng != null) {
+      endpoint += '?lat=$lat&lng=$lng';
+    }
+    return _extractList(await get(endpoint));
+  }
+
   // ========== GESTATION AND VACCINATION API ==========
 
   Future<List<dynamic>> getGestationRecords() async {

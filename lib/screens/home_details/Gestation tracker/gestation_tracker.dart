@@ -3468,7 +3468,7 @@ class _GestationTrackerScreenState extends State<GestationTrackerScreen> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2E7D32).withOpacity(0.1),
+                  color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -3498,7 +3498,7 @@ class _GestationTrackerScreenState extends State<GestationTrackerScreen> {
               color: const Color(0xFFE8F5E9),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFF2E7D32).withOpacity(0.15),
+                color: const Color(0xFF2E7D32).withValues(alpha: 0.15),
               ),
             ),
             child: const Text(
@@ -3558,7 +3558,7 @@ class _GestationTrackerScreenState extends State<GestationTrackerScreen> {
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
                   color: isActive
-                      ? const Color(0xFF2E7D32).withOpacity(0.08)
+                      ? const Color(0xFF2E7D32).withValues(alpha: 0.08)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -3611,7 +3611,7 @@ class _GestationTrackerScreenState extends State<GestationTrackerScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: const Color(0xFF2E7D32).withOpacity(0.1),
+                color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

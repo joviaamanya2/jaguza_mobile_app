@@ -26,6 +26,8 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Jaguza needs photo access so you can attach animal images and videos to sickness reports.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Jaguza uses your location to find and sort nearby livestock markets by distance.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

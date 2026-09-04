@@ -281,6 +281,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   Widget _buildPlanSelector() {
     final scheme = Theme.of(context).colorScheme;
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -507,7 +508,6 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: scheme.outlineVariant, style: BorderStyle.solid),
               ),
               child: _advertImage != null
                   ? ClipRRect(
@@ -636,7 +636,6 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: scheme.outlineVariant, style: BorderStyle.solid),
               ),
               child: _advertVideo != null
                   ? Center(
