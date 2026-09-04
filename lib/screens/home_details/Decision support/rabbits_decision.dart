@@ -13,7 +13,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Breed Selection',
       description:
           'Choosing the right rabbit breed is essential for your farming success. Consider your primary purpose (meat, fur, wool, show, or pets), growth rate, reproductive performance, and market demand in your area.',
-      image: 'assets/rabbit_breed.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/62/Rabbit_-_French_Lop_breed.jpg/960px-Rabbit_-_French_Lop_breed.jpg',
       details: [
         'Meat breeds: New Zealand White, Californian, Flemish Giant',
         'Fur breeds: Rex, Chinchilla, Satin',
@@ -26,7 +26,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Housing & Caging Systems',
       description:
           'Proper housing is crucial for rabbit health, productivity, and welfare. Good cage design prevents diseases, reduces stress, and improves feed efficiency and growth rates.',
-      image: 'assets/rabbit_housing.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Rabbit_in_hutch.jpg/960px-Rabbit_in_hutch.jpg',
       details: [
         'Cage space: 2-6 sq ft per rabbit (breed dependent)',
         'Wire cage floors: 1/2 x 1 inch mesh (prevents sore hocks)',
@@ -39,7 +39,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Feeding & Nutrition',
       description:
           'Rabbits require a balanced diet of hay, pellets, and fresh vegetables for optimal health, growth, and reproduction. Digestive health is critical in rabbit production.',
-      image: 'assets/rabbit_feeding.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/PermaLiv_kaninforing_i_kaninbur_02-01-20.jpg/960px-PermaLiv_kaninforing_i_kaninbur_02-01-20.jpg',
       details: [
         'Hay: 70-80% of diet (timothy, orchard, or oat hay)',
         'Pellets: 16-18% protein, 14-18% fiber for growing rabbits',
@@ -52,7 +52,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Health Management & Disease Prevention',
       description:
           'Rabbit health management includes vaccination, parasite control, and regular monitoring. A proactive health program prevents common diseases and reduces losses.',
-      image: 'assets/rabbit_health.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Little_Bunny_In_Hands_%28121780523%29.jpeg/960px-Little_Bunny_In_Hands_%28121780523%29.jpeg',
       details: [
         'Common diseases: Pasteurellosis, Enteritis, Coccidiosis',
         'Vaccination: Myxomatosis, RHD (Rabbit Hemorrhagic Disease)',
@@ -65,7 +65,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Breeding & Reproduction',
       description:
           'Strategic breeding decisions improve herd genetics, increase productivity, and ensure healthy kits. Understanding rabbit reproduction is essential for profitability.',
-      image: 'assets/rabbit_reproduction.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Rabbits_in_a_cage.jpg/960px-Rabbits_in_a_cage.jpg',
       details: [
         'Age at first breeding: 4-6 months (does)',
         'Breeding frequency: 3-5 litters per year',
@@ -78,7 +78,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Kindling Management',
       description:
           'Kindling (birthing) is a critical phase in rabbit production. Proper management during kindling and lactation ensures high kit survival rates and doe productivity.',
-      image: 'assets/rabbit_kindling.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Newborn_rabbits_in_a_fur_nest.jpg/960px-Newborn_rabbits_in_a_fur_nest.jpg',
       details: [
         'Nest box: Provide 1-2 days before kindling',
         'Kindling materials: Hay, straw, wood shavings',
@@ -91,7 +91,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Grower Management',
       description:
           'Raising healthy grower rabbits from weaning to market requires careful management of nutrition, housing, and health to maximize growth and efficiency.',
-      image: 'assets/rabbit_grower.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Young_Netherland_Dwarf_rabbit.jpg/960px-Young_Netherland_Dwarf_rabbit.jpg',
       details: [
         'Weaning weight: 1-1.5 lbs (breed dependent)',
         'Market weight: 4-6 lbs (depending on market)',
@@ -104,7 +104,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Water Management',
       description:
           'Clean, accessible water is essential for rabbit health, digestion, and growth. Water quality directly affects feed intake and productivity in rabbit production.',
-      image: 'assets/rabbit_water.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Domestic-rabbit-drinking-water.jpg/960px-Domestic-rabbit-drinking-water.jpg',
       details: [
         'Daily water: 2-4 liters per rabbit (breed dependent)',
         'Waterers: Automatic nipple drinkers or crocks',
@@ -117,7 +117,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Waste Management & Composting',
       description:
           'Effective waste management converts rabbit manure into valuable fertilizer. Rabbit manure is one of the best organic fertilizers for gardens and crops.',
-      image: 'assets/rabbit_waste.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/f2/Compost_bin_with_compost.jpg/960px-Compost_bin_with_compost.jpg',
       details: [
         'Rabbit manure: 1-2 lbs per rabbit per month',
         'Composting: Nitrogen-rich compost in 2-3 months',
@@ -130,7 +130,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Financial Management',
       description:
           'Successful rabbit farming requires careful financial planning, cost tracking, and revenue optimization. Understanding production costs is essential for profitability.',
-      image: 'assets/rabbit_finance.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/SB040_Rabbit_farming_Cuba_1.JPG/960px-SB040_Rabbit_farming_Cuba_1.JPG',
       details: [
         'Feed costs: 50-60% of total expenses',
         'Breeding stock costs: Initial investment',
@@ -143,7 +143,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Understanding market dynamics and choosing the right marketing channels helps maximize returns from rabbit production. Multiple revenue streams can improve farm profitability.',
-      image: 'assets/rabbit_market.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Baby_rabbits_in_market_%2826400003044%29.jpg/960px-Baby_rabbits_in_market_%2826400003044%29.jpg',
       details: [
         'Meat market: Butcheries, restaurants, direct sales',
         'Breeding stock: Sales to other producers',
@@ -235,7 +235,7 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 height: 180,
@@ -314,7 +314,7 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,

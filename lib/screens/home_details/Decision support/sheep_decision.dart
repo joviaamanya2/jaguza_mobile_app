@@ -13,7 +13,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Breed Selection',
       description:
           'Choosing the right sheep breed is fundamental to your farming success. Consider your primary goal (meat, wool, milk, or multipurpose), climate adaptation, disease resistance, and market demand in your region.',
-      image: 'assets/sheep_breed.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/Galway_%28Breed_of_Sheep%29.JPG/960px-Galway_%28Breed_of_Sheep%29.JPG',
       details: [
         'Meat breeds: Dorper, Suffolk, Hampshire, Texel',
         'Wool breeds: Merino, Rambouillet, Corriedale',
@@ -26,7 +26,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Housing & Shelter',
       description:
           'Proper housing protects sheep from predators, extreme weather, and diseases. Good shelter design promotes health, reduces stress, and improves wool quality and productivity.',
-      image: 'assets/sheep_housing.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/df/New_sheep_barn_and_lambing_shed%2C_Pershore_Bridge_-_geograph.org.uk_-_6051639.jpg/960px-New_sheep_barn_and_lambing_shed%2C_Pershore_Bridge_-_geograph.org.uk_-_6051639.jpg',
       details: [
         'Space requirement: 15-20 sq ft per sheep',
         'Good ventilation to prevent respiratory issues',
@@ -39,7 +39,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Feeding & Nutrition',
       description:
           'Sheep are ruminants that require a balanced diet for optimal health, wool production, growth, and reproduction. Proper nutrition is key to profitability.',
-      image: 'assets/sheep_feeding.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/5/5c/Sheep_grazing_-_geograph.org.uk_-_139102.jpg',
       details: [
         'Forage: 70-80% of diet (pasture, hay, silage)',
         'Quality hay and grazing management',
@@ -52,7 +52,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Health Management & Disease Prevention',
       description:
           'Sheep health management includes vaccination, deworming, foot care, and regular monitoring. A proactive health program prevents diseases and reduces economic losses.',
-      image: 'assets/sheep_health.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0e/Shepherd_watching_his_flock_grazing_at_Xaghra%2C_Gozo.jpg/960px-Shepherd_watching_his_flock_grazing_at_Xaghra%2C_Gozo.jpg',
       details: [
         'Vaccination: FMD, Sheep Pox, Brucellosis, Enterotoxemia',
         'Deworming schedule: Every 3-4 months (rotational)',
@@ -65,7 +65,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Breeding & Reproduction',
       description:
           'Strategic breeding decisions improve flock genetics, increase productivity, and ensure healthy lambs. Understanding sheep reproduction cycles is essential for profitability.',
-      image: 'assets/sheep_reproduction.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/Merino_ewes_%26_lambs-crop.JPG/960px-Merino_ewes_%26_lambs-crop.JPG',
       details: [
         'Age at first breeding: 8-12 months (ewes)',
         'Breeding season: 1-2 times per year',
@@ -78,7 +78,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Wool & Fiber Management',
       description:
           'For wool-producing sheep, proper management ensures high-quality fiber production. Shearing, grading, and marketing of wool adds significant value to your operation.',
-      image: 'assets/sheep_wool.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/ca/Sheep_Shearing_Championship%2C_Punchestown%2C_Ireland._Image_from_the_event._Shearing_the_sheeps_03.jpg/960px-Sheep_Shearing_Championship%2C_Punchestown%2C_Ireland._Image_from_the_event._Shearing_the_sheeps_03.jpg',
       details: [
         'Shearing frequency: Once or twice annually',
         'Shearing timing: Before lambing or in spring',
@@ -91,7 +91,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Lamb Production Management',
       description:
           'Raising healthy lambs from birth to market requires careful management. Proper nutrition, health care, and growth monitoring optimize lamb production and profitability.',
-      image: 'assets/sheep_lamb.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2d/Sheep_with_young_lambs%2C_Breary_Grange_Farm_-_geograph.org.uk_-_6456070.jpg/960px-Sheep_with_young_lambs%2C_Breary_Grange_Farm_-_geograph.org.uk_-_6456070.jpg',
       details: [
         'Colostrum intake: Critical within first 6 hours',
         'Creep feeding for growing lambs',
@@ -104,7 +104,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Water Management',
       description:
           'Clean, accessible water is essential for sheep health, digestion, milk production, and wool growth. Water quality directly affects productivity and animal welfare.',
-      image: 'assets/sheep_water.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/be/Sheep_drinking_trough_-_geograph.org.uk_-_3185626.jpg/960px-Sheep_drinking_trough_-_geograph.org.uk_-_3185626.jpg',
       details: [
         'Daily water: 1-2 gallons per sheep',
         'Clean water troughs daily',
@@ -117,7 +117,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Financial Management',
       description:
           'Successful sheep farming requires careful financial planning, cost tracking, and revenue optimization. Understanding costs and income streams maximizes profitability.',
-      image: 'assets/sheep_finance.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Flock_of_sheep%2C_Church_Farm_-_geograph.org.uk_-_6923398.jpg/960px-Flock_of_sheep%2C_Church_Farm_-_geograph.org.uk_-_6923398.jpg',
       details: [
         'Feed costs: 40-50% of total expenses',
         'Veterinary and medicine costs',
@@ -130,7 +130,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Understanding market trends and finding the right channels helps maximize profits whether selling lamb meat, wool, or breeding stock. Value-added products can increase revenue.',
-      image: 'assets/sheep_market.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/8/80/Sheep_auction%2C_Newport_Cattle_Market_-_geograph.org.uk_-_1038044.jpg',
       details: [
         'Lamb meat: Butcheries, direct sales, processors',
         'Wool marketing: Wool cooperatives, direct buyers',
@@ -222,7 +222,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 height: 180,
@@ -301,7 +301,7 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,

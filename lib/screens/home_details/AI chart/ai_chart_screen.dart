@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:file_picker/file_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:jaguza_app/services/api_service.dart';
+import 'package:jaguza_app/services/language_service.dart';
 
 class AIChatTab extends StatefulWidget {
   const AIChatTab({super.key});
@@ -50,8 +51,29 @@ class _AIChatTabState extends State<AIChatTab> {
     super.initState();
     _speech = stt.SpeechToText();
     _messageController.addListener(_onMessageChanged);
+    _selectedLanguage = LanguageService.getLanguageNameFromCode(
+      LanguageService.currentLocale.languageCode,
+    );
+    LanguageService.localeNotifier.addListener(_syncLanguage);
     _initSpeech();
     _loadChatHistory();
+  }
+
+  void _syncLanguage() {
+    if (!mounted) return;
+    setState(() {
+      _selectedLanguage = LanguageService.getLanguageNameFromCode(
+        LanguageService.currentLocale.languageCode,
+      );
+    });
+  }
+
+  Future<void> _changeLanguage(String languageName) async {
+    setState(() => _selectedLanguage = languageName);
+    await LanguageService.saveLanguage(
+      LanguageService.getLanguageCodeFromName(languageName),
+      languageName,
+    );
   }
 
   Future<void> _loadChatHistory() async {
@@ -228,6 +250,7 @@ class _AIChatTabState extends State<AIChatTab> {
   @override
   void dispose() {
     _messageController.removeListener(_onMessageChanged);
+    LanguageService.localeNotifier.removeListener(_syncLanguage);
     _messageController.dispose();
     _chatScrollController.dispose();
     _speech.stop();
@@ -514,7 +537,7 @@ class _AIChatTabState extends State<AIChatTab> {
         PopupMenuButton<String>(
           tooltip: 'Change language',
           icon: Icon(Icons.language_rounded, color: scheme.onPrimary),
-          onSelected: (language) => setState(() => _selectedLanguage = language),
+          onSelected: _changeLanguage,
           itemBuilder: (context) => _languages.map((language) => PopupMenuItem(
             value: language,
             child: Text(language),
@@ -899,8 +922,10 @@ class _AIChatTabState extends State<AIChatTab> {
         language: _selectedLanguage,
       );
       final rawReply = result['ai_response'] ?? result['response'] ?? result['message'];
-      final reply = rawReply is Map ? rawReply['message'] : rawReply;
-      final response = '${reply ?? ''}'.trim();
+      final reply = rawReply is Map
+          ? (rawReply['message'] ?? rawReply['bot_response'] ?? rawReply['text'])
+          : rawReply;
+      final response = '${reply ?? result['message'] ?? ''}'.trim();
       if (response.isEmpty) throw Exception('The AI returned an empty response.');
       if (!mounted) return;
       setState(() {
@@ -910,9 +935,14 @@ class _AIChatTabState extends State<AIChatTab> {
       _scrollToLatest();
     } catch (e) {
       if (!mounted) return;
+      debugPrint('AI chat send failed: $e');
+      final message = e.toString().contains('session expired') ||
+              e.toString().contains('Not authenticated')
+          ? 'Your session has expired. Please sign in again to keep chatting.'
+          : 'I could not reach Jaguza AI right now. Please check your connection and try again.';
       setState(() {
         _messages.add(ChatMessage(
-          text: 'I could not reach Jaguza AI right now. Please try again.\n\n$e',
+          text: message,
           isUser: false,
           timestamp: DateTime.now(),
         ));

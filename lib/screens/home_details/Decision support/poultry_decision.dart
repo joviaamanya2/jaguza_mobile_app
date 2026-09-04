@@ -13,7 +13,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Breed Selection',
       description:
           'Choosing the right poultry breed is fundamental to your farming success. Consider your primary purpose (eggs, meat, or dual-purpose), climate adaptation, disease resistance, and market demand in your region.',
-      image: 'assets/poultry_breed.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/2/29/DkCornishHen.jpg',
       details: [
         'Layer breeds: Isa Brown, Lohmann, Hy-Line, Leghorn',
         'Broiler breeds: Ross, Cobb, Hubbard, Arbor Acres',
@@ -26,7 +26,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Housing & Infrastructure',
       description:
           'Proper housing is essential for poultry health, productivity, and welfare. Good housing design protects birds from predators, weather, and diseases while optimizing production.',
-      image: 'assets/poultry_housing.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/2/2e/Wells_Poultry_Housing_-_Large_Chicken_Coop_and_Run.jpg',
       details: [
         'Space: 1-2 sq ft per bird (layers), 0.5-1 sq ft (broilers)',
         'Ventilation: 4-8 air changes per hour minimum',
@@ -39,7 +39,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Feeding & Nutrition',
       description:
           'Proper nutrition is critical for poultry performance, egg production, and growth. Feed costs represent 60-70% of production costs, making feed efficiency crucial for profitability.',
-      image: 'assets/poultry_feeding.jpg',
+      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Layer_Chicken_feeding_03.jpg/960px-Layer_Chicken_feeding_03.jpg',
       details: [
         'Starter feed: 20-22% protein (0-6 weeks)',
         'Grower feed: 18-20% protein (6-18 weeks)',
@@ -52,7 +52,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Health Management & Biosecurity',
       description:
           'Maintaining flock health through vaccination, biosecurity, and regular monitoring prevents costly diseases and improves productivity. A proactive health program is essential.',
-      image: 'assets/poultry_health.jpg',
+      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Chicken_vaccination_afghanistan.jpg/960px-Chicken_vaccination_afghanistan.jpg',
       details: [
         'Common diseases: Newcastle, Gumboro, Infectious Bronchitis',
         'Vaccination program: Marek\'s, IBD, ND, IB, IBH, Fowl Pox',
@@ -65,7 +65,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Layer Management',
       description:
           'Layer management focuses on optimizing egg production, quality, and consistency while maintaining hen health and welfare. Proper management extends laying cycles and improves profitability.',
-      image: 'assets/poultry_layer.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/2/22/A_hen_with_an_egg.jpg',
       details: [
         'Peak production: 90-95% at 26-32 weeks of age',
         'Annual production: 280-320 eggs per hen per year',
@@ -78,7 +78,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Broiler Management',
       description:
           'Broiler management focuses on maximizing growth rate and feed efficiency from day-old to market weight, directly impacting profitability in meat production.',
-      image: 'assets/poultry_broiler.jpg',
+      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Broiler_Chicken_at_a_farm.jpg/960px-Broiler_Chicken_at_a_farm.jpg',
       details: [
         'Growth rate: 40-60 grams per day',
         'Market weight: 1.5-2.5 kg (depending on market)',
@@ -91,7 +91,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Breeder Management',
       description:
           'Breeder flock management focuses on producing high-quality hatching eggs through proper nutrition, housing, and health management. Genetic improvement drives productivity.',
-      image: 'assets/poultry_breeder.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Hens_and_rooster_395_Kirjava_kukko_ja_kana_C.JPG',
       details: [
         'Age at first lay: 20-24 weeks',
         'Hen to rooster ratio: 8-10 hens per rooster',
@@ -104,7 +104,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Incubation & Hatchery Management',
       description:
           'Incubation management determines hatch rates and chick quality. Proper temperature, humidity, and turning schedules are critical for successful hatching.',
-      image: 'assets/poultry_incubation.jpg',
+      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Incubator_with_freshly_hatched_chick.jpg/960px-Incubator_with_freshly_hatched_chick.jpg',
       details: [
         'Incubation temperature: 99.5°F (37.5°C) forced air',
         'Incubation humidity: 50-55% (days 1-18), 65-75% (days 19-21)',
@@ -117,7 +117,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Water Management',
       description:
           'Clean, accessible water is essential for poultry health, digestion, egg production, and thermoregulation. Water quality directly affects feed intake and productivity.',
-      image: 'assets/poultry_water.jpg',
+      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f2/Week_old_chick_drinking_water_in_Kenya.jpg/960px-Week_old_chick_drinking_water_in_Kenya.jpg',
       details: [
         'Daily water: 150-200 ml per chicken (environment dependent)',
         'Waterers: 1 per 20-30 birds (plastic or stainless)',
@@ -130,7 +130,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Waste Management',
       description:
           'Poultry manure is a valuable fertilizer resource. Proper management transforms waste into profit while ensuring environmental compliance and sustainability.',
-      image: 'assets/poultry_waste.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/9/9a/Chicken-deep-litter.jpg',
       details: [
         'Manure production: 4-6 lbs per 100 birds per day',
         'Composting: 2-3 months for quality fertilizer',
@@ -143,7 +143,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Financial Management',
       description:
           'Successful poultry farming requires careful financial planning, cost tracking, and revenue optimization. Understanding production costs is essential for profitability.',
-      image: 'assets/poultry_finance.jpg',
+      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/Parafield_Poultry_Farm%28GN09582%29.jpg/960px-Parafield_Poultry_Farm%28GN09582%29.jpg',
       details: [
         'Feed costs: 60-70% of total expenses',
         'Chick costs: 15-20% of total expenses',
@@ -156,7 +156,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Understanding market dynamics and choosing the right marketing channels helps maximize returns from poultry production. Multiple revenue streams can improve profitability.',
-      image: 'assets/poultry_market.jpg',
+      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a0/Cambodia_08_-_037_-_eggs_for_sale_at_the_market_%283198826603%29.jpg/960px-Cambodia_08_-_037_-_eggs_for_sale_at_the_market_%283198826603%29.jpg',
       details: [
         'Egg market: Table eggs, fertile eggs, specialty eggs',
         'Meat market: Whole birds, cut pieces, processed products',
@@ -248,7 +248,7 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 height: 180,
@@ -327,7 +327,7 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,

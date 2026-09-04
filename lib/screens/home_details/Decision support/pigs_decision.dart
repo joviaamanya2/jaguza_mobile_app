@@ -13,7 +13,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Breed Selection',
       description:
           'Choosing the right pig breed is critical for your farming success. Consider your primary purpose (meat, breeding stock, or show), growth rate, feed conversion efficiency, disease resistance, and market demand.',
-      image: 'assets/images/pig_breed.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/92/Duroc_pig_%28Belagro-2021%29_1.jpg/960px-Duroc_pig_%28Belagro-2021%29_1.jpg',
       details: [
         'Meat breeds: Large White, Landrace, Duroc, Hampshire',
         'Maternal breeds: Yorkshire, Landrace, Chester White',
@@ -26,7 +26,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Housing & Facilities',
       description:
           'Proper housing is essential for pig health, productivity, and welfare. Good facility design reduces stress, prevents diseases, and improves feed efficiency and growth rates.',
-      image: 'assets/images/pig_housing.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/8/83/Pig_styes_at_One_Ash_Grange_Farm_-_geograph.org.uk_-_1805950.jpg',
       details: [
         'Space requirement: 8-30 sq ft per pig (age dependent)',
         'Proper ventilation: 20-30 air changes per hour',
@@ -39,7 +39,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Feeding & Nutrition',
       description:
           'Pigs require balanced nutrition for optimal growth, reproduction, and health. Feed costs represent 60-70% of production costs, making feed efficiency crucial for profitability.',
-      image: 'assets/images/pig_feeding.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/b7/Pig_feeding_straw.jpg/960px-Pig_feeding_straw.jpg',
       details: [
         'Creep feed: 18-22% protein for piglets (0-20 lbs)',
         'Grower feed: 16-18% protein (20-50 lbs)',
@@ -52,7 +52,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Health Management & Disease Prevention',
       description:
           'Maintaining herd health through vaccination, biosecurity, and regular monitoring prevents costly diseases and improves productivity. A proactive health program is essential for success.',
-      image: 'assets/images/pig_health.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/US_Navy_081006-N-5642P-330_U.S._Public_Health_Service_Lt._Cmdr._Julie_Sinclair%2C_a_veterinarian_embarked_aboard_the_amphibious_assault_ship_USS_Kearsarge_%28LHD_3%29%2C_administers_a_vaccination_to_a_pig_during_a_community_service_pro.jpg/960px-thumbnail.jpg',
       details: [
         'Vaccination: PRRS, Swine Flu, E. coli, PCV2, Mycoplasma',
         'Biosecurity: All-in-all-out production systems',
@@ -65,7 +65,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Reproduction Management',
       description:
           'Strategic breeding decisions ensure consistent piglet production, healthy offspring, and improved herd genetics. Understanding reproductive cycles is key to maximizing production.',
-      image: 'assets/images/pig_reproduction.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Breeding_boars_pig_sow-638346.jpg/960px-Breeding_boars_pig_sow-638346.jpg',
       details: [
         'Age at first breeding: 7-8 months (gilts)',
         'Estrous cycle: 21 days (standing heat for 2-3 days)',
@@ -78,7 +78,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Farrowing Management',
       description:
           'Farrowing is the most critical phase in pig production. Proper management during farrowing and lactation ensures high piglet survival rates and sow productivity.',
-      image: 'assets/images/pig_farrowing.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/68/Piglets_Nursing_in_a_Farrowing_Crate.jpg/960px-Piglets_Nursing_in_a_Farrowing_Crate.jpg',
       details: [
         'Farrowing crate: Prevents piglet crushing',
         'Litter size: 10-14 piglets per litter (average)',
@@ -91,7 +91,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Grower-Finisher Management',
       description:
           'Grower-finisher management focuses on maximizing daily gain and feed efficiency from weaning to market weight, directly impacting profitability.',
-      image: 'assets/images/pig_grower.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/bc/Piggys_at_farm.jpg/960px-Piggys_at_farm.jpg',
       details: [
         'Growth rate: 1.5-2.2 lbs per day (feed dependent)',
         'Market weight: 240-280 lbs (depending on market)',
@@ -104,7 +104,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Water Management',
       description:
           'Clean, accessible water is essential for pig health, digestion, growth, and thermoregulation. Water quality and availability directly affect feed intake and productivity.',
-      image: 'assets/images/pig_water.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Pig_getting_a_drink.jpg/960px-Pig_getting_a_drink.jpg',
       details: [
         'Daily water: 2-6 gallons per pig (age dependent)',
         'Waterer: 1 per 20 pigs (nipple or bowl)',
@@ -117,7 +117,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Waste Management',
       description:
           'Effective waste management is crucial for environmental sustainability, regulatory compliance, and farm economics. Proper manure handling can also be a valuable nutrient source.',
-      image: 'assets/images/pig_waste.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/8/8a/Slurry_Spreader_-_geograph.org.uk_-_1897086.jpg',
       details: [
         'Manure: 1-2 cubic yards per finishing pig per year',
         'Storage: Covered pits, lagoons, or composting',
@@ -130,7 +130,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Financial Management',
       description:
           'Successful pig farming requires careful financial planning, cost tracking, and revenue optimization. Understanding production costs is essential for profitability in a volatile market.',
-      image: 'assets/images/pig_finance.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Circle_Four_Farms_pig_farms_-_Milford_Utah.jpg/960px-Circle_Four_Farms_pig_farms_-_Milford_Utah.jpg',
       details: [
         'Feed costs: 60-70% of total expenses',
         'Piglet costs: 20-25% of total expenses',
@@ -143,7 +143,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Understanding market dynamics and choosing the right marketing channels helps maximize returns from pork production. Multiple revenue streams can improve farm profitability.',
-      image: 'assets/images/pig_market.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/0/09/Auctioning_pigs_at_Frank_Sheroan%27s_closing-out_sale_-_DPLA_-_ce608454ea7943ef957e9acc67982e79.jpg',
       details: [
         'Market hogs: Contract production vs. spot market',
         'Breeding stock: Sales to other producers',
@@ -235,7 +235,7 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 height: 180,
@@ -313,7 +313,7 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,

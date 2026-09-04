@@ -13,7 +13,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Breed Selection',
       description:
           'Choosing the right goat breed is crucial for your farming success. Consider your primary purpose (milk, meat, fiber, or pets), climate adaptability, disease resistance, and market demand in your area.',
-      image: 'assets/goat_breed.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Boer_Goat_%2849944899088%29.jpg/960px-Boer_Goat_%2849944899088%29.jpg',
       details: [
         'Dairy breeds: Saanen, Alpine, Nubian, Toggenburg',
         'Meat breeds: Boer, Kalahari Red, Savanna',
@@ -26,7 +26,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Housing & Shelter',
       description:
           'Proper housing protects goats from extreme weather, predators, and diseases. Good shelter design promotes health, reduces stress, and improves productivity.',
-      image: 'assets/goat_housing.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Tannenberg_brauner_Stall.jpg/960px-Tannenberg_brauner_Stall.jpg',
       details: [
         'Space requirement: 15-20 sq ft per adult goat',
         'Good ventilation and natural lighting',
@@ -39,7 +39,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Feeding & Nutrition',
       description:
           'Goats are browsers, not grazers. They require a diverse diet including browse, forages, concentrates, and minerals for optimal health, milk production, and growth.',
-      image: 'assets/goat_feeding.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/64/Goats_browsing_woody_plants_Namibia.jpg/960px-Goats_browsing_woody_plants_Namibia.jpg',
       details: [
         'Browse: 60-70% of diet (shrubs, trees, weeds)',
         'Hay: Quality grass/legume hay daily',
@@ -52,7 +52,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Health Management & Disease Prevention',
       description:
           'Goat health management includes vaccination, deworming, foot care, and regular health monitoring. A proactive approach prevents common diseases and reduces losses.',
-      image: 'assets/goat_health.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/2b/Village_veterinarian_outreach_program_130110-N-HN353-192.jpg/960px-Village_veterinarian_outreach_program_130110-N-HN353-192.jpg',
       details: [
         'Vaccination: PPR, CCPP, FMD, Enterotoxemia',
         'Deworming: Every 3-4 months (rotational)',
@@ -65,7 +65,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Breeding & Reproduction',
       description:
           'Strategic breeding decisions improve herd genetics, increase productivity, and ensure healthy offspring. Proper management of breeding cycles is essential for profitability.',
-      image: 'assets/goat_reproduction.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/60/Mixed_breed_goat_with_kids.jpg/960px-Mixed_breed_goat_with_kids.jpg',
       details: [
         'Age at first breeding: 8-12 months (does)',
         'Breeding season: 2-3 times per year',
@@ -78,7 +78,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Milk Production Management',
       description:
           'Dairy goats are excellent milk producers. Proper milking techniques, hygiene, and management maximize milk yield and quality while maintaining udder health.',
-      image: 'assets/goat_milk.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6d/Milking_a_Goat_by_hand.jpg/960px-Milking_a_Goat_by_hand.jpg',
       details: [
         'Milking frequency: 2 times daily',
         'Proper udder preparation and hygiene',
@@ -91,7 +91,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Water Management',
       description:
           'Clean, accessible water is essential for goat health, digestion, milk production, and temperature regulation. Water quality directly affects productivity.',
-      image: 'assets/goat_water.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/A_goat_drinking_water.jpg/960px-A_goat_drinking_water.jpg',
       details: [
         'Daily water: 2-3 gallons per adult goat',
         'Clean waterers: 2-3 times daily in hot weather',
@@ -104,7 +104,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Financial Management',
       description:
           'Successful goat farming requires careful financial planning, cost tracking, and revenue optimization. Understanding your costs helps maximize profitability.',
-      image: 'assets/goat_finance.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/a/a4/Lesotho_farmers_watching_their_goats.jpg/960px-Lesotho_farmers_watching_their_goats.jpg',
       details: [
         'Feed costs: 40-50% of total expenses',
         'Veterinary and medicine costs',
@@ -117,7 +117,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Goat products have a growing market. Understanding consumer preferences, market channels, and pricing helps you maximize revenue from your goat enterprise.',
-      image: 'assets/goat_market.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/A_goat_on_sale_at_the_Monday_Market_in_Kakuri%2C_Kaduna_01.jpg/960px-A_goat_on_sale_at_the_Monday_Market_in_Kakuri%2C_Kaduna_01.jpg',
       details: [
         'Milk: Direct sales, processing, cooperatives',
         'Meat: Local markets, butcheries, direct consumer',
@@ -209,7 +209,7 @@ class _GoatDecisionScreenState extends State<GoatDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 height: 180,
@@ -288,7 +288,7 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,

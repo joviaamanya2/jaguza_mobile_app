@@ -13,7 +13,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Breed Selection',
       description:
           'Your choice of cattle breed(s) plays a vital role in your success in the cattle farming industry. It\'s not a choice that should be taken lightly. Consider factors like climate adaptation, milk/meat production, disease resistance, and market demand.',
-      image: 'assets/cattle_breed.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/e/e8/Friesian_herd_-_geograph.org.uk_-_474418.jpg',
       details: [
         'Dairy breeds: Holstein, Jersey, Guernsey',
         'Beef breeds: Angus, Hereford, Simmental',
@@ -26,7 +26,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Housing Management',
       description:
           'Good site selection and housing management is very important for your cattle health and productivity. Proper shelter protects from extreme weather and reduces stress.',
-      image: 'assets/cattle_housing.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/2/22/The_cow_sheds_of_Clashconnachie_-_geograph.org.uk_-_1596677.jpg',
       details: [
         'Adequate space: 40-50 sq ft per animal',
         'Proper ventilation and natural lighting',
@@ -39,7 +39,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Feeding & Nutrition',
       description:
           'Proper nutrition is essential for cattle growth, milk production, and reproduction. A balanced diet improves overall herd health and productivity.',
-      image: 'assets/cattle_feeding.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/7/74/Cattle%2C_feeding_on_silage%2C_at_East_Ridge_Farm_-_geograph.org.uk_-_1626473.jpg',
       details: [
         'Forage: 60-80% of daily diet (hay, silage, pasture)',
         'Concentrate feed based on production level',
@@ -52,7 +52,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Health Management & Disease Prevention',
       description:
           'Maintaining herd health through vaccination, parasite control, and regular monitoring prevents costly diseases and improves productivity.',
-      image: 'assets/cattle_health.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/4/41/US_Navy_070720-N-8704K-133_Lt._Cmdr._Gregg_Langham%2C_a_U.S._Public_Health_Service_veterinarian_attached_to_Military_Sealift_Command_hospital_ship_USNS_Comfort_%28T-AH_20%29%2C_injects_cattle_with_anti-parasite_vaccination_at_the_Dos_P.jpg',
       details: [
         'Vaccination program: FMD, LSD, Anthrax, Blackquarter',
         'De-worming: Every 3 months internally and externally',
@@ -65,7 +65,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Reproductive Management',
       description:
           'Strategic breeding decisions ensure consistent milk/meat production, healthy calves, and improved herd genetics over time.',
-      image: 'assets/cattle_reproduction.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/f/fb/New_born_Frisian_red_white_calf.jpg',
       details: [
         'Age at first breeding: 18-24 months for heifers',
         'Breeding interval: Aim for 12-13 months',
@@ -78,7 +78,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Milk Production Management',
       description:
           'For dairy farms, optimizing milk production through proper milking practices and cow management maximizes revenue and animal welfare.',
-      image: 'assets/cattle_milk.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/0/06/Desa_Cattle_Dairy_Farm_Milking.jpg',
       details: [
         'Milking frequency: 2-3 times daily',
         'Proper udder hygiene and sanitation',
@@ -91,7 +91,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Water Management',
       description:
           'Adequate clean water is critical for cattle health, digestion, milk production, and overall productivity. Ensure consistent access year-round.',
-      image: 'assets/cattle_water.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/9/92/Spring_Steel_Farm_keep_Cattle_High_and_Dry_%28CPS_code_561%29_%2820201117-NRCS-LSC-0269%29.jpg',
       details: [
         'Daily water requirement: 20-30+ gallons per cow',
         'Clean water sources free from contaminants',
@@ -104,7 +104,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Financial Management',
       description:
           'Managing costs and income effectively is crucial for a profitable cattle farm. Track expenses and plan for seasonal variations.',
-      image: 'assets/cattle_finance.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/8/82/Kenyan_20_Shilling_Note.jpg',
       details: [
         'Record keeping for expenses and income',
         'Feed costs are typically 50-60% of expenses',
@@ -117,7 +117,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
       title: 'Marketing & Sales',
       description:
           'Understanding market trends and finding the right channels helps maximize profits whether selling milk, meat, or breeding stock.',
-      image: 'assets/cattle_market.jpg',
+      image: 'https://upload.wikimedia.org/wikipedia/commons/0/04/Cattle_sale_1.JPG',
       details: [
         'Milk pricing: Local cooperatives, direct sales, processors',
         'Beef marketing: Live sales, processed meat, direct consumer',
@@ -207,7 +207,7 @@ class _CattleDecisionScreenState extends State<CattleDecisionScreen> {
                 bottomLeft: Radius.circular(12),
                 bottomRight: Radius.circular(12),
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 height: 180,
@@ -286,7 +286,7 @@ class TopicDetailScreen extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset(
+              child: Image.network(
                 topic.image,
                 width: double.infinity,
                 fit: BoxFit.cover,
