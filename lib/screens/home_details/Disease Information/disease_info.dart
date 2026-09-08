@@ -273,153 +273,17 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: SafeArea(
+        top: false,
         child: Column(
           children: [
-            _buildHeader(),
-            const SizedBox(height: 12),
-            _buildPromoBanners(),
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             _buildSearchBar(),
             const SizedBox(height: 12),
             _buildCategoryFilters(),
             const SizedBox(height: 12),
             Expanded(child: _buildDiseaseList()),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader() {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      color: scheme.primary,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          _iconCircle(icon: Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Animal Diseases',
-                  style: TextStyle(
-                    color: scheme.onPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Comprehensive disease database',
-                  style: TextStyle(
-                    color: scheme.onPrimary.withValues(alpha: 0.7),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          _iconCircle(icon: Icons.filter_list_rounded, onTap: () {}),
-        ],
-      ),
-    );
-  }
-
-  Widget _iconCircle({required IconData icon, required VoidCallback onTap}) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: scheme.onPrimary.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: scheme.onPrimary, size: 22),
-      ),
-    );
-  }
-
-  Widget _buildPromoBanners() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
-        children: [
-          Expanded(
-            child: _promoCard(
-              icon: Icons.biotech_rounded,
-              title: 'Know Diseases',
-              subtitle: 'Learn & prevent',
-              color: Theme.of(context).colorScheme.primary,
-              onTap: () {},
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _promoCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 20),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: scheme.onSurfaceVariant,
-              size: 20,
-            ),
           ],
         ),
       ),

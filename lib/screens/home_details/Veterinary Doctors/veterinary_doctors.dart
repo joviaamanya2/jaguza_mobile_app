@@ -1,10 +1,7 @@
 ﻿import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/screens/home_details/Profile/profile_screen.dart';
 import 'package:jaguza_app/services/api_service.dart';
-import 'package:jaguza_app/screens/home_screen.dart';
-import '../My farm/my_farm.dart';
 
 class VeterinaryDoctorsScreen extends StatefulWidget {
   const VeterinaryDoctorsScreen({super.key});
@@ -19,8 +16,6 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   String _selectedFilter = 'All';
-  bool _showFilterSheet = false;
-  int _selectedNavIndex = 2; // Default to Doctors tab
 
   final List<String> _filters = ['All', 'Nearby', 'Top Rated', 'Available Now'];
   final ApiService _apiService = ApiService();
@@ -130,9 +125,10 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
-          _buildHeader(),
+          const SizedBox(height: 6),
           _buildSearchBar(),
           _buildFilterChips(),
           _buildTabBar(),
@@ -147,296 +143,8 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNav(),
     );
   }
-
-  Widget _buildHeader() {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      color: scheme.primary,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _headerIcon(Icons.arrow_back_rounded, onTap: () => Navigator.pop(context)),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Find Experts',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'Veterinary Doctors',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ],
-                ),
-              ),
-              _headerIcon(Icons.filter_list_rounded, onTap: () {
-                setState(() => _showFilterSheet = !_showFilterSheet);
-                _showFilterBottomSheet(context);
-              }),
-              const SizedBox(width: 8),
-              _headerIcon(Icons.tune_rounded, onTap: () {
-                _showSortBottomSheet(context);
-              }),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              _statChip(Icons.verified_rounded, '24 Verified'),
-              const SizedBox(width: 8),
-              _statChip(Icons.star_rounded, '4.6 Avg'),
-              const SizedBox(width: 8),
-              _statChip(Icons.location_on_rounded, '12 Nearby'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showFilterBottomSheet(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.filter_list_rounded, color: scheme.primary, size: 20),
-                const SizedBox(width: 10),
-                Text('Filter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface)),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 22),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            ..._filters.map((filter) => _filterOption(filter, _selectedFilter == filter, () {
-              setState(() => _selectedFilter = filter);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Filter: $filter'),
-                  backgroundColor: scheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            })),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _filterOption(String title, bool isActive, VoidCallback onTap) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Container(
-                width: 20,
-                height: 20,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: isActive ? scheme.primary : scheme.outlineVariant),
-                  color: isActive ? scheme.primary : Colors.transparent,
-                ),
-                child: isActive ? const Icon(Icons.check_rounded, color: Colors.white, size: 14) : null,
-              ),
-              const SizedBox(width: 14),
-              Text(title, style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: isActive ? scheme.primary : scheme.onSurface,
-              )),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  void _showSortBottomSheet(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.tune_rounded, color: scheme.primary, size: 20),
-                const SizedBox(width: 10),
-                Text('Sort & Filter', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: scheme.onSurface)),
-                const Spacer(),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded, size: 22),
-                  onPressed: () => Navigator.pop(context),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _sortOption(Icons.star_rounded, 'Highest Rated', 'Sort by best reviews', () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Sorted by: Highest Rated'),
-                  backgroundColor: scheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }),
-            _sortOption(Icons.location_on_rounded, 'Nearest First', 'Sort by distance', () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Sorted by: Nearest First'),
-                  backgroundColor: scheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }),
-            _sortOption(Icons.schedule_rounded, 'Available Now', 'Show only available', () {
-              Navigator.pop(context);
-              setState(() => _selectedFilter = 'Available Now');
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Filter: Available Now'),
-                  backgroundColor: scheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }),
-            _sortOption(Icons.verified_rounded, 'Verified Only', 'Show only verified experts', () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Filter: Verified Only'),
-                  backgroundColor: scheme.primary,
-                  behavior: SnackBarBehavior.floating,
-                  duration: const Duration(seconds: 2),
-                ),
-              );
-            }),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _sortOption(IconData icon, String title, String subtitle, VoidCallback onTap) {
-    final scheme = Theme.of(context).colorScheme;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(10),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Icon(icon, color: scheme.onSurfaceVariant, size: 20),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface)),
-                    Text(subtitle, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
-                  ],
-                ),
-              ),
-              Icon(Icons.chevron_right_rounded, size: 20, color: scheme.onSurfaceVariant),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _headerIcon(IconData icon, {required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: Colors.white, size: 20),
-      ),
-    );
-  }
-
-  Widget _statChip(IconData icon, String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white, size: 13),
-          const SizedBox(width: 4),
-          Text(text, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w500)),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSearchBar() {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
@@ -589,78 +297,6 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
             Text(subtitle, style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildBottomNav() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 12, offset: const Offset(0, -2))],
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _navItem(Icons.home_rounded, 'Home', _selectedNavIndex == 0, () {
-                setState(() => _selectedNavIndex = 0);
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MainShell()),
-                  (route) => false,
-                );
-              }),
-              _navItem(Icons.pets_rounded, 'My Farm', _selectedNavIndex == 1, () {
-                setState(() => _selectedNavIndex = 1);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MyFarmScreen()),
-                ).then((_) {
-                  setState(() => _selectedNavIndex = 2);
-                });
-              }),
-              _navItem(Icons.medical_services_rounded, 'Doctors', _selectedNavIndex == 2, () {
-                setState(() => _selectedNavIndex = 2);
-                // Already on this screen
-              }),
-              _navItem(Icons.person_rounded, 'Profile', _selectedNavIndex == 3, () {
-                setState(() => _selectedNavIndex = 3);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreenWrapper()),
-                ).then((_) {
-                  setState(() => _selectedNavIndex = 2);
-                });
-              }),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _navItem(IconData icon, String label, bool active, VoidCallback onTap) {
-    final scheme = Theme.of(context).colorScheme;
-    final color = active ? scheme.primary : scheme.onSurfaceVariant;
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(6),
-            decoration: active
-                ? BoxDecoration(color: scheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10))
-                : null,
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(height: 2),
-          Text(label, style: TextStyle(fontSize: 10, fontWeight: active ? FontWeight.w600 : FontWeight.w500, color: color)),
-        ],
       ),
     );
   }
@@ -1624,142 +1260,25 @@ class _DoctorCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final doc = doctor;
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))]
+    return _ProfessionalCard(
+      name: doc.name,
+      subtitle: doc.location,
+      bio: doc.bio,
+      onAbout: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => DoctorInfoScreen(doctor: doc)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildAvatar(doc.avatarColor, doc.initials),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              doc.name,
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          if (doc.isVerified) ...[
-                            const SizedBox(width: 4),
-                            Icon(Icons.verified_rounded, color: scheme.primary, size: 14),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_rounded, color: scheme.onSurfaceVariant, size: 13),
-                          const SizedBox(width: 2),
-                          Flexible(
-                            child: Text(
-                              doc.location,
-                              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          if (doc.isNearby) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: scheme.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4)
-                              ),
-                              child: Text(
-                                'Nearby',
-                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: scheme.primary)
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: doc.tagColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6)
-                        ),
-                        child: Text(
-                          doc.specialty,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: doc.tagColor),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: doc.rating >= 4.5 ? const Color(0xFFFFF8E1) : scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10)
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.star_rounded,
-                        color: doc.rating >= 4.5 ? Colors.amber[600] : scheme.onSurfaceVariant,
-                        size: 14
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        doc.rating.toString(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: doc.rating >= 4.5 ? Colors.amber[800] : scheme.onSurfaceVariant
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _actionButton(Icons.info_outline_rounded, 'About', scheme.primary, () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => DoctorInfoScreen(doctor: doc)));
-                })),
-                const SizedBox(width: 8),
-                Expanded(child: _actionButton(Icons.location_on_rounded, 'Location', const Color(0xFF1E88E5), () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LocationScreen(name: doc.name, location: doc.location, latitude: doc.latitude, longitude: doc.longitude)));
-                })),
-                const SizedBox(width: 8),
-                Expanded(child: _actionButton(Icons.phone_rounded, 'Call', scheme.primary, () => _makePhoneCall(doc.phone))),
-              ],
-            ),
-          ],
-        ),
+      onLocation: () => _openGoogleMaps(
+        doc.latitude,
+        doc.longitude,
+        label: (doc.latitude == 0 && doc.longitude == 0) ? doc.location : '',
       ),
+      onCall: () => _makePhoneCall(doc.phone),
     );
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-//  WORKER CARD (FIXED - No Overflow)
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// WORKER CARD
 class _WorkerCard extends StatelessWidget {
   final ExtensionWorker worker;
   const _WorkerCard({required this.worker});
@@ -1767,133 +1286,144 @@ class _WorkerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final w = worker;
+    return _ProfessionalCard(
+      name: w.name,
+      subtitle: w.location,
+      bio: w.bio,
+      onAbout: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => WorkerInfoScreen(worker: w)),
+      ),
+      onLocation: () => _openGoogleMaps(
+        w.latitude,
+        w.longitude,
+        label: (w.latitude == 0 && w.longitude == 0) ? w.location : '',
+      ),
+      onCall: () => _makePhoneCall(w.phone),
+    );
+  }
+}
+
+// SHARED PROFESSIONAL CARD (matches the doctors screen design)
+class _ProfessionalCard extends StatelessWidget {
+  final String name;
+  final String subtitle;
+  final String bio;
+  final VoidCallback onAbout;
+  final VoidCallback onLocation;
+  final VoidCallback onCall;
+
+  const _ProfessionalCard({
+    required this.name,
+    required this.subtitle,
+    required this.bio,
+    required this.onAbout,
+    required this.onLocation,
+    required this.onCall,
+  });
+
+  static const _red = Color(0xFFC62828);
+  static const _orange = Color(0xFFEF6C00);
+  static const _green = Color(0xFF2E7D32);
+
+  @override
+  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
+    final cardBg = Color.alphaBlend(
+      scheme.primary.withValues(alpha: 0.06),
+      Theme.of(context).cardColor,
+    );
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
+        color: cardBg,
         borderRadius: BorderRadius.circular(14),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))]
+        border: Border.all(color: scheme.primary.withValues(alpha: 0.12)),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Row(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.person_rounded,
+              size: 30,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.45),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildAvatar(w.avatarColor, w.initials),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              w.name,
-                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: scheme.onSurface),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          if (w.isVerified) ...[
-                            const SizedBox(width: 4),
-                            Icon(Icons.verified_rounded, color: scheme.primary, size: 14),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          Icon(Icons.location_on_rounded, color: scheme.onSurfaceVariant, size: 13),
-                          const SizedBox(width: 2),
-                          Flexible(
-                            child: Text(
-                              w.location,
-                              style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant),
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                          if (w.isNearby) ...[
-                            const SizedBox(width: 4),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: scheme.primary.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(4)
-                              ),
-                              child: Text(
-                                'Nearby',
-                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: scheme.primary)
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: w.tagColor.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(6)
-                        ),
-                        child: Text(
-                          w.specialty,
-                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: w.tagColor),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
-                        ),
-                      ),
-                    ],
+                Text(
+                  name,
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: scheme.primary,
                   ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: w.rating >= 4.5 ? const Color(0xFFFFF8E1) : scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(10)
+                if (subtitle.trim().isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: TextStyle(fontSize: 11.5, color: scheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  bio,
+                  style: TextStyle(
+                    fontSize: 12,
+                    height: 1.35,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                const SizedBox(height: 12),
+                Padding(
+                  padding: const EdgeInsets.only(left: 28),
                   child: Row(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.star_rounded,
-                        color: w.rating >= 4.5 ? Colors.amber[600] : scheme.onSurfaceVariant,
-                        size: 14
-                      ),
-                      const SizedBox(width: 2),
-                      Text(
-                        w.rating.toString(),
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: w.rating >= 4.5 ? Colors.amber[800] : scheme.onSurfaceVariant
-                        ),
-                      ),
+                      _circleAction(Icons.question_mark_rounded, _red, onAbout),
+                      const SizedBox(width: 16),
+                      _circleAction(Icons.location_on_rounded, _orange, onLocation),
+                      const SizedBox(width: 16),
+                      _circleAction(Icons.phone_rounded, _green, onCall),
                     ],
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(child: _actionButton(Icons.info_outline_rounded, 'About', scheme.primary, () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => WorkerInfoScreen(worker: w)));
-                })),
-                const SizedBox(width: 8),
-                Expanded(child: _actionButton(Icons.location_on_rounded, 'Location', const Color(0xFF1E88E5), () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => LocationScreen(name: w.name, location: w.location, latitude: w.latitude, longitude: w.longitude)));
-                })),
-                const SizedBox(width: 8),
-                Expanded(child: _actionButton(Icons.phone_rounded, 'Call', scheme.primary, () => _makePhoneCall(w.phone))),
-              ],
-            ),
-          ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _circleAction(IconData icon, Color color, VoidCallback onTap) {
+    return Material(
+      color: color,
+      shape: const CircleBorder(),
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: onTap,
+        child: SizedBox(
+          width: 42,
+          height: 42,
+          child: Icon(icon, color: Colors.white, size: 20),
         ),
       ),
     );
@@ -1903,40 +1433,3 @@ class _WorkerCard extends StatelessWidget {
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  SHARED CARD WIDGETS
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-
-Widget _buildAvatar(Color color, String initials) {
-  return Container(
-    width: 50, height: 50,
-    decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(14)),
-    child: Center(child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700))),
-  );
-}
-
-Widget _actionButton(IconData icon, String label, Color color, VoidCallback onTap) {
-  return Material(
-    color: color.withValues(alpha: 0.08),
-    borderRadius: BorderRadius.circular(10),
-    child: InkWell(
-      borderRadius: BorderRadius.circular(10),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: color, size: 16),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text(
-                label, 
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}

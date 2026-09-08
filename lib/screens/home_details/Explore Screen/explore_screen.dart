@@ -1,10 +1,10 @@
-﻿import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:jaguza_app/services/api_service.dart';
+﻿import 'dart:convert';
 
-// Import your disease and marketplace screens
-import '../../home_details/Disease Information/disease_info.dart';
-import '../../home_details/Market place/market_place.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:jaguza_app/services/api_service.dart';
 
 class ExploreScreen extends StatefulWidget {
   const ExploreScreen({super.key});
@@ -21,12 +21,15 @@ class _ExploreScreenState extends State<ExploreScreen> {
   String? _loadError;
   List<FeedPost> _feedPosts = [];
 
-  final List<CategoryItem> _categories = [
-    CategoryItem(icon: Icons.grid_view_rounded, label: 'All'),
-    CategoryItem(icon: Icons.pets_rounded, label: 'Cattle'),
-    CategoryItem(icon: Icons.egg_rounded, label: 'Poultry'),
-    CategoryItem(icon: Icons.set_meal_rounded, label: 'Pigs'),
-    CategoryItem(icon: Icons.grass_rounded, label: 'Goats'),
+  static const String _iconDir = 'lib/assets/images/home icons';
+  final List<CategoryItem> _categories = const [
+    CategoryItem(icon: Icons.forum_rounded, label: 'All'),
+    CategoryItem(icon: Icons.pets_rounded, label: 'Cattle', image: '$_iconDir/cow.png'),
+    CategoryItem(icon: Icons.pets_rounded, label: 'Pigs', image: '$_iconDir/pig.png'),
+    CategoryItem(icon: Icons.pets_rounded, label: 'Goats', image: '$_iconDir/goat.png'),
+    CategoryItem(icon: Icons.pets_rounded, label: 'Rabbits', image: '$_iconDir/rabbit.png'),
+    CategoryItem(icon: Icons.pets_rounded, label: 'Sheep', image: '$_iconDir/sheep.png'),
+    CategoryItem(icon: Icons.pets_rounded, label: 'Poultry', image: '$_iconDir/poultry.png'),
   ];
 
   @override
@@ -70,6 +73,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final title = '${item['title'] ?? 'Jaguza farming resource'}';
     final content = '${item['summary'] ?? item['content'] ?? ''}';
     return FeedPost(
+      id: 'resource_${item['id'] ?? title.hashCode}',
       author: 'Jaguza Support',
       location: category,
       dateTime: _dateLabel(item['created_at']),
@@ -93,23 +97,38 @@ class _ExploreScreenState extends State<ExploreScreen> {
     final categoryValue = item['category'];
     final categoryName = categoryValue is Map ? categoryValue['name'] : categoryValue;
     final category = _displayCategory('${categoryName ?? 'Videos'}');
-    final title = '${item['title'] ?? 'Jaguza farming video'}';
+    final title = '${item['title'] ?? 'Jaguza farming post'}';
+    final mediaType = '${item['media_type'] ?? 'video'}'.toLowerCase();
+    final isImage = mediaType == 'image';
+
+    String? cleanUrl(dynamic value) {
+      final text = '${value ?? ''}'.trim();
+      return text.isEmpty ? null : text;
+    }
+
+    final imageUrl = isImage
+        ? (cleanUrl(item['image_url']) ?? cleanUrl(item['thumbnail_url']))
+        : cleanUrl(item['thumbnail_url']);
+
     return FeedPost(
+      id: 'video_${item['id'] ?? title.hashCode}',
       author: 'Jaguza Official',
       location: category,
       dateTime: _dateLabel(item['created_at']),
       timeAgo: _timeAgo(item['created_at']),
       title: title,
-      excerpt: '${item['description'] ?? 'Watch this farming lesson from the Jaguza dashboard.'}',
+      excerpt: '${item['description'] ?? (isImage ? 'Shared from the Jaguza dashboard.' : 'Watch this farming lesson from the Jaguza dashboard.')}',
       category: category,
       likes: int.tryParse('${item['views_count'] ?? 0}') ?? 0,
       comments: 0,
       isVerified: true,
       authorColor: const Color(0xFF1565C0),
       categoryColor: const Color(0xFF1565C0),
-      categoryIcon: Icons.play_circle_fill_rounded,
+      categoryIcon: isImage ? Icons.image_rounded : Icons.play_circle_fill_rounded,
       imageGradientStart: const Color(0xFF1565C0),
       imageGradientEnd: const Color(0xFF42A5F5),
+      imageUrl: imageUrl,
+      isVideo: !isImage,
     );
   }
 
@@ -176,14 +195,69 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: Column(
         children: [
-          _buildHeader(),
+          _buildCategoryIcons(),
           _buildSearchBar(),
-          _buildQuickBanners(),
-          _buildCategoryChips(),
+          const SizedBox(height: 6),
           Expanded(child: _buildFeed()),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCategoryIcons() {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      color: Theme.of(context).cardColor,
+      padding: const EdgeInsets.only(top: 8, bottom: 2),
+      child: SizedBox(
+        height: 52,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          itemCount: _categories.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 22),
+          itemBuilder: (context, index) {
+            final cat = _categories[index];
+            final active = _selectedCategory == index;
+            final color = active
+                ? scheme.primary
+                : scheme.onSurfaceVariant.withValues(alpha: 0.6);
+            return GestureDetector(
+              onTap: () => setState(() => _selectedCategory = index),
+              behavior: HitTestBehavior.opaque,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 28,
+                    height: 28,
+                    child: cat.image != null
+                        ? Image.asset(
+                            cat.image!,
+                            color: color,
+                            colorBlendMode: BlendMode.srcIn,
+                            errorBuilder: (_, __, ___) =>
+                                Icon(cat.icon, size: 22, color: color),
+                          )
+                        : Icon(cat.icon, size: 24, color: color),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    height: 2.5,
+                    width: 22,
+                    decoration: BoxDecoration(
+                      color: active ? scheme.primary : Colors.transparent,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -191,94 +265,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  HEADER - Clean, solid color
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  Widget _buildHeader() {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      color: scheme.primary,
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              _headerBtn(Icons.menu_rounded, () {}),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Discover',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    const Text(
-                      'Explore Community',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              _headerBtn(Icons.notifications_none_rounded, () {}),
-              const SizedBox(width: 8),
-              _headerBtn(Icons.chat_bubble_outline_rounded, () {}),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              _trendTag('# PoultryFarming'),
-              const SizedBox(width: 8),
-              _trendTag('# DairyTips'),
-              const SizedBox(width: 8),
-              _trendTag('# AnimalHealth'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _headerBtn(IconData icon, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(icon, color: Colors.white, size: 20),
-      ),
-    );
-  }
-
-  Widget _trendTag(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-    );
-  }
-
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  SEARCH BAR
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -325,163 +311,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  QUICK BANNERS - Flat, clean with navigation
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  Widget _buildQuickBanners() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          Expanded(
-            child: _quickBanner(
-              icon: Icons.storefront_rounded,
-              title: 'Sell your agricultural products',
-              subtitle: 'in Market Place',
-              color: const Color(0xFFF57C00),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MarketplaceScreen()),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: _quickBanner(
-              icon: Icons.biotech_rounded,
-              title: 'Know more about',
-              subtitle: 'animal Diseases',
-              color: Theme.of(context).colorScheme.primary,
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const AnimalDiseasesScreen()),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _quickBanner({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.15)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      height: 1.2,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: scheme.onSurfaceVariant,
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: scheme.onSurfaceVariant,
-              size: 20,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  CATEGORY CHIPS
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-  Widget _buildCategoryChips() {
-    final scheme = Theme.of(context).colorScheme;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SizedBox(
-        height: 38,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _categories.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            final cat = _categories[index];
-            final isActive = _selectedCategory == index;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedCategory = index),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isActive ? scheme.primary : Theme.of(context).cardColor,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isActive ? scheme.primary : scheme.outlineVariant,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      cat.icon,
-                      size: 14,
-                      color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      cat.label,
-                      style: TextStyle(
-                        color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
-                        fontSize: 12,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  FEED
   // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
@@ -552,12 +384,63 @@ class _FeedPostCard extends StatefulWidget {
 class _FeedPostCardState extends State<_FeedPostCard> {
   bool _isLiked = false;
   int _likeCount = 0;
+  int _commentCount = 0;
   bool _isBookmarked = false;
+  bool _busyLike = false;
+
+  String get _key => widget.post.storageKey;
 
   @override
   void initState() {
     super.initState();
     _likeCount = widget.post.likes;
+    _commentCount = widget.post.comments;
+    _loadLocalState();
+  }
+
+  Future<void> _loadLocalState() async {
+    final liked = await ExploreLocalStore.isLiked(_key);
+    final count = await ExploreLocalStore.commentCount(_key);
+    if (!mounted) return;
+    setState(() {
+      _isLiked = liked;
+      _likeCount = widget.post.likes + (liked ? 1 : 0);
+      _commentCount = widget.post.comments + count;
+    });
+  }
+
+  Future<void> _toggleLike() async {
+    if (_busyLike) return;
+    _busyLike = true;
+    final nowLiked = await ExploreLocalStore.toggleLike(_key);
+    if (mounted) {
+      setState(() {
+        _isLiked = nowLiked;
+        _likeCount = widget.post.likes + (nowLiked ? 1 : 0);
+      });
+    }
+    _busyLike = false;
+  }
+
+  Future<void> _sharePost() async {
+    final post = widget.post;
+    final text = [
+      post.title,
+      '',
+      post.excerpt,
+      '',
+      'Shared from the Jaguza app',
+    ].join('\n');
+    try {
+      await Share.share(text, subject: post.title);
+    } catch (e) {
+      if (!mounted) return;
+      await Clipboard.setData(ClipboardData(text: text));
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Copied to clipboard')),
+      );
+    }
   }
 
   @override
@@ -671,55 +554,8 @@ class _FeedPostCardState extends State<_FeedPostCard> {
             ),
           ),
 
-          // Post image
-          Container(
-            width: double.infinity,
-            height: 180,
-            color: post.imageGradientStart,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 60,
-                    height: 60,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Icon(
-                      post.categoryIcon,
-                      color: Colors.white,
-                      size: 30,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.camera_alt_rounded, color: Colors.white.withValues(alpha: 0.8), size: 12),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${post.location}, ${post.dateTime}',
-                          style: TextStyle(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Post media (image / video thumbnail, with a placeholder fallback)
+          _buildMedia(post),
 
           // Title & excerpt
           Padding(
@@ -781,16 +617,11 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                   icon: _isLiked ? Icons.favorite_rounded : Icons.favorite_border_rounded,
                   label: '$_likeCount',
                   color: _isLiked ? const Color(0xFFE53935) : scheme.onSurfaceVariant,
-                  onTap: () {
-                    setState(() {
-                      _isLiked = !_isLiked;
-                      _likeCount += _isLiked ? 1 : -1;
-                    });
-                  },
+                  onTap: _toggleLike,
                 ),
                 _actionBtn(
                   icon: Icons.chat_bubble_outline_rounded,
-                  label: '${post.comments}',
+                  label: '$_commentCount',
                   color: scheme.onSurfaceVariant,
                   onTap: () => _showCommentsSheet(context, post),
                 ),
@@ -799,7 +630,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                   icon: Icons.share_rounded,
                   label: 'Share',
                   color: scheme.onSurfaceVariant,
-                  onTap: () {},
+                  onTap: _sharePost,
                 ),
                 const SizedBox(width: 4),
                 GestureDetector(
@@ -816,6 +647,97 @@ class _FeedPostCardState extends State<_FeedPostCard> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMedia(FeedPost post) {
+    const height = 180.0;
+
+    Widget placeholder() => Container(
+          width: double.infinity,
+          height: height,
+          color: post.imageGradientStart,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(post.categoryIcon, color: Colors.white, size: 30),
+                ),
+                const SizedBox(height: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.camera_alt_rounded, color: Colors.white.withValues(alpha: 0.8), size: 12),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${post.location}, ${post.dateTime}',
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: 0.9),
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+    final url = post.imageUrl;
+    if (url == null || url.isEmpty) return placeholder();
+
+    return SizedBox(
+      width: double.infinity,
+      height: height,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.network(
+            url,
+            fit: BoxFit.cover,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return Container(
+                color: post.imageGradientStart.withValues(alpha: 0.15),
+                child: Center(
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: post.imageGradientStart,
+                  ),
+                ),
+              );
+            },
+            errorBuilder: (context, error, stackTrace) => placeholder(),
+          ),
+          if (post.isVideo)
+            Center(
+              child: Container(
+                width: 54,
+                height: 54,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.45),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.play_arrow_rounded, color: Colors.white, size: 32),
+              ),
+            ),
         ],
       ),
     );
@@ -850,17 +772,80 @@ class _FeedPostCardState extends State<_FeedPostCard> {
     );
   }
 
-  void _showCommentsSheet(BuildContext context, FeedPost post) {
-    final scheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
+  Future<void> _showCommentsSheet(BuildContext context, FeedPost post) async {
+    await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (ctx) => Container(
-        height: MediaQuery.of(ctx).size.height * 0.55,
+      builder: (ctx) => _CommentsSheet(storageKey: _key),
+    );
+    if (mounted) {
+      final count = await ExploreLocalStore.commentCount(_key);
+      if (mounted) {
+        setState(() => _commentCount = widget.post.comments + count);
+      }
+    }
+  }
+}
+
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  COMMENTS SHEET
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+class _CommentsSheet extends StatefulWidget {
+  final String storageKey;
+  const _CommentsSheet({required this.storageKey});
+
+  @override
+  State<_CommentsSheet> createState() => _CommentsSheetState();
+}
+
+class _CommentsSheetState extends State<_CommentsSheet> {
+  final TextEditingController _controller = TextEditingController();
+  List<PostComment> _comments = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    final list = await ExploreLocalStore.comments(widget.storageKey);
+    if (!mounted) return;
+    setState(() {
+      _comments = list;
+      _loading = false;
+    });
+  }
+
+  Future<void> _send() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    final list = await ExploreLocalStore.addComment(widget.storageKey, text);
+    _controller.clear();
+    if (!mounted) return;
+    setState(() => _comments = list);
+    FocusScope.of(context).unfocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        height: MediaQuery.of(context).size.height * 0.6,
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: Theme.of(ctx).cardColor,
+          color: Theme.of(context).cardColor,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(
@@ -894,7 +879,7 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      '${post.comments}',
+                      '${_comments.length}',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w700,
@@ -904,36 +889,97 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                   ),
                   const Spacer(),
                   GestureDetector(
-                    onTap: () => Navigator.pop(ctx),
+                    onTap: () => Navigator.pop(context),
                     child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant),
                   ),
                 ],
               ),
             ),
             const Divider(height: 20),
-            if (post.comments == 0)
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.chat_bubble_outline_rounded, size: 44, color: scheme.outlineVariant),
-                      const SizedBox(height: 10),
-                      Text(
-                        'No comments yet',
-                        style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Be the first to share your thoughts',
-                        style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              const Expanded(child: SizedBox()),
+            Expanded(
+              child: _loading
+                  ? Center(child: CircularProgressIndicator(color: scheme.primary))
+                  : _comments.isEmpty
+                      ? Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.chat_bubble_outline_rounded, size: 44, color: scheme.outlineVariant),
+                              const SizedBox(height: 10),
+                              Text(
+                                'No comments yet',
+                                style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Be the first to share your thoughts',
+                                style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                              ),
+                            ],
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          itemCount: _comments.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 14),
+                          itemBuilder: (context, index) {
+                            final c = _comments[index];
+                            return Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  width: 32,
+                                  height: 32,
+                                  decoration: BoxDecoration(
+                                    color: scheme.primary,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      c.author.isNotEmpty ? c.author[0].toUpperCase() : 'Y',
+                                      style: TextStyle(
+                                        color: scheme.onPrimary,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Text(
+                                            c.author,
+                                            style: TextStyle(
+                                              fontSize: 12.5,
+                                              fontWeight: FontWeight.w700,
+                                              color: scheme.onSurface,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 6),
+                                          Text(
+                                            c.timeAgo,
+                                            style: TextStyle(fontSize: 10.5, color: scheme.onSurfaceVariant),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        c.text,
+                                        style: TextStyle(fontSize: 12.5, color: scheme.onSurfaceVariant, height: 1.4),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            );
+                          },
+                        ),
+            ),
             // Comment input
             Container(
               padding: const EdgeInsets.fromLTRB(14, 10, 14, 16),
@@ -964,29 +1010,48 @@ class _FeedPostCardState extends State<_FeedPostCard> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Theme.of(ctx).cardColor,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: scheme.outlineVariant),
-                      ),
-                      child: Text(
-                        'Add a comment...',
-                        style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12.5),
+                    child: TextField(
+                      controller: _controller,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.send,
+                      onSubmitted: (_) => _send(),
+                      style: TextStyle(color: scheme.onSurface, fontSize: 12.5),
+                      decoration: InputDecoration(
+                        hintText: 'Add a comment...',
+                        hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12.5),
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                        filled: true,
+                        fillColor: Theme.of(context).cardColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: scheme.outlineVariant),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: scheme.outlineVariant),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: scheme.primary),
+                        ),
                       ),
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: scheme.primary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Center(
-                      child: Icon(Icons.send_rounded, color: scheme.onPrimary, size: 16),
+                  GestureDetector(
+                    onTap: _send,
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: scheme.primary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Icon(Icons.send_rounded, color: scheme.onPrimary, size: 16),
+                      ),
                     ),
                   ),
                 ],
@@ -999,16 +1064,110 @@ class _FeedPostCardState extends State<_FeedPostCard> {
   }
 }
 
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+//  LOCAL LIKES / COMMENTS STORE (on-device, per post)
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+class PostComment {
+  final String text;
+  final String author;
+  final DateTime createdAt;
+
+  const PostComment({required this.text, required this.author, required this.createdAt});
+
+  Map<String, dynamic> toJson() => {
+        'text': text,
+        'author': author,
+        'createdAt': createdAt.toIso8601String(),
+      };
+
+  factory PostComment.fromJson(Map<String, dynamic> j) => PostComment(
+        text: '${j['text'] ?? ''}',
+        author: '${j['author'] ?? 'You'}',
+        createdAt: DateTime.tryParse('${j['createdAt'] ?? ''}') ?? DateTime.now(),
+      );
+
+  String get timeAgo {
+    final diff = DateTime.now().difference(createdAt);
+    if (diff.inDays > 0) return '${diff.inDays}d ago';
+    if (diff.inHours > 0) return '${diff.inHours}h ago';
+    if (diff.inMinutes > 0) return '${diff.inMinutes}m ago';
+    return 'just now';
+  }
+}
+
+class ExploreLocalStore {
+  static const _likesKey = 'explore_liked_posts';
+  static const _commentsKey = 'explore_post_comments';
+
+  static Future<Set<String>> _likedIds() async {
+    final prefs = await SharedPreferences.getInstance();
+    return (prefs.getStringList(_likesKey) ?? const <String>[]).toSet();
+  }
+
+  static Future<bool> isLiked(String postKey) async => (await _likedIds()).contains(postKey);
+
+  static Future<bool> toggleLike(String postKey) async {
+    final prefs = await SharedPreferences.getInstance();
+    final ids = (prefs.getStringList(_likesKey) ?? <String>[]).toSet();
+    final nowLiked = !ids.contains(postKey);
+    if (nowLiked) {
+      ids.add(postKey);
+    } else {
+      ids.remove(postKey);
+    }
+    await prefs.setStringList(_likesKey, ids.toList());
+    return nowLiked;
+  }
+
+  static Future<Map<String, dynamic>> _commentMap() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_commentsKey);
+    if (raw == null || raw.isEmpty) return <String, dynamic>{};
+    try {
+      final decoded = jsonDecode(raw);
+      return decoded is Map ? Map<String, dynamic>.from(decoded) : <String, dynamic>{};
+    } catch (_) {
+      return <String, dynamic>{};
+    }
+  }
+
+  static Future<List<PostComment>> comments(String postKey) async {
+    final map = await _commentMap();
+    final list = (map[postKey] as List?) ?? const [];
+    return list
+        .whereType<Map>()
+        .map((e) => PostComment.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+
+  static Future<int> commentCount(String postKey) async => (await comments(postKey)).length;
+
+  static Future<List<PostComment>> addComment(String postKey, String text) async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = await _commentMap();
+    final list = List<dynamic>.from((map[postKey] as List?) ?? const []);
+    list.add(PostComment(text: text, author: 'You', createdAt: DateTime.now()).toJson());
+    map[postKey] = list;
+    await prefs.setString(_commentsKey, jsonEncode(map));
+    return list
+        .whereType<Map>()
+        .map((e) => PostComment.fromJson(Map<String, dynamic>.from(e)))
+        .toList();
+  }
+}
+
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  DATA MODELS
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 class CategoryItem {
   final IconData icon;
   final String label;
-  const CategoryItem({required this.icon, required this.label});
+  final String? image;
+  const CategoryItem({required this.icon, required this.label, this.image});
 }
 
 class FeedPost {
+  final String id;
   final String author;
   final String location;
   final String dateTime;
@@ -1024,10 +1183,16 @@ class FeedPost {
   final IconData categoryIcon;
   final Color imageGradientStart;
   final Color imageGradientEnd;
+  final String? imageUrl;
+  final bool isVideo;
 
   String get authorInitials => author.split(' ').map((w) => w.isNotEmpty ? w[0] : '').take(2).join().toUpperCase();
 
+  /// Stable key used to persist likes / comments for this post on the device.
+  String get storageKey => id.isNotEmpty ? id : 'post_${title.hashCode}';
+
   const FeedPost({
+    this.id = '',
     required this.author,
     required this.location,
     required this.dateTime,
@@ -1043,6 +1208,8 @@ class FeedPost {
     required this.categoryIcon,
     required this.imageGradientStart,
     required this.imageGradientEnd,
+    this.imageUrl,
+    this.isVideo = false,
   });
 }
 

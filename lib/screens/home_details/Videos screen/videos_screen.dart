@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:jaguza_app/services/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -258,33 +260,35 @@ class _VideoScreenState extends State<VideoScreen> {
   // ═══════════════════════════════════════
   Widget _buildSearchBar() {
     final scheme = Theme.of(context).colorScheme;
+    OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: color, width: width),
+        );
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: scheme.outlineVariant),
-        ),
-        child: TextField(
-          controller: _searchController,
-          onChanged: (val) => setState(() => _searchQuery = val),
-          decoration: InputDecoration(
-            hintText: 'Search videos...',
-            hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
-            prefixIcon: Icon(Icons.search_rounded, color: scheme.primary, size: 20),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? GestureDetector(
-                    onTap: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                    },
-                    child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
-          ),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (val) => setState(() => _searchQuery = val),
+        style: TextStyle(fontSize: 13, color: scheme.onSurface),
+        decoration: InputDecoration(
+          hintText: 'Search videos...',
+          hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+          prefixIcon: Icon(Icons.search_rounded, color: scheme.onSurfaceVariant, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  icon: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: Theme.of(context).cardColor,
+          isDense: true,
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+          enabledBorder: border(scheme.outlineVariant),
+          focusedBorder: border(scheme.primary, 1.5),
         ),
       ),
     );
@@ -383,7 +387,7 @@ class _VideoScreenState extends State<VideoScreen> {
   Widget _buildFeaturedCard(VideoItem video) {
     final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => _showVideoDetails(context, video),
+      onTap: () => _openVideo(video),
       child: SizedBox(
         width: 250,
         child: Column(
@@ -549,7 +553,7 @@ class _VideoScreenState extends State<VideoScreen> {
   Widget _buildVideoCard(VideoItem video) {
     final scheme = Theme.of(context).colorScheme;
     return GestureDetector(
-      onTap: () => _showVideoDetails(context, video),
+      onTap: () => _openVideo(video),
       child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.all(10),
@@ -702,9 +706,9 @@ class _VideoScreenState extends State<VideoScreen> {
               ),
             ),
             Icon(
-              Icons.chevron_right_rounded,
+              Icons.open_in_new_rounded,
               color: scheme.onSurfaceVariant,
-              size: 18,
+              size: 16,
             ),
           ],
         ),
@@ -713,312 +717,30 @@ class _VideoScreenState extends State<VideoScreen> {
   }
 
   // ═══════════════════════════════════════
-  //  VIDEO DETAILS DIALOG
+  //  OPEN VIDEO (launches YouTube / external player)
   // ═══════════════════════════════════════
-  void _showVideoDetails(BuildContext context, VideoItem video) {
-    final scheme = Theme.of(context).colorScheme;
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.85,
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 12),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: scheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Video Preview
-                    Container(
-                      height: 180,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: video.thumbnailColor,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Stack(
-                        children: [
-                          Center(
-                            child: Icon(
-                              video.icon,
-                              size: 56,
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          Center(
-                            child: Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                color: scheme.primary.withValues(alpha: 0.8),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.play_arrow_rounded,
-                                color: Colors.white,
-                                size: 32,
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            bottom: 10,
-                            right: 10,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: Colors.black.withValues(alpha: 0.7),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: Text(
-                                video.duration,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+  Future<void> _openVideo(VideoItem video) async {
+    final url = video.videoUrl?.trim() ?? '';
+    if (url.isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This video has no link yet.')),
+      );
+      return;
+    }
 
-                    const SizedBox(height: 14),
+    final id = int.tryParse(video.id);
+    if (id != null) {
+      unawaited(ApiService().incrementVideoViews(id).catchError((_) {}));
+    }
 
-                    // Title
-                    Text(
-                      video.title,
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-
-                    const SizedBox(height: 6),
-
-                    // Meta Info
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 4,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: video.thumbnailColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            video.category,
-                            style: TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.w600,
-                              color: video.thumbnailColor,
-                            ),
-                          ),
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.visibility_rounded, size: 12, color: scheme.onSurfaceVariant),
-                            const SizedBox(width: 3),
-                            Text(
-                              _formatViews(video.views),
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.calendar_today_rounded, size: 10, color: scheme.onSurfaceVariant),
-                            const SizedBox(width: 3),
-                            Text(
-                              video.date,
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: scheme.onSurfaceVariant,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    // Description
-                    Text(
-                      'Description',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      video.description,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: scheme.onSurfaceVariant,
-                        height: 1.5,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // Action Buttons
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: video.videoUrl == null || video.videoUrl!.isEmpty
-                                ? null
-                                : () async {
-                                    await launchUrl(
-                                      Uri.parse(video.videoUrl!),
-                                      mode: LaunchMode.externalApplication,
-                                    );
-                                  },
-                            icon: const Icon(Icons.share_rounded, size: 16),
-                            label: const Text('Watch'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: scheme.primary,
-                              foregroundColor: scheme.onPrimary,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              textStyle: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {},
-                            icon: const Icon(Icons.favorite_border_rounded, size: 16),
-                            label: const Text('Save'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: scheme.primary,
-                              padding: const EdgeInsets.symmetric(vertical: 10),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              side: BorderSide(color: scheme.primary),
-                              textStyle: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    // Related Videos
-                    Text(
-                      'Related Videos',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: scheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    ..._videos.where((v) => v.id != video.id).take(3).map((v) => 
-                      _buildRelatedVideoCard(v),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildRelatedVideoCard(VideoItem video) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
-      onTap: () {
-        Navigator.pop(context);
-        _showVideoDetails(context, video);
-      },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 70,
-              height: 50,
-              decoration: BoxDecoration(
-                color: video.thumbnailColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Center(
-                child: Icon(
-                  video.icon,
-                  size: 20,
-                  color: Colors.white.withValues(alpha: 0.3),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    video.title,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w600,
-                      color: scheme.onSurface,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${video.duration} • ${_formatViews(video.views)} views',
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    final uri = Uri.parse(url);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not open the video.')),
+      );
+    }
   }
 
   // ═══════════════════════════════════════

@@ -31,11 +31,12 @@ dependencies:
   
   flutter:
     sdk: flutter
-  font_awesome_flutter: ^10.1.0
+  font_awesome_flutter: ^11.0.0
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
   url_launcher: ^6.2.1
+  share_plus: ^10.1.4
   image_picker: ^1.0.7
   google_maps_flutter: ^2.6.1
   geolocator: ^12.0.0
@@ -129,6 +130,7 @@ flutter:
     - lib/assets/images/detail image/sheep/finances.jpg
     - lib/assets/images/image.png
     - lib/assets/images/marketplace/
+    - lib/assets/images/home icons/
     
 
   # An image asset can refer to one or more resolution-specific "variants", see
