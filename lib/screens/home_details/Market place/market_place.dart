@@ -17,15 +17,24 @@ class MarketplaceScreen extends StatefulWidget {
 }
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> {
+  // Bottom nav: 0 = Livestock, 1 = Equipments, 2 = Market Prices
   int _selectedTab = 0;
-  String _selectedCategory = 'All';
+  int _priceSubTab = 0; // 0 = Prices, 1 = Nearby Markets
+
+  bool _showSearch = false;
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+
+  String? _selectedLivestockCategory;
+  String? _selectedEquipmentCategory;
+  bool _showAllLivestock = false;
+  bool _showAllEquipment = false;
+  bool? _sortAscending; // null = default order
 
   // Sample cart items
   final List<CartItem> _cartItems = [];
 
-  // Sample products with market-based prices
+  // Curated catalog: real backend listings replace/augment this once loaded.
   final List<Product> _products = [
     Product(
       id: '1',
@@ -81,16 +90,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     ),
     Product(
       id: '5',
-      name: 'Goat (Mature)',
+      name: 'Boar Goat',
       category: 'Goats',
-      price: 180000,
+      price: 76000,
       unit: 'per goat',
       seller: 'Mukono Goat Farm',
       location: 'Mukono',
       rating: 4.5,
       imageAsset: 'lib/assets/images/Goat.png',
-      inStock: 15,
-      description: 'Healthy mature Boer goats for breeding or meat',
+      inStock: 8,
+      description: 'Healthy Boer goat for breeding or meat',
     ),
     Product(
       id: '6',
@@ -131,6 +140,130 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       inStock: 150,
       description: 'Fresh free-range eggs from healthy hens',
     ),
+    Product(
+      id: '9',
+      name: 'Merino Sheep',
+      category: 'Sheep',
+      price: 220000,
+      unit: 'per sheep',
+      seller: 'Highland Sheep Farm',
+      location: 'Kabale',
+      rating: 4.6,
+      imageAsset: 'lib/assets/images/Sheep.png',
+      inStock: 12,
+      description: 'Healthy Merino sheep, good for wool and meat production',
+    ),
+    Product(
+      id: '10',
+      name: 'Rabbits For Sale',
+      category: 'Rabbits',
+      price: 25000,
+      unit: 'per rabbit',
+      seller: 'Bunny Farm Uganda',
+      location: 'Kampala',
+      rating: 4.7,
+      imageAsset: 'lib/assets/images/Rabbit.png',
+      inStock: 10,
+      description: 'Healthy young rabbits, various breeds, great for meat or pets',
+    ),
+    Product(
+      id: '11',
+      name: 'Dwarf Rabbit',
+      category: 'Rabbits',
+      price: 30000,
+      unit: 'per rabbit',
+      seller: 'Bunny Farm Uganda',
+      location: 'Kampala',
+      rating: 4.5,
+      imageAsset: 'lib/assets/images/Rabbit.png',
+      inStock: 25,
+      description: 'Friendly dwarf rabbit, litter-trained, ready to rehome',
+    ),
+    // Equipment and housing sold by Jaguza — shown under the Equipments tab.
+    Product(
+      id: 'eq-drone',
+      name: 'Agricultural Drone',
+      category: 'Equipment',
+      price: 3500000,
+      unit: 'per unit',
+      seller: 'Jaguza Equipment',
+      location: 'Kampala',
+      rating: 4.9,
+      inStock: 5,
+      description: 'Crop-monitoring drone with camera for aerial farm inspection and spraying.',
+    ),
+    Product(
+      id: 'eq-tractor',
+      name: 'Compact Farm Tractor',
+      category: 'Equipment',
+      price: 28000000,
+      unit: 'per unit',
+      seller: 'Jaguza Equipment',
+      location: 'Kampala',
+      rating: 4.8,
+      inStock: 2,
+      description: 'Compact tractor suitable for small to medium farms, diesel engine.',
+    ),
+    Product(
+      id: 'eq-milker',
+      name: 'Milking Machine',
+      category: 'Equipment',
+      price: 1200000,
+      unit: 'per unit',
+      seller: 'Jaguza Equipment',
+      location: 'Kampala',
+      rating: 4.7,
+      inStock: 8,
+      description: 'Portable electric milking machine for dairy cattle.',
+    ),
+    Product(
+      id: 'eq-incubator',
+      name: 'Egg Incubator (56 eggs)',
+      category: 'Equipment',
+      price: 650000,
+      unit: 'per unit',
+      seller: 'Jaguza Equipment',
+      location: 'Kampala',
+      rating: 4.6,
+      inStock: 12,
+      description: 'Automatic egg incubator with temperature and humidity control.',
+    ),
+    Product(
+      id: 'eq-pump',
+      name: 'Solar Water Pump',
+      category: 'Equipment',
+      price: 1800000,
+      unit: 'per unit',
+      seller: 'Jaguza Equipment',
+      location: 'Kampala',
+      rating: 4.5,
+      inStock: 4,
+      description: 'Solar-powered water pump for farm irrigation.',
+    ),
+    Product(
+      id: 'eq-coop',
+      name: 'Chicken Coop',
+      category: 'Housing',
+      price: 900000,
+      unit: 'per unit',
+      seller: 'Jaguza Equipment',
+      location: 'Kampala',
+      rating: 4.8,
+      inStock: 6,
+      description: 'Wooden chicken coop, houses up to 20 birds.',
+    ),
+    Product(
+      id: 'eq-cattlecrush',
+      name: 'Cattle Crush (Handling Pen)',
+      category: 'Housing',
+      price: 2200000,
+      unit: 'per unit',
+      seller: 'Jaguza Equipment',
+      location: 'Kampala',
+      rating: 4.7,
+      inStock: 3,
+      description: 'Steel cattle crush for safe handling, vaccination and treatment.',
+    ),
   ];
 
   bool _isLoadingMarketplace = false;
@@ -147,6 +280,59 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   bool _loadingPrices = true;
   bool _pricesFromServer = false;
   List<MarketPrice> _prices = kReferencePrices;
+
+  static const List<_TopCategory> _livestockTopCategories = [
+    _TopCategory(label: 'Cows', asset: 'lib/assets/images/cattle.jpg', filterValue: 'Cattle'),
+    _TopCategory(label: 'Goats', asset: 'lib/assets/images/Goat.png', filterValue: 'Goats'),
+    _TopCategory(label: 'Sheep', asset: 'lib/assets/images/Sheep.png', filterValue: 'Sheep'),
+    _TopCategory(label: 'Pigs', asset: 'lib/assets/images/Pigs.png', filterValue: 'Pigs'),
+    _TopCategory(label: 'Poultry', asset: 'lib/assets/images/Poultry.png', filterValue: 'Poultry'),
+  ];
+
+  static const List<_TopCategory> _equipmentTopCategories = [
+    _TopCategory(label: 'Equipment', icon: Icons.handyman_rounded, filterValue: 'Equipment'),
+    _TopCategory(label: 'Housing', icon: Icons.warehouse_rounded, filterValue: 'Housing'),
+  ];
+
+  bool _isEquipmentCategory(String category) => category == 'Equipment' || category == 'Housing';
+
+  List<Product> _applySort(List<Product> list) {
+    if (_sortAscending == null) return list;
+    final sorted = [...list];
+    sorted.sort((a, b) => _sortAscending!
+        ? a.price.compareTo(b.price)
+        : b.price.compareTo(a.price));
+    return sorted;
+  }
+
+  List<Product> get _filteredLivestockProducts {
+    final query = _searchQuery.toLowerCase();
+    final list = _products.where((p) {
+      if (_isEquipmentCategory(p.category)) return false;
+      final matchesSearch = query.isEmpty ||
+          p.name.toLowerCase().contains(query) ||
+          p.seller.toLowerCase().contains(query) ||
+          p.location.toLowerCase().contains(query);
+      final matchesCategory =
+          _selectedLivestockCategory == null || p.category == _selectedLivestockCategory;
+      return matchesSearch && matchesCategory;
+    }).toList();
+    return _applySort(list);
+  }
+
+  List<Product> get _filteredEquipmentProducts {
+    final query = _searchQuery.toLowerCase();
+    final list = _products.where((p) {
+      if (!_isEquipmentCategory(p.category)) return false;
+      final matchesSearch = query.isEmpty ||
+          p.name.toLowerCase().contains(query) ||
+          p.seller.toLowerCase().contains(query);
+      final matchesCategory =
+          _selectedEquipmentCategory == null || p.category == _selectedEquipmentCategory;
+      return matchesSearch && matchesCategory;
+    }).toList();
+    return _applySort(list);
+  }
 
   // Sample sold products
   final List<SoldProduct> _soldProducts = [
@@ -178,18 +364,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       status: 'Pending',
     ),
   ];
-
-  List<Product> get _filteredProducts {
-    final allProducts = [..._products];
-    final query = _searchQuery.toLowerCase();
-    return allProducts.where((p) {
-      final matchesSearch = p.name.toLowerCase().contains(query) ||
-          p.seller.toLowerCase().contains(query) ||
-          p.location.toLowerCase().contains(query);
-      final matchesCategory = _selectedCategory == 'All' || p.category == _selectedCategory;
-      return matchesSearch && matchesCategory;
-    }).toList();
-  }
 
   @override
   void initState() {
@@ -393,7 +567,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       }).toList();
       if (mounted && products.isNotEmpty) {
         setState(() => _products
-          ..clear()
           ..addAll(products));
       }
     } catch (_) {
@@ -492,6 +665,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         return 'Feed';
       case 'medicine':
         return 'Medicine';
+      case 'equipment':
+        return 'Equipment';
+      case 'housing':
+        return 'Housing';
       default:
         return category[0].toUpperCase() + category.substring(1);
     }
@@ -503,11 +680,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       case 'goats':
       case 'pigs':
       case 'sheep':
+      case 'rabbits':
         return 'livestock';
       case 'poultry':
         return 'poultry';
       case 'feed':
         return 'feed';
+      case 'equipment':
+        return 'equipment';
+      case 'housing':
+        return 'housing';
       default:
         return 'other';
     }
@@ -526,7 +708,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       appBar: AppBar(
         elevation: 0,
         title: Text(
-          'Market Place',
+          'Jaguza Market',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
@@ -538,6 +720,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: Icon(_showSearch ? Icons.close_rounded : Icons.search_rounded),
+            onPressed: () => setState(() {
+              _showSearch = !_showSearch;
+              if (!_showSearch) {
+                _searchController.clear();
+                _searchQuery = '';
+              }
+            }),
+          ),
           Stack(
             clipBehavior: Clip.none,
             children: [
@@ -570,89 +762,76 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ),
             ],
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded),
+            onSelected: (value) {
+              switch (value) {
+                case 'refresh':
+                  _loadMarketplaceListings();
+                  break;
+                case 'price_low':
+                  setState(() => _sortAscending = true);
+                  break;
+                case 'price_high':
+                  setState(() => _sortAscending = false);
+                  break;
+                case 'price_default':
+                  setState(() => _sortAscending = null);
+                  break;
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'refresh', child: Text('Refresh listings')),
+              PopupMenuItem(value: 'price_low', child: Text('Sort: Price low to high')),
+              PopupMenuItem(value: 'price_high', child: Text('Sort: Price high to low')),
+              PopupMenuItem(value: 'price_default', child: Text('Sort: Default')),
+            ],
+          ),
         ],
       ),
       body: Column(
         children: [
-          _buildTabBar(),
-          _buildSearchBar(),
-          _buildCategoryChips(),
+          if (_showSearch) _buildSearchBar(),
           Expanded(
             child: IndexedStack(
               index: _selectedTab,
               children: [
-                _buildProductsList(),
-                _buildAnimalPrices(),
-                _buildNearbyMarkets(),
+                _buildLivestockTab(),
+                _buildEquipmentsTab(),
+                _buildMarketPricesTab(),
               ],
             ),
           ),
         ],
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedTab,
+        onTap: (index) => setState(() => _selectedTab = index),
+        type: BottomNavigationBarType.fixed,
+        backgroundColor: Theme.of(context).cardColor,
+        selectedItemColor: scheme.primary,
+        unselectedItemColor: scheme.onSurfaceVariant,
+        selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.w700),
+        unselectedLabelStyle: const TextStyle(fontSize: 11),
+        items: const [
+          BottomNavigationBarItem(icon: Icon(Icons.pets_rounded), label: 'Livestock'),
+          BottomNavigationBarItem(icon: Icon(Icons.local_offer_rounded), label: 'Equipments'),
+          BottomNavigationBarItem(icon: Icon(Icons.attach_money_rounded), label: 'Market Prices'),
+        ],
+      ),
       floatingActionButton: _selectedTab == 0
           ? FloatingActionButton(
-              onPressed: () => _showSellProductDialog(context),
+              onPressed: () => _showSellProductDialog(context, initialCategory: 'Cattle'),
               backgroundColor: scheme.primary,
               child: Icon(Icons.add_rounded, color: scheme.onPrimary),
             )
-          : null,
-    );
-  }
-
-  // ============= TAB BAR =============
-  Widget _buildTabBar() {
-    final scheme = Theme.of(context).colorScheme;
-    final tabs = [
-      {'icon': Icons.storefront_rounded, 'label': 'Products'},
-      {'icon': Icons.monetization_on_rounded, 'label': 'Prices'},
-      {'icon': Icons.location_on_rounded, 'label': 'Markets'},
-    ];
-
-    return Container(
-      color: Theme.of(context).cardColor,
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Row(
-        children: tabs.asMap().entries.map((entry) {
-          final index = entry.key;
-          final tab = entry.value;
-          final isActive = _selectedTab == index;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedTab = index;
-                });
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  color: isActive ? scheme.primary.withValues(alpha: 0.08) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      tab['icon'] as IconData,
-                      size: 20,
-                      color: isActive ? scheme.primary : scheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      tab['label'] as String,
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-                        color: isActive ? scheme.primary : scheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
+          : _selectedTab == 1
+              ? FloatingActionButton(
+                  onPressed: () => _showSellProductDialog(context, initialCategory: 'Equipment'),
+                  backgroundColor: scheme.primary,
+                  child: Icon(Icons.add_rounded, color: scheme.onPrimary),
+                )
+              : null,
     );
   }
 
@@ -669,6 +848,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         ),
         child: TextField(
           controller: _searchController,
+          autofocus: true,
           onChanged: (val) => setState(() => _searchQuery = val),
           decoration: InputDecoration(
             hintText: 'Search products, sellers, or locations...',
@@ -691,40 +871,97 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  // ============= CATEGORY CHIPS =============
-  Widget _buildCategoryChips() {
+  // ============= SECTION HEADER =============
+  Widget _sectionHeader(String title, {VoidCallback? onViewMore}) {
     final scheme = Theme.of(context).colorScheme;
-    final categories = ['All', 'Cattle', 'Poultry', 'Goats', 'Pigs', 'Dairy', 'Feed', 'Crops'];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: scheme.onSurface),
+          ),
+          if (onViewMore != null)
+            GestureDetector(
+              onTap: onViewMore,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'View more',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: scheme.primary),
+                  ),
+                  Icon(Icons.chevron_right_rounded, size: 16, color: scheme.primary),
+                ],
+              ),
+            )
+          else
+            Icon(Icons.chevron_right_rounded, size: 18, color: scheme.onSurfaceVariant),
+        ],
+      ),
+    );
+  }
 
-    return Container(
-      height: 40,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+  // ============= TOP CATEGORIES =============
+  Widget _buildTopCategories({
+    required List<_TopCategory> items,
+    required String? selected,
+    required ValueChanged<String?> onSelect,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    return SizedBox(
+      height: 92,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: items.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 18),
         itemBuilder: (context, index) {
-          final cat = categories[index];
-          final isActive = _selectedCategory == cat;
+          final item = items[index];
+          final isActive = selected == item.filterValue;
           return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = cat),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-              decoration: BoxDecoration(
-                color: isActive ? scheme.primary : Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: isActive ? scheme.primary : scheme.outlineVariant,
+            onTap: () => onSelect(isActive ? null : item.filterValue),
+            child: Column(
+              children: [
+                Container(
+                  width: 62,
+                  height: 62,
+                  padding: const EdgeInsets.all(2.5),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isActive ? scheme.primary : scheme.primary.withValues(alpha: 0.35),
+                      width: isActive ? 2.5 : 1.5,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: item.asset != null
+                        ? Image.asset(
+                            item.asset!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: scheme.primary.withValues(alpha: 0.08),
+                              child: Icon(Icons.pets_rounded, color: scheme.primary),
+                            ),
+                          )
+                        : Container(
+                            color: scheme.primary.withValues(alpha: 0.08),
+                            child: Icon(item.icon, color: scheme.primary, size: 26),
+                          ),
+                  ),
                 ),
-              ),
-              child: Text(
-                cat,
-                style: TextStyle(
-                  color: isActive ? scheme.onPrimary : scheme.onSurfaceVariant,
-                  fontSize: 12,
-                  fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+                const SizedBox(height: 6),
+                Text(
+                  item.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: isActive ? FontWeight.w700 : FontWeight.w600,
+                    color: isActive ? scheme.primary : scheme.onSurface,
+                  ),
                 ),
-              ),
+              ],
             ),
           );
         },
@@ -732,242 +969,255 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  // ============= PRODUCTS LIST =============
-  Widget _buildProductsList() {
-    final products = _filteredProducts;
-    
-    if (products.isEmpty) {
-      return _buildEmptyState(
-        icon: Icons.storefront_rounded,
-        title: 'No Products Found',
-        subtitle: 'Try adjusting your search or category',
-      );
-    }
+  // ============= LIVESTOCK TAB =============
+  Widget _buildLivestockTab() {
+    final all = _filteredLivestockProducts;
+    final shown = _showAllLivestock ? all : all.take(4).toList();
+    return RefreshIndicator(
+      onRefresh: _loadMarketplaceListings,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.only(bottom: 88),
+        children: [
+          const SizedBox(height: 12),
+          _sectionHeader('Top Categories'),
+          _buildTopCategories(
+            items: _livestockTopCategories,
+            selected: _selectedLivestockCategory,
+            onSelect: (value) => setState(() => _selectedLivestockCategory = value),
+          ),
+          const SizedBox(height: 20),
+          _sectionHeader(
+            'Featured Products',
+            onViewMore: all.length > 4
+                ? () => setState(() => _showAllLivestock = !_showAllLivestock)
+                : null,
+          ),
+          if (shown.isEmpty)
+            _buildEmptyState(
+              icon: Icons.storefront_rounded,
+              title: 'No Products Found',
+              subtitle: 'Try adjusting your search or category',
+            )
+          else
+            _buildProductsGrid(shown),
+        ],
+      ),
+    );
+  }
 
+  // ============= EQUIPMENTS TAB =============
+  Widget _buildEquipmentsTab() {
+    final all = _filteredEquipmentProducts;
+    final shown = _showAllEquipment ? all : all.take(4).toList();
+    return RefreshIndicator(
+      onRefresh: _loadMarketplaceListings,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
+        padding: const EdgeInsets.only(bottom: 88),
+        children: [
+          const SizedBox(height: 12),
+          _sectionHeader('Top Categories'),
+          _buildTopCategories(
+            items: _equipmentTopCategories,
+            selected: _selectedEquipmentCategory,
+            onSelect: (value) => setState(() => _selectedEquipmentCategory = value),
+          ),
+          const SizedBox(height: 20),
+          _sectionHeader(
+            'Featured Products',
+            onViewMore: all.length > 4
+                ? () => setState(() => _showAllEquipment = !_showAllEquipment)
+                : null,
+          ),
+          if (shown.isEmpty)
+            _buildEmptyState(
+              icon: Icons.handyman_rounded,
+              title: 'No Equipment Found',
+              subtitle: 'Try adjusting your search or category',
+            )
+          else
+            _buildProductsGrid(shown),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProductsGrid(List<Product> products) {
     return GridView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 80),
-      physics: const BouncingScrollPhysics(),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.65,
+        mainAxisSpacing: 16,
+        childAspectRatio: 0.85,
       ),
       itemCount: products.length,
       itemBuilder: (context, index) => _buildProductCard(products[index]),
     );
   }
 
+  // ============= MARKET PRICES TAB =============
+  Widget _buildMarketPricesTab() {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Row(
+            children: [
+              Expanded(child: _priceModeChip('Prices', 0)),
+              const SizedBox(width: 8),
+              Expanded(child: _priceModeChip('Nearby Markets', 1)),
+            ],
+          ),
+        ),
+        Expanded(
+          child: IndexedStack(
+            index: _priceSubTab,
+            children: [
+              _buildAnimalPrices(),
+              _buildNearbyMarkets(),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _priceModeChip(String label, int index) {
+    final scheme = Theme.of(context).colorScheme;
+    final active = _priceSubTab == index;
+    return GestureDetector(
+      onTap: () => setState(() => _priceSubTab = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: active ? scheme.primary : Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: active ? scheme.primary : scheme.outlineVariant),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: active ? Colors.white : scheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ============= PRODUCT CARD (matches the Jaguza Market design) =============
   Widget _buildProductCard(Product product) {
     final scheme = Theme.of(context).colorScheme;
     final isAvailable = product.inStock > 0 && product.status != 'sold';
     final isOwner = product.sellerId != null && product.sellerId == _currentUserId;
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
+    return GestureDetector(
+      onTap: isAvailable ? () => _addToCart(product) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Product Image
-          Container(
-            height: 100,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: scheme.primary.withValues(alpha: 0.06),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-            ),
-            child: Stack(
-              children: [
-                Positioned.fill(
-                  child: ClipRRect(
-                    borderRadius:
-                        const BorderRadius.vertical(top: Radius.circular(12)),
-                    child: _buildProductImage(product, scheme),
-                  ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(14),
+                child: Container(
+                  height: 108,
+                  width: double.infinity,
+                  color: scheme.primary.withValues(alpha: 0.06),
+                  child: _buildProductImage(product, scheme),
                 ),
-                // Available/Sold Badge at Top Right
+              ),
+              if (isOwner)
                 Positioned(
-                  top: 6,
-                  right: 6,
+                  top: 4,
+                  right: 4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: isAvailable ? Colors.green : scheme.error,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      color: Colors.black.withValues(alpha: 0.35),
+                      shape: BoxShape.circle,
                     ),
-                    child: Text(
-                      isAvailable ? 'In Stock' : 'Sold',
-                      style: const TextStyle(
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ),
-                ),
-                if (isOwner)
-                  Positioned(
-                    top: 2,
-                    left: 2,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.35),
-                        shape: BoxShape.circle,
-                      ),
-                      child: PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert_rounded, size: 16, color: Colors.white),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                        onSelected: (value) {
-                          if (value == 'sold') _markProductSold(product);
-                          if (value == 'delete') _deleteProduct(product);
-                        },
-                        itemBuilder: (context) => [
-                          if (product.status != 'sold')
-                            const PopupMenuItem(
-                              value: 'sold',
-                              child: Row(
-                                children: [
-                                  Icon(Icons.check_circle_outline_rounded, size: 16),
-                                  SizedBox(width: 8),
-                                  Text('Mark as Sold'),
-                                ],
-                              ),
-                            ),
+                    child: PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert_rounded, size: 16, color: Colors.white),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                      onSelected: (value) {
+                        if (value == 'sold') _markProductSold(product);
+                        if (value == 'delete') _deleteProduct(product);
+                      },
+                      itemBuilder: (context) => [
+                        if (product.status != 'sold')
                           const PopupMenuItem(
-                            value: 'delete',
+                            value: 'sold',
                             child: Row(
                               children: [
-                                Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+                                Icon(Icons.check_circle_outline_rounded, size: 16),
                                 SizedBox(width: 8),
-                                Text('Delete', style: TextStyle(color: Colors.red)),
+                                Text('Mark as Sold'),
                               ],
                             ),
                           ),
-                        ],
-                      ),
+                        const PopupMenuItem(
+                          value: 'delete',
+                          child: Row(
+                            children: [
+                              Icon(Icons.delete_outline_rounded, size: 16, color: Colors.red),
+                              SizedBox(width: 8),
+                              Text('Delete', style: TextStyle(color: Colors.red)),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-              ],
-            ),
+                ),
+              Positioned(
+                bottom: -12,
+                left: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: isAvailable ? const Color(0xFFFF9800) : scheme.error,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    isAvailable ? '${product.inStock} Available' : 'Sold Out',
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
+                  ),
+                ),
+              ),
+            ],
           ),
-
           Padding(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.fromLTRB(8, 18, 8, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   product.name,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: scheme.onSurface,
-                  ),
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: scheme.onSurface),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
-                const SizedBox(height: 2),
-                // Location and Rating Row
-                Row(
-                  children: [
-                    Icon(Icons.location_on_rounded, size: 10, color: scheme.onSurfaceVariant),
-                    const SizedBox(width: 2),
-                    Expanded(
-                      child: Text(
-                        product.location,
-                        style: TextStyle(fontSize: 9, color: scheme.onSurfaceVariant),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Icon(Icons.star_rounded, size: 10, color: Colors.amber[600]),
-                    Text(
-                      product.rating.toString(),
-                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: scheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
                 const SizedBox(height: 4),
-                // Price Row
-                Row(
-                  children: [
-                    Flexible(
-                      flex: 2,
-                      child: Text(
-                        'UGX ${_formatPrice(product.price)}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
-                          color: scheme.primary,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Flexible(
-                      flex: 1,
-                      child: Text(
-                        product.unit,
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: scheme.onSurfaceVariant,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // Stock and Cart Row
-                Row(
-                  children: [
-                    Flexible(
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: product.inStock > 0 ? Colors.green.withValues(alpha: 0.1) : scheme.error.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text(
-                          product.inStock > 0 ? '${product.inStock} in stock' : 'Out of stock',
-                          style: TextStyle(
-                            fontSize: 8,
-                            fontWeight: FontWeight.w600,
-                            color: product.inStock > 0 ? Colors.green[700] : scheme.error,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: product.inStock > 0 ? scheme.primary : scheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: IconButton(
-                        onPressed: product.inStock > 0
-                            ? () => _addToCart(product)
-                            : null,
-                        icon: const Icon(Icons.shopping_cart_outlined, size: 14),
-                        color: scheme.onPrimary,
-                        padding: const EdgeInsets.all(4),
-                        constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                      ),
-                    ),
-                  ],
+                Text(
+                  'UGX ${_formatPrice(product.price)}',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: scheme.onSurface),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -1397,15 +1647,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   // ============= SELL PRODUCT DIALOG =============
-  void _showSellProductDialog(BuildContext context) {
+  void _showSellProductDialog(BuildContext context, {String initialCategory = 'Cattle'}) {
     final nameController = TextEditingController();
     final priceController = TextEditingController();
     final quantityController = TextEditingController();
     final descriptionController = TextEditingController();
     final locationController = TextEditingController();
-    String selectedCategory = 'Cattle';
+    String selectedCategory = initialCategory;
     File? selectedImage;
     bool isUploading = false;
+    final categories = [
+      'Cattle', 'Poultry', 'Goats', 'Pigs', 'Sheep', 'Rabbits', 'Dairy', 'Feed', 'Crops', 'Equipment', 'Housing',
+    ];
 
     showDialog(
       context: context,
@@ -1415,7 +1668,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           final scheme = Theme.of(context).colorScheme;
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Sell Your Product'),
+            title: Text(_isEquipmentCategory(selectedCategory) ? 'List Equipment' : 'Sell Your Product'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1478,20 +1731,20 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   DropdownButtonFormField<String>(
                     initialValue: selectedCategory,
                     decoration: const InputDecoration(
                       labelText: 'Category *',
                       border: OutlineInputBorder(),
                     ),
-                    items: const [
-                      'Cattle', 'Poultry', 'Goats', 'Pigs', 'Dairy', 'Feed', 'Crops'
-                    ].map((cat) => DropdownMenuItem(value: cat, child: Text(cat))).toList(),
-                    onChanged: (value) => selectedCategory = value ?? 'Cattle',
+                    items: categories
+                        .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+                        .toList(),
+                    onChanged: (value) => setState(() => selectedCategory = value ?? initialCategory),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   TextField(
                     controller: nameController,
                     decoration: const InputDecoration(
@@ -1501,7 +1754,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   TextField(
                     controller: priceController,
                     decoration: const InputDecoration(
@@ -1512,7 +1765,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   TextField(
                     controller: quantityController,
                     decoration: const InputDecoration(
@@ -1523,7 +1776,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
-                  
+
                   TextField(
                     controller: locationController,
                     decoration: const InputDecoration(
@@ -1533,7 +1786,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  
+
                   TextField(
                     controller: descriptionController,
                     decoration: const InputDecoration(
@@ -1557,7 +1810,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       priceController.text.isNotEmpty &&
                       quantityController.text.isNotEmpty &&
                       locationController.text.isNotEmpty) {
-                    
+
                     setState(() => isUploading = true);
                     try {
                       await ApiService().createMarketplaceListing({
@@ -1580,7 +1833,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     }
 
                     if (!context.mounted) return;
-                    
+
                     Navigator.pop(context);
 
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1649,7 +1902,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   ),
                   const Spacer(),
                   Text(
-                    '2 items',
+                    '${_cartItems.length} items',
                     style: TextStyle(
                       fontSize: 14,
                       color: scheme.primary,
@@ -1840,7 +2093,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   // Bundled fallback photo for each category so a card always shows a real
   // image instantly, even offline or while a network image is still loading.
-  String _categoryImageAsset(String category) {
+  String? _categoryImageAsset(String category) {
     switch (category.toLowerCase()) {
       case 'cattle':
       case 'livestock':
@@ -1855,24 +2108,55 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         return 'lib/assets/images/Pigs.png';
       case 'sheep':
         return 'lib/assets/images/Sheep.png';
+      case 'rabbits':
+        return 'lib/assets/images/Rabbit.png';
       case 'feed':
         return 'lib/assets/images/marketplace/feed.jpg';
+      case 'equipment':
+      case 'housing':
+        return null; // No stock photos for equipment — render an icon instead.
       default:
         return 'lib/assets/images/marketplace/cattle.jpg';
     }
   }
 
-  Widget _categoryImage(Product product) => Image.asset(
-        _categoryImageAsset(product.category),
-        fit: BoxFit.cover,
-        width: double.infinity,
-        height: double.infinity,
-        cacheWidth: 400,
+  // Chooses a representative icon for an equipment/housing item based on its
+  // name, since there's no stock photo to fall back to.
+  IconData _equipmentIconFor(Product product) {
+    final n = product.name.toLowerCase();
+    if (n.contains('drone')) return Icons.flight_rounded;
+    if (n.contains('tractor')) return Icons.agriculture_rounded;
+    if (n.contains('milk')) return Icons.local_drink_rounded;
+    if (n.contains('incubator') || n.contains('egg')) return Icons.egg_rounded;
+    if (n.contains('coop') || n.contains('house') || n.contains('barn') || n.contains('shed') || n.contains('crush') || n.contains('pen')) {
+      return Icons.warehouse_rounded;
+    }
+    if (n.contains('water') || n.contains('pump')) return Icons.water_drop_rounded;
+    return Icons.handyman_rounded;
+  }
+
+  Widget _categoryImage(Product product) {
+    final scheme = Theme.of(context).colorScheme;
+    final asset = _categoryImageAsset(product.category);
+    if (asset == null) {
+      return Container(
+        color: scheme.primary.withValues(alpha: 0.08),
+        alignment: Alignment.center,
+        child: Icon(_equipmentIconFor(product), size: 32, color: scheme.primary.withValues(alpha: 0.7)),
       );
+    }
+    return Image.asset(
+      asset,
+      fit: BoxFit.cover,
+      width: double.infinity,
+      height: double.infinity,
+      cacheWidth: 400,
+    );
+  }
 
   // Renders the product photo. Local assets and freshly picked files paint
   // immediately; network images are cached to disk after the first load and
-  // fall back to the bundled category photo on error.
+  // fall back to the bundled category photo (or an icon, for equipment) on error.
   Widget _buildProductImage(Product product, ColorScheme scheme) {
     if (product.imageFile != null) {
       return Image.file(
@@ -1929,12 +2213,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         return Icons.cruelty_free_rounded;
       case 'Sheep':
         return Icons.pets_rounded;
+      case 'Rabbits':
+        return Icons.cruelty_free_rounded;
       case 'Dairy':
         return Icons.local_drink_rounded;
       case 'Feed':
         return Icons.grain_rounded;
       case 'Crops':
         return Icons.grass_rounded;
+      case 'Equipment':
+        return Icons.handyman_rounded;
+      case 'Housing':
+        return Icons.warehouse_rounded;
       default:
         return Icons.category_rounded;
     }
@@ -1948,28 +2238,48 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   Widget _buildEmptyState({required IconData icon, required String title, required String subtitle}) {
     final scheme = Theme.of(context).colorScheme;
-    return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 64, color: scheme.outlineVariant),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: scheme.onSurface),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            subtitle,
-            style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
-          ),
-        ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 64, color: scheme.outlineVariant),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: scheme.onSurface),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
 // ============= MODELS =============
+
+/// One circular shortcut in the "Top Categories" row — backed by a photo
+/// asset (livestock) or an icon (equipment, which has no stock photos).
+class _TopCategory {
+  final String label;
+  final String filterValue;
+  final String? asset;
+  final IconData? icon;
+
+  const _TopCategory({
+    required this.label,
+    required this.filterValue,
+    this.asset,
+    this.icon,
+  });
+}
+
 class Product {
   final String id;
   final String name;

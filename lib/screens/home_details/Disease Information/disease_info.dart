@@ -212,6 +212,9 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
           icon: Icons.medical_information_rounded,
           category: category,
           description: '${disease['symptoms'] ?? disease['description'] ?? ''}',
+            imageUrl: '${disease['thumbnail'] ?? ''}'.trim().isEmpty
+              ? null
+              : '${disease['thumbnail']}',
           screen: _PlaceholderDetailScreen(
             title: '${disease['name'] ?? 'Disease'}',
           ),
@@ -441,11 +444,22 @@ class DiseaseCard extends StatelessWidget {
                 color: item.severityColor.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(
-                item.icon,
-                color: item.severityColor,
-                size: 22,
-              ),
+              child: item.imageUrl != null
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        item.imageUrl!,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Icon(
+                          item.icon,
+                          color: item.severityColor,
+                          size: 22,
+                        ),
+                      ),
+                    )
+                  : Icon(item.icon, color: item.severityColor, size: 22),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -534,6 +548,7 @@ class DiseaseItem {
   final IconData icon;
   final String category;
   final String description;
+  final String? imageUrl;
   final Widget screen;
 
   const DiseaseItem({
@@ -544,6 +559,7 @@ class DiseaseItem {
     required this.icon,
     required this.category,
     required this.description,
+    this.imageUrl,
     required this.screen,
   });
 }

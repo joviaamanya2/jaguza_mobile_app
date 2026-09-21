@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:jaguza_app/screens/onboarding%20screens/onboarding1.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
+import '../services/app_localizations.dart';
 import 'home_screen.dart';
 import 'language_selection.dart';
 
@@ -215,7 +216,7 @@ class _SplashScreenState extends State<SplashScreen>
                       FadeTransition(
                         opacity: _taglineFade,
                         child: Text(
-                          'Know your herd, wherever they roam.',
+                          context.tr('Know your herd, wherever they roam.'),
                           style: TextStyle(
                             color: Colors.black.withValues(alpha: 0.7), // Changed to dark gray
                             fontSize: 14,

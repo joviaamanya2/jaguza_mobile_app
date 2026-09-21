@@ -409,8 +409,11 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
         title: Row(
           children: [
             Expanded(
@@ -422,30 +425,30 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
-                      color: scheme.onSurface,
+                      color: scheme.onPrimary,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Row(
                     children: [
-                      Icon(Icons.location_on_rounded, size: 12, color: scheme.onSurfaceVariant),
+                      Icon(Icons.location_on_rounded, size: 12, color: scheme.onPrimary.withValues(alpha: 0.8)),
                       const SizedBox(width: 4),
                       Text(
                         _selectedLocation,
-                        style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+                        style: TextStyle(fontSize: 12, color: scheme.onPrimary.withValues(alpha: 0.8)),
                       ),
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1976D2).withValues(alpha: 0.1),
+                          color: Colors.white.withValues(alpha: 0.18),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
                           _selectedCountry,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
-                            color: Color(0xFF1976D2),
+                            color: scheme.onPrimary,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -460,18 +463,18 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color.fromRGBO(25, 118, 210, 0.12),
+                  color: Colors.white.withValues(alpha: 0.18),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
-                    Icon(Icons.public_rounded, size: 14, color: Color(0xFF1976D2)),
-                    SizedBox(width: 4),
+                    Icon(Icons.public_rounded, size: 14, color: scheme.onPrimary),
+                    const SizedBox(width: 4),
                     Text(
                       'Country',
                       style: TextStyle(
                         fontSize: 11,
-                        color: Color(0xFF1976D2),
+                        color: scheme.onPrimary,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -484,7 +487,6 @@ class _WeatherUpdatesScreenState extends State<WeatherUpdatesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh_rounded, size: 22),
-            color: const Color(0xFF1976D2),
             onPressed: () {
               _loadWeather();
               ScaffoldMessenger.of(context).showSnackBar(

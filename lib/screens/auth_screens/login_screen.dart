@@ -4,6 +4,7 @@ import '../language_selection.dart';
 import '../auth_screens/forgot_password_screen.dart';
 import '../auth_screens/Signup_screen.dart';
 import '../../services/api_service.dart';
+import '../../services/app_localizations.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -58,18 +59,18 @@ class _SignInScreenState extends State<SignInScreen>
       setState(() => _isLoading = false);
 
       if (result['success'] == true) {
-        _showSnack('Login successful! Welcome back');
+        _showSnack(context.tr('Login successful! Welcome back'));
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
         );
       } else {
-        _showSnack(result['error'] ?? 'Invalid login credentials', isError: true);
+        _showSnack(result['error'] ?? context.tr('Invalid login credentials'), isError: true);
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      _showSnack('Network error: ${e.toString()}', isError: true);
+      _showSnack('${context.tr('Network error')}: ${e.toString()}', isError: true);
     }
   }
 
@@ -100,7 +101,7 @@ class _SignInScreenState extends State<SignInScreen>
     // Implement Google Sign-In
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Google Sign-In initiated'),
+        content: Text(context.tr('Google Sign-In initiated')),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
@@ -110,7 +111,7 @@ class _SignInScreenState extends State<SignInScreen>
     // Implement Apple Sign-In
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Apple Sign-In initiated'),
+        content: Text(context.tr('Apple Sign-In initiated')),
         backgroundColor: Theme.of(context).colorScheme.primary,
       ),
     );
@@ -137,12 +138,12 @@ class _SignInScreenState extends State<SignInScreen>
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        const _SectionHeading(
-                          title: 'SIGN IN',
-                          subtitle: 'Welcome back! Please enter your details.',
+                        _SectionHeading(
+                          title: context.tr('SIGN IN'),
+                          subtitle: context.tr('Welcome back! Please enter your details.'),
                         ),
                         const SizedBox(height: 26),
-                        const _FieldLabel('Email or Phone Number'),
+                        _FieldLabel(context.tr('Email or Phone Number')),
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
@@ -150,7 +151,7 @@ class _SignInScreenState extends State<SignInScreen>
                           autofillHints: const [AutofillHints.email],
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Please enter your email or phone number';
+                              return context.tr('Please enter your email or phone number');
                             }
                             return null;
                           },
@@ -161,17 +162,17 @@ class _SignInScreenState extends State<SignInScreen>
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const _FieldLabel('Password'),
+                        _FieldLabel(context.tr('Password')),
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _obscurePassword,
                           autofillHints: const [AutofillHints.password],
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
+                              return context.tr('Please enter your password');
                             }
                             if (value.length < 6) {
-                              return 'Password must be at least 6 characters';
+                              return context.tr('Password must be at least 6 characters');
                             }
                             return null;
                           },
@@ -189,8 +190,8 @@ class _SignInScreenState extends State<SignInScreen>
                               ),
                               onPressed: _togglePasswordVisibility,
                               tooltip: _obscurePassword
-                                  ? 'Show password'
-                                  : 'Hide password',
+                                  ? context.tr('Show password')
+                                  : context.tr('Hide password'),
                             ),
                           ),
                         ),
@@ -212,7 +213,7 @@ class _SignInScreenState extends State<SignInScreen>
                               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                             ),
                             child: Text(
-                              'Forgot Password?',
+                              context.tr('Forgot Password?'),
                               style: TextStyle(
                                 color: scheme.primary,
                                 fontWeight: FontWeight.w700,
@@ -358,9 +359,9 @@ class _SignInButton extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Text(
-                'SIGN IN',
-                style: TextStyle(
+            : Text(
+                context.tr('SIGN IN'),
+                style: const TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 1.3,
@@ -383,7 +384,7 @@ class _OrDivider extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14),
           child: Text(
-            'OR CONTINUE WITH',
+            context.tr('OR CONTINUE WITH'),
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -419,14 +420,14 @@ class _SocialButtons extends StatelessWidget {
             height: 26,
             fit: BoxFit.contain,
           ),
-          semanticLabel: 'Sign in with Google',
+          semanticLabel: context.tr('Sign in with Google'),
           onTap: onGoogleTap,
         ),
         const SizedBox(width: 18),
         _SocialTile(
           icon: Icon(Icons.apple_rounded,
               color: Theme.of(context).colorScheme.onSurface, size: 30),
-          semanticLabel: 'Sign in with Apple',
+          semanticLabel: context.tr('Sign in with Apple'),
           onTap: onAppleTap,
         ),
       ],
@@ -486,14 +487,14 @@ class _RegisterPrompt extends StatelessWidget {
             TextSpan(
               children: [
                 TextSpan(
-                  text: "Don't have an Account? ",
+                  text: "${context.tr("Don't have an Account?")} ",
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     fontSize: 14,
                   ),
                 ),
                 TextSpan(
-                  text: 'Register',
+                  text: context.tr('Register'),
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w800,

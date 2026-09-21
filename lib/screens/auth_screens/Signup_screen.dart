@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../terms_and_conditions.dart';
 import '../language_selection.dart';
 import '../../services/api_service.dart';
+import '../../services/app_localizations.dart';
 
 // ─── Theme constants ─
 // _kGreen is kept for the custom curved header (a deliberate static brand
@@ -37,11 +38,11 @@ Color _strengthColor(_PasswordStrength s, ColorScheme scheme) => switch (s) {
       _ => scheme.outlineVariant,
     };
 
-String _strengthLabel(_PasswordStrength s) => switch (s) {
-      _PasswordStrength.weak => 'Weak',
-      _PasswordStrength.fair => 'Fair',
-      _PasswordStrength.strong => 'Strong',
-      _PasswordStrength.veryStrong => 'Very strong',
+String _strengthLabel(BuildContext context, _PasswordStrength s) => switch (s) {
+      _PasswordStrength.weak => context.tr('Weak'),
+      _PasswordStrength.fair => context.tr('Fair'),
+      _PasswordStrength.strong => context.tr('Strong'),
+      _PasswordStrength.veryStrong => context.tr('Very strong'),
       _ => '',
     };
 
@@ -143,7 +144,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     if (!_agreedToTerms) {
       _showSnack(
-        'Please accept the Terms & Conditions to continue.',
+        context.tr('Please accept the Terms & Conditions to continue.'),
         isError: true,
       );
       return;
@@ -159,6 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       
       final userData = {
         'name': '${_firstNameCtrl.text.trim()} ${_lastNameCtrl.text.trim()}',
+        'username': username,
         'email': email,
         'password': _passwordCtrl.text,
         'password_confirmation': _confirmPasswordCtrl.text,
@@ -174,13 +176,13 @@ class _RegisterScreenState extends State<RegisterScreen>
       setState(() => _isLoading = false);
 
       if (result['success'] == true) {
-        _showSnack('Account created successfully! Welcome aboard');
+        _showSnack(context.tr('Account created successfully! Welcome aboard'));
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
         );
       } else {
-        String errorMessage = 'Registration failed. Please try again.';
+        String errorMessage = context.tr('Registration failed. Please try again.');
         if (result['error'] is Map) {
           final errors = result['error'] as Map;
           errorMessage = errors.values.first.toString();
@@ -192,7 +194,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      _showSnack('Network error: ${e.toString()}', isError: true);
+      _showSnack('${context.tr('Network error')}: ${e.toString()}', isError: true);
     }
   }
 
@@ -250,7 +252,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         children: [
                           Expanded(
                             child: _FormGroup(
-                              label: 'First Name',
+                              label: context.tr('First Name'),
                               child: _AppField(
                                 controller: _firstNameCtrl,
                                 focusNode: _firstNameFocus,
@@ -260,10 +262,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 capitalization: TextCapitalization.words,
                                 validator: (v) {
                                   if (v == null || v.trim().isEmpty) {
-                                    return 'Required';
+                                    return context.tr('Required');
                                   }
                                   if (v.trim().length < 2) {
-                                    return 'Too short';
+                                    return context.tr('Too short');
                                   }
                                   return null;
                                 },
@@ -273,7 +275,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                           const SizedBox(width: 14),
                           Expanded(
                             child: _FormGroup(
-                              label: 'Last Name',
+                              label: context.tr('Last Name'),
                               child: _AppField(
                                 controller: _lastNameCtrl,
                                 focusNode: _lastNameFocus,
@@ -283,7 +285,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                                 capitalization: TextCapitalization.words,
                                 validator: (v) {
                                   if (v == null || v.trim().isEmpty) {
-                                    return 'Required';
+                                    return context.tr('Required');
                                   }
                                   return null;
                                 },
@@ -295,7 +297,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       const SizedBox(height: 16),
 
                       _FormGroup(
-                        label: 'Email Address',
+                        label: context.tr('Email Address'),
                         child: _AppField(
                           controller: _emailCtrl,
                           focusNode: _emailFocus,
@@ -306,12 +308,12 @@ class _RegisterScreenState extends State<RegisterScreen>
                           autofillHints: const [AutofillHints.email],
                           validator: (v) {
                             if (v == null || v.trim().isEmpty) {
-                              return 'Please enter your email';
+                              return context.tr('Please enter your email');
                             }
                             if (!RegExp(
                                     r'^[\w\-\.]+@([\w\-]+\.)+[\w\-]{2,}$')
                                 .hasMatch(v.trim())) {
-                              return 'Enter a valid email address';
+                              return context.tr('Enter a valid email address');
                             }
                             return null;
                           },
@@ -320,7 +322,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       const SizedBox(height: 16),
 
                       _FormGroup(
-                        label: 'Phone Number',
+                        label: context.tr('Phone Number'),
                         child: _PhoneField(
                           controller: _phoneCtrl,
                           focusNode: _phoneFocus,
@@ -334,7 +336,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       const SizedBox(height: 16),
 
                       _FormGroup(
-                        label: 'Password',
+                        label: context.tr('Password'),
                         child: _AppField(
                           controller: _passwordCtrl,
                           focusNode: _passwordFocus,
@@ -356,10 +358,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) {
-                              return 'Please enter a password';
+                              return context.tr('Please enter a password');
                             }
                             if (v.length < 8) {
-                              return 'Password must be at least 8 characters';
+                              return context.tr('Password must be at least 8 characters');
                             }
                             return null;
                           },
@@ -373,7 +375,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                       const SizedBox(height: 16),
 
                       _FormGroup(
-                        label: 'Confirm Password',
+                        label: context.tr('Confirm Password'),
                         child: _AppField(
                           controller: _confirmPasswordCtrl,
                           focusNode: _confirmFocus,
@@ -396,10 +398,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                           ),
                           validator: (v) {
                             if (v == null || v.isEmpty) {
-                              return 'Please confirm your password';
+                              return context.tr('Please confirm your password');
                             }
                             if (v != _passwordCtrl.text) {
-                              return 'Passwords do not match';
+                              return context.tr('Passwords do not match');
                             }
                             return null;
                           },
@@ -438,14 +440,14 @@ class _RegisterScreenState extends State<RegisterScreen>
                             TextSpan(
                               children: [
                                 TextSpan(
-                                  text: 'Already have an account? ',
+                                  text: '${context.tr('Already have an account?')} ',
                                   style: TextStyle(
                                     color: scheme.onSurfaceVariant,
                                     fontSize: 14,
                                   ),
                                 ),
                                 TextSpan(
-                                  text: 'Sign In',
+                                  text: context.tr('Sign In'),
                                   style: TextStyle(
                                     color: scheme.primary,
                                     fontWeight: FontWeight.w700,
@@ -494,9 +496,9 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Create Account',
-              style: TextStyle(
+            Text(
+              context.tr('Create Account'),
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -505,7 +507,7 @@ class _RegisterScreenState extends State<RegisterScreen>
             ),
             const SizedBox(height: 6),
             Text(
-              'Join Jaguza and manage your herd smarter.',
+              context.tr('Join Jaguza and manage your herd smarter.'),
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.80),
                 fontSize: 14,
@@ -678,8 +680,8 @@ class _PhoneField extends StatelessWidget {
         if (nextFocus != null) FocusScope.of(context).requestFocus(nextFocus);
       },
       validator: (v) {
-        if (v == null || v.trim().isEmpty) return 'Please enter your phone number';
-        if (v.length < 7) return 'Enter a valid phone number';
+        if (v == null || v.trim().isEmpty) return context.tr('Please enter your phone number');
+        if (v.length < 7) return context.tr('Enter a valid phone number');
         return null;
       },
       style: TextStyle(fontSize: 14, color: scheme.onSurface),
@@ -751,7 +753,7 @@ class _PasswordStrengthMeter extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final color = _strengthColor(strength, scheme);
     final filled = _strengthSegments(strength);
-    final label = _strengthLabel(strength);
+    final label = _strengthLabel(context, strength);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -776,7 +778,7 @@ class _PasswordStrengthMeter extends StatelessWidget {
             Icon(Icons.shield_rounded, size: 13, color: color),
             const SizedBox(width: 5),
             Text(
-              'Password strength: $label',
+              '${context.tr('Password strength')}: $label',
               style: TextStyle(
                 fontSize: 11.5,
                 color: color,
@@ -830,7 +832,7 @@ class _TermsRow extends StatelessWidget {
               TextSpan(
                 children: [
                   TextSpan(
-                    text: 'I have read and agree to the Jaguza Livestock ',
+                    text: '${context.tr('I have read and agree to the Jaguza Livestock')} ',
                     style: TextStyle(
                       fontSize: 13,
                       color: scheme.onSurfaceVariant,
@@ -843,7 +845,7 @@ class _TermsRow extends StatelessWidget {
                     child: GestureDetector(
                       onTap: onTermsTap,
                       child: Text(
-                        'Terms & Conditions',
+                        context.tr('Terms & Conditions'),
                         style: TextStyle(
                           fontSize: 13,
                           color: scheme.primary,
@@ -856,7 +858,7 @@ class _TermsRow extends StatelessWidget {
                     ),
                   ),
                   TextSpan(
-                    text: ' and Privacy Policy.',
+                    text: ' ${context.tr('and Privacy Policy.')}',
                     style: TextStyle(
                       fontSize: 13,
                       color: scheme.onSurfaceVariant,
@@ -905,20 +907,20 @@ class _RegisterButton extends StatelessWidget {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Row(
+            : Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'CREATE ACCOUNT',
-                    style: TextStyle(
+                    context.tr('CREATE ACCOUNT'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                       letterSpacing: 1.2,
                     ),
                   ),
-                  SizedBox(width: 8),
-                  Icon(Icons.arrow_forward_rounded,
+                  const SizedBox(width: 8),
+                  const Icon(Icons.arrow_forward_rounded,
                       color: Colors.white, size: 18),
                 ],
               ),

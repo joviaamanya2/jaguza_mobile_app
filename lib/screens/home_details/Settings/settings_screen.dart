@@ -94,8 +94,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _toggleRow(
                         icon: Icons.notifications_active_rounded,
                         iconColor: const Color(0xFFF59E0B),
-                        title: 'Push Notifications',
-                        subtitle: 'Real-time alerts for your herd',
+                        title: context.tr('Push Notifications'),
+                        subtitle: context.tr('Real-time alerts for your herd'),
                         value: _pushNotifications,
                         onChanged: (v) =>
                             setState(() => _pushNotifications = v),
@@ -108,16 +108,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _dropdownRow(
                         icon: Icons.language_rounded,
                         iconColor: const Color(0xFF8B5CF6),
-                        title: 'Language',
+                        title: context.tr('Language'),
                         value: _selectedLanguage,
-                        options: const [
-                          'English',
-                          'Luganda',
-                          'Swahili',
-                          'French',
-                          'Runyankore',
-                          'Acholi',
-                        ],
+                        options: LanguageService.getSupportedLanguages()
+                            .map((lang) => lang['name']!)
+                            .toList(),
                         onChanged: (v) {
                           if (v != null) _changeLanguage(v);
                         },
@@ -130,8 +125,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _toggleRow(
                         icon: Icons.dark_mode_rounded,
                         iconColor: const Color(0xFF6366F1),
-                        title: 'Dark Mode',
-                        subtitle: 'Switch to dark interface',
+                        title: context.tr('Dark Mode'),
+                        subtitle: context.tr('Switch to dark interface'),
                         value: _darkMode,
                         onChanged: (v) => ThemeService.setDarkMode(v),
                       ),
@@ -139,26 +134,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _tapRow(
                         icon: Icons.shield_outlined,
                         iconColor: _kGreen,
-                        title: 'Privacy Policy',
-                        subtitle: 'How we handle your data',
+                        title: context.tr('Privacy Policy'),
+                        subtitle: context.tr('How we handle your data'),
                         onTap: () => _showInfoSheet(
                           context,
-                          title: 'Privacy Policy',
-                          body:
-                              'Jaguza Livestock takes your privacy seriously. We collect only the data necessary to deliver our services. Your livestock data, farm records and location information are stored securely and never shared with third parties without your consent.\n\nYou may request deletion of your data at any time by contacting support@jaguzalivestock.com.',
+                          title: context.tr('Privacy Policy'),
+                          body: context.tr(
+                              'Jaguza Livestock takes your privacy seriously. We collect only the data necessary to deliver our services. Your livestock data, farm records and location information are stored securely and never shared with third parties without your consent.\n\nYou may request deletion of your data at any time by contacting support@jaguzalivestock.com.'),
                         ),
                       ),
                       _divider(),
                       _tapRow(
                         icon: Icons.description_outlined,
                         iconColor: const Color(0xFF6366F1),
-                        title: 'Terms & Conditions',
-                        subtitle: 'Review our terms of service',
+                        title: context.tr('Terms & Conditions'),
+                        subtitle: context.tr('Review our terms of service'),
                         onTap: () => _showInfoSheet(
                           context,
-                          title: 'Terms & Conditions',
-                          body:
-                              'By using Jaguza Livestock you agree to use the app for lawful agricultural purposes only. Misuse, unauthorized access, or reverse-engineering of the platform is strictly prohibited.\n\nFor the full terms, visit jaguzalivestock.com/terms.',
+                          title: context.tr('Terms & Conditions'),
+                          body: context.tr(
+                              'By using Jaguza Livestock you agree to use the app for lawful agricultural purposes only. Misuse, unauthorized access, or reverse-engineering of the platform is strictly prohibited.\n\nFor the full terms, visit jaguzalivestock.com/terms.'),
                         ),
                       ),
                     ]),
@@ -169,13 +164,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _tapRow(
                         icon: Icons.help_outline_rounded,
                         iconColor: const Color(0xFF3B82F6),
-                        title: 'Help Center',
-                        subtitle: 'FAQs and how-to guides',
+                        title: context.tr('Help Center'),
+                        subtitle: context.tr('FAQs and how-to guides'),
                         onTap: () => _showInfoSheet(
                           context,
-                          title: 'Help Center',
-                          body:
-                              'Need help? Visit our help center at help.jaguzalivestock.com or contact us:\n\nEmail: support@jaguzalivestock.com\nPhone: +256 XXX XXX XXX\n\nOur support team is available Monday – Friday, 8 AM – 6 PM (EAT).',
+                          title: context.tr('Help Center'),
+                          body: context.tr(
+                              'Need help? Visit our help center at help.jaguzalivestock.com or contact us:\n\nEmail: support@jaguzalivestock.com\nPhone: +256 XXX XXX XXX\n\nOur support team is available Monday – Friday, 8 AM – 6 PM (EAT).'),
                         ),
                       ),
                     ]),
@@ -186,7 +181,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _tapRow(
                         icon: Icons.info_outline_rounded,
                         iconColor: _kGreen,
-                        title: 'App Version',
+                        title: context.tr('App Version'),
                         subtitle: 'Jaguza Livestock v1.0.0',
                         onTap: () {},
                         trailingText: 'v1.0.0',
@@ -196,9 +191,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _tapRow(
                         icon: Icons.update_rounded,
                         iconColor: const Color(0xFF3B82F6),
-                        title: 'Check for Updates',
-                        subtitle: 'You are on the latest version',
-                        onTap: () => _showSnack(context, 'You\'re up to date!'),
+                        title: context.tr('Check for Updates'),
+                        subtitle: context.tr('You are on the latest version'),
+                        onTap: () => _showSnack(context, context.tr('You\'re up to date!')),
                       ),
                     ]),
 
@@ -208,8 +203,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _tapRow(
                         icon: Icons.logout_rounded,
                         iconColor: const Color(0xFFEF4444),
-                        title: 'Log Out',
-                        subtitle: 'Sign out of your account',
+                        title: context.tr('Log Out'),
+                        subtitle: context.tr('Sign out of your account'),
                         titleColor: const Color(0xFFEF4444),
                         onTap: () => _showLogoutDialog(context),
                       ),
@@ -217,8 +212,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       _tapRow(
                         icon: Icons.person_off_outlined,
                         iconColor: const Color(0xFFEF4444),
-                        title: 'Delete Account',
-                        subtitle: 'Permanently remove your data',
+                        title: context.tr('Delete Account'),
+                        subtitle: context.tr('Permanently remove your data'),
                         titleColor: const Color(0xFFEF4444),
                         onTap: () => _showDeleteAccountDialog(context),
                       ),
@@ -228,7 +223,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // Footer
                     Center(
                       child: Text(
-                        '© 2025 Jaguar Farm Tech · All rights reserved',
+                        '© 2025 Jaguar Farm Tech · ${context.tr('All rights reserved')}',
                         style: TextStyle(
                           fontSize: 11,
                           color: _kSubtext.withValues(alpha: 0.6),
@@ -346,7 +341,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Manage Account',
+                      context.tr('Manage Account'),
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -355,7 +350,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      'View and edit your profile settings',
+                      context.tr('View and edit your profile settings'),
                       style: TextStyle(
                         fontSize: 13,
                         color: _kSubtext,
@@ -603,17 +598,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: ctx,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Log Out',
-            style: TextStyle(
+        title: Text(ctx.tr('Log Out'),
+            style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFEF4444))),
-        content: const Text(
-            'Are you sure you want to log out of your Jaguza account?'),
+        content: Text(
+            ctx.tr('Are you sure you want to log out of your Jaguza account?')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: _kSubtext)),
+            child: Text(ctx.tr('Cancel'),
+                style: const TextStyle(color: _kSubtext)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
@@ -622,8 +617,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Log Out',
-                style: TextStyle(color: Colors.white)),
+            child: Text(ctx.tr('Log Out'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -635,17 +630,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       context: ctx,
       builder: (_) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Account',
-            style: TextStyle(
+        title: Text(ctx.tr('Delete Account'),
+            style: const TextStyle(
                 fontWeight: FontWeight.w700,
                 color: Color(0xFFEF4444))),
-        content: const Text(
-            'This action is permanent and cannot be undone. All your farm data, animals, and records will be deleted.'),
+        content: Text(
+            ctx.tr('This action is permanent and cannot be undone. All your farm data, animals, and records will be deleted.')),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel',
-                style: TextStyle(color: _kSubtext)),
+            child: Text(ctx.tr('Cancel'),
+                style: const TextStyle(color: _kSubtext)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
@@ -654,8 +649,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10)),
             ),
-            child: const Text('Delete',
-                style: TextStyle(color: Colors.white)),
+            child: Text(ctx.tr('Delete'),
+                style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -718,8 +713,8 @@ class _InfoSheet extends StatelessWidget {
                     borderRadius: BorderRadius.circular(14)),
                 elevation: 0,
               ),
-              child: const Text('Got it',
-                  style: TextStyle(
+              child: Text(context.tr('Got it'),
+                  style: const TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.w700,
                       fontSize: 15)),

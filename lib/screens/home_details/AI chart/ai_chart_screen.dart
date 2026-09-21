@@ -19,6 +19,7 @@ class _AIChatTabState extends State<AIChatTab> {
   final ScrollController _chatScrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   final List<FileAttachment> _attachments = [];
+  late final String _sessionId;
   bool _isLoading = false;
   bool _isRecording = false;
   String _selectedLanguage = 'English';
@@ -27,16 +28,11 @@ class _AIChatTabState extends State<AIChatTab> {
   late stt.SpeechToText _speech;
   String _lastWords = '';
 
-  final List<String> _languages = [
-    'English',
-    'Swahili',
-    'Luganda',
-    'French',
-    'Spanish',
-    'Arabic',
-    'German',
-    'Portuguese',
-  ];
+  // Scoped to the languages Jaguza has real translations for today, so this
+  // list can't drift from what LanguageService actually supports.
+  final List<String> _languages = LanguageService.getSupportedLanguages()
+      .map((lang) => lang['name']!)
+      .toList();
   
   final List<String> _quickQuestions = [
     'Treat cattle diseases',
@@ -49,6 +45,7 @@ class _AIChatTabState extends State<AIChatTab> {
   @override
   void initState() {
     super.initState();
+    _sessionId = 'mobile_${DateTime.now().microsecondsSinceEpoch}';
     _speech = stt.SpeechToText();
     _messageController.addListener(_onMessageChanged);
     _selectedLanguage = LanguageService.getLanguageNameFromCode(
@@ -920,6 +917,7 @@ class _AIChatTabState extends State<AIChatTab> {
       final result = await ApiService().sendChatMessage(
         text.isEmpty ? 'Please help me with the attached farm file.' : text,
         language: _selectedLanguage,
+        sessionId: _sessionId,
       );
       final rawReply = result['ai_response'] ?? result['response'] ?? result['message'];
       final reply = rawReply is Map
@@ -936,10 +934,11 @@ class _AIChatTabState extends State<AIChatTab> {
     } catch (e) {
       if (!mounted) return;
       debugPrint('AI chat send failed: $e');
-      final message = e.toString().contains('session expired') ||
-              e.toString().contains('Not authenticated')
-          ? 'Your session has expired. Please sign in again to keep chatting.'
-          : 'I could not reach Jaguza AI right now. Please check your connection and try again.';
+      final errorText = e.toString().toLowerCase();
+      final message = errorText.contains('session expired') ||
+          errorText.contains('not authenticated')
+        ? 'Your session has expired. Please sign in again to keep chatting.'
+        : _offlineReply(text);
       setState(() {
         _messages.add(ChatMessage(
           text: message,
@@ -950,6 +949,23 @@ class _AIChatTabState extends State<AIChatTab> {
       });
       _scrollToLatest();
     }
+  }
+
+  String _offlineReply(String text) {
+    final question = text.toLowerCase();
+    if (question.contains('feed') || question.contains('feeding') || question.contains('nutrition')) {
+      return 'Offline feeding guidance: provide clean water, use feed suited to the animal age and production stage, and introduce feed changes gradually over 7-10 days. Tell me the animal type and age for more specific help.';
+    }
+    if (question.contains('vaccin')) {
+      return 'Offline vaccination guidance: keep a dated record, follow your local veterinarian schedule, and do not vaccinate visibly sick animals without professional advice.';
+    }
+    if (question.contains('breed') || question.contains('breeding') || question.contains('heat')) {
+      return 'Offline breeding guidance: select healthy animals with good records, watch for heat signs, and record mating and expected-birth dates. A veterinarian should confirm pregnancy.';
+    }
+    if (question.contains('market') || question.contains('price') || question.contains('sell')) {
+      return 'Offline market guidance: compare at least three buyers, record weight and body condition, and subtract transport and treatment costs before accepting an offer.';
+    }
+    return 'I am temporarily offline, but I can still help with feeding, vaccination, breeding, animal symptoms, and farm decisions. Please try your question again when the connection returns.';
   }
 
   void _clearChat() {

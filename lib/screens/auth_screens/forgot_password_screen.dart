@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../services/api_service.dart';
+import '../../services/app_localizations.dart';
 import './login_screen.dart';
 
 // =========================================================
@@ -16,7 +18,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
     with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
+  final ApiService _apiService = ApiService();
   late final AnimationController _logoController;
+  bool _isSending = false;
 
   @override
   void initState() {
@@ -34,14 +38,34 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
     super.dispose();
   }
 
-  void _sendCode() {
+  Future<void> _sendCode() async {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => VerificationScreen(email: _emailController.text.trim()),
-      ),
-    );
+
+    final email = _emailController.text.trim();
+    setState(() => _isSending = true);
+
+    Map<String, dynamic> result;
+    try {
+      result = await _apiService.forgotPassword(email);
+    } catch (error) {
+      result = {'success': false, 'error': error.toString()};
+    }
+
+    if (!mounted) return;
+    setState(() => _isSending = false);
+
+    if (result['success'] == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VerificationScreen(email: email),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['error']?.toString() ?? context.tr('Failed to send verification code'))),
+      );
+    }
   }
 
   @override
@@ -65,7 +89,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         Text(
-                          'Forgot Password?',
+                          context.tr('Forgot Password?'),
                           style: TextStyle(
                             fontSize: 26,
                             fontWeight: FontWeight.w800,
@@ -75,17 +99,22 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          "No worries! Enter your email address or phone number and we'll send you a code to reset your password.",
+                          context.tr("No worries! Enter your email address and we'll send you a code to reset your password."),
                           style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5),
                         ),
                         const SizedBox(height: 32),
-                        const _FieldLabel('Email or Phone Number'),
+                        _FieldLabel(context.tr('Email Address')),
                         TextFormField(
                           controller: _emailController,
                           keyboardType: TextInputType.emailAddress,
+                          enabled: !_isSending,
                           validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter your email or phone number';
+                            final trimmed = value?.trim() ?? '';
+                            if (trimmed.isEmpty) {
+                              return context.tr('Please enter your email address');
+                            }
+                            if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(trimmed)) {
+                              return context.tr('Please enter a valid email address');
                             }
                             return null;
                           },
@@ -96,7 +125,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
                         ),
                         const SizedBox(height: 32),
                         _ActionBtn(
-                          title: 'SEND CODE',
+                          title: context.tr('SEND CODE'),
+                          isLoading: _isSending,
                           onPressed: _sendCode,
                         ),
                       ],
@@ -168,6 +198,9 @@ class VerificationScreen extends StatefulWidget {
 class _VerificationScreenState extends State<VerificationScreen> {
   final List<TextEditingController> _controllers = [];
   final List<FocusNode> _focusNodes = [];
+  final ApiService _apiService = ApiService();
+  bool _isVerifying = false;
+  bool _isResending = false;
 
   @override
   void initState() {
@@ -189,13 +222,54 @@ class _VerificationScreenState extends State<VerificationScreen> {
     super.dispose();
   }
 
-  void _verifyCode() {
+  Future<void> _verifyCode() async {
     String code = _controllers.map((c) => c.text).join();
-    if (code.length == 6) {
-      Navigator.push(context, MaterialPageRoute(builder: (context) => const NewPasswordScreen()));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please enter the 6-digit code')));
+    if (code.length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(context.tr('Please enter the 6-digit code'))));
+      return;
     }
+
+    setState(() => _isVerifying = true);
+    Map<String, dynamic> result;
+    try {
+      result = await _apiService.verifyResetCode(widget.email, code);
+    } catch (error) {
+      result = {'success': false, 'error': error.toString()};
+    }
+
+    if (!mounted) return;
+    setState(() => _isVerifying = false);
+
+    if (result['success'] == true) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => NewPasswordScreen(email: widget.email, code: code),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['error']?.toString() ?? context.tr('Invalid or expired code'))),
+      );
+    }
+  }
+
+  Future<void> _resendCode() async {
+    setState(() => _isResending = true);
+    final result = await _apiService.forgotPassword(widget.email);
+
+    if (!mounted) return;
+    setState(() => _isResending = false);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          result['success'] == true
+              ? '${context.tr('A new code has been sent to')} ${widget.email}'
+              : (result['error']?.toString() ?? context.tr('Failed to resend the code')),
+        ),
+      ),
+    );
   }
 
   @override
@@ -217,12 +291,12 @@ class _VerificationScreenState extends State<VerificationScreen> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Text(
-                        'Verification',
+                        context.tr('Verification'),
                         style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: scheme.onSurface),
                       ),
                       const SizedBox(height: 10),
                       Text(
-                        'Enter the 6-digit code sent to\n${widget.email}',
+                        '${context.tr('Enter the 6-digit code sent to')}\n${widget.email}',
                         style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5),
                       ),
                       const SizedBox(height: 40),
@@ -236,6 +310,7 @@ class _VerificationScreenState extends State<VerificationScreen> {
                             child: TextFormField(
                               controller: _controllers[index],
                               focusNode: _focusNodes[index],
+                              enabled: !_isVerifying,
                               textAlign: TextAlign.center,
                               keyboardType: TextInputType.number,
                               style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
@@ -257,15 +332,15 @@ class _VerificationScreenState extends State<VerificationScreen> {
                       Align(
                         alignment: Alignment.center,
                         child: TextButton(
-                          onPressed: () {}, // Add resend logic here
+                          onPressed: _isResending ? null : _resendCode,
                           child: Text(
-                            "Didn't receive a code? Resend",
+                            _isResending ? context.tr('Sending...') : context.tr("Didn't receive a code? Resend"),
                             style: TextStyle(color: scheme.primary, fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                         ),
                       ),
                       const SizedBox(height: 40),
-                      _ActionBtn(title: 'VERIFY CODE', onPressed: _verifyCode),
+                      _ActionBtn(title: context.tr('VERIFY CODE'), isLoading: _isVerifying, onPressed: _verifyCode),
                     ],
                   ),
                 ),
@@ -330,7 +405,9 @@ class _VerificationScreenState extends State<VerificationScreen> {
 // SCREEN 3: Enter New Password
 // =========================================================
 class NewPasswordScreen extends StatefulWidget {
-  const NewPasswordScreen({super.key});
+  final String email;
+  final String code;
+  const NewPasswordScreen({super.key, required this.email, required this.code});
 
   @override
   State<NewPasswordScreen> createState() => _NewPasswordScreenState();
@@ -340,8 +417,10 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _newPassController = TextEditingController();
   final _confirmPassController = TextEditingController();
+  final ApiService _apiService = ApiService();
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _isResetting = false;
 
   @override
   void dispose() {
@@ -350,9 +429,32 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
     super.dispose();
   }
 
-  void _resetPassword() {
+  Future<void> _resetPassword() async {
     if (!_formKey.currentState!.validate()) return;
-    Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuccessScreen()));
+
+    setState(() => _isResetting = true);
+    Map<String, dynamic> result;
+    try {
+      result = await _apiService.resetPassword(
+        widget.email,
+        widget.code,
+        _newPassController.text,
+        _confirmPassController.text,
+      );
+    } catch (error) {
+      result = {'success': false, 'error': error.toString()};
+    }
+
+    if (!mounted) return;
+    setState(() => _isResetting = false);
+
+    if (result['success'] == true) {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => const SuccessScreen()));
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result['error']?.toString() ?? context.tr('Failed to reset password'))),
+      );
+    }
   }
 
   @override
@@ -375,17 +477,18 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Create New Password', style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: scheme.onSurface)),
+                        Text(context.tr('Create New Password'), style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800, color: scheme.onSurface)),
                         const SizedBox(height: 10),
-                        Text('Your new password must be different from previously used passwords.', style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5)),
+                        Text(context.tr('Your new password must be different from previously used passwords.'), style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5)),
                         const SizedBox(height: 32),
-                        const _FieldLabel('New Password'),
+                        _FieldLabel(context.tr('New Password')),
                         TextFormField(
                           controller: _newPassController,
                           obscureText: _obscureNew,
+                          enabled: !_isResetting,
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Please enter a new password';
-                            if (value.length < 6) return 'Password must be at least 6 characters';
+                            if (value == null || value.isEmpty) return context.tr('Please enter a new password');
+                            if (value.length < 8) return context.tr('Password must be at least 8 characters');
                             return null;
                           },
                           decoration: InputDecoration(
@@ -398,13 +501,14 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           ),
                         ),
                         const SizedBox(height: 16),
-                        const _FieldLabel('Confirm Password'),
+                        _FieldLabel(context.tr('Confirm Password')),
                         TextFormField(
                           controller: _confirmPassController,
                           obscureText: _obscureConfirm,
+                          enabled: !_isResetting,
                           validator: (value) {
-                            if (value == null || value.isEmpty) return 'Please confirm your password';
-                            if (value != _newPassController.text) return 'Passwords do not match';
+                            if (value == null || value.isEmpty) return context.tr('Please confirm your password');
+                            if (value != _newPassController.text) return context.tr('Passwords do not match');
                             return null;
                           },
                           decoration: InputDecoration(
@@ -417,7 +521,7 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                           ),
                         ),
                         const SizedBox(height: 40),
-                        _ActionBtn(title: 'RESET PASSWORD', onPressed: _resetPassword),
+                        _ActionBtn(title: context.tr('RESET PASSWORD'), isLoading: _isResetting, onPressed: _resetPassword),
                       ],
                     ),
                   ),
@@ -508,7 +612,7 @@ class SuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               Text(
-                'Password Reset\nSuccessful!',
+                context.tr('Password Reset\nSuccessful!'),
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 26,
@@ -519,13 +623,13 @@ class SuccessScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                'Your password has been successfully reset. You can now use your new credentials to log in.',
+                context.tr('Your password has been successfully reset. You can now use your new credentials to log in.'),
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant, height: 1.5),
               ),
               const SizedBox(height: 40),
               _ActionBtn(
-                title: 'BACK TO LOGIN',
+                title: context.tr('BACK TO LOGIN'),
                 onPressed: () {
                   Navigator.pushAndRemoveUntil(
                     context,
@@ -562,22 +666,30 @@ class _FieldLabel extends StatelessWidget {
 class _ActionBtn extends StatelessWidget {
   final String title;
   final VoidCallback onPressed;
-  const _ActionBtn({required this.title, required this.onPressed});
+  final bool isLoading;
+  const _ActionBtn({required this.title, required this.onPressed, this.isLoading = false});
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 54,
       child: ElevatedButton(
-        onPressed: onPressed,
+        onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFFFF7A1A),
           foregroundColor: Colors.white,
+          disabledBackgroundColor: const Color(0xFFFF7A1A).withValues(alpha: 0.7),
           elevation: 0,
           shadowColor: Colors.transparent,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
-        child: Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 1.3)),
+        child: isLoading
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(strokeWidth: 2.4, color: Colors.white),
+              )
+            : Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, letterSpacing: 1.3)),
       ),
     );
   }

@@ -26,15 +26,13 @@ class DecisionSupportScreen extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Theme.of(context).cardColor,
-        foregroundColor: scheme.onSurface,
         elevation: 0,
         title: Text(
           'Decision Support',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w700,
-            color: scheme.onSurface,
+            color: scheme.onPrimary,
           ),
         ),
         leading: IconButton(
@@ -46,7 +44,6 @@ class DecisionSupportScreen extends StatelessWidget {
             margin: const EdgeInsets.only(right: 8),
             child: IconButton(
               icon: const Icon(Icons.auto_awesome_rounded, size: 24),
-              color: scheme.primary,
               onPressed: () => _showAIAssistantDialog(context),
             ),
           ),

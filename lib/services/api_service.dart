@@ -30,11 +30,11 @@ class ApiService {
   // Override LOCAL_API_BASE_URL when the phone/network IP changes.
   static const String _localApi = String.fromEnvironment(
     'LOCAL_API_BASE_URL',
-    defaultValue: 'http://192.168.2.160:8000/api/v1/',
+    defaultValue: 'http://192.168.2.148:8000/api/v1/',
   );
   static const String _localToken = String.fromEnvironment(
     'LOCAL_TOKEN_URL',
-    defaultValue: 'http://192.168.2.160:8000/api/token/',
+    defaultValue: 'http://192.168.2.148:8000/api/token/',
   );
 
   // For an Android emulator use:
@@ -154,21 +154,27 @@ class ApiService {
       print('📥 Login Response Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = _decodeJsonResponse(response.body);
         if (data['success'] == true) {
-          String token = data['data']['token'] ?? data['token'];
+          final responseData = data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : data;
+          final token = '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
+          if (token.isEmpty) {
+            return {'success': false, 'error': 'The server did not return a login token'};
+          }
           await saveProductionTokens(
             token,
-            data['data']['refresh_token'] ?? 'refresh_token_placeholder',
+            '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
           );
-          return {'success': true, 'data': data['data']};
+          return {'success': true, 'data': responseData};
         }
         return {'success': false, 'error': data['message'] ?? 'Login failed'};
       } else {
-        final error = json.decode(response.body);
+        final error = _decodeJsonResponse(response.body);
         return {
           'success': false,
-          'error': error['message'] ?? 'Invalid credentials',
+          'error': _validationMessage(error) ?? error['message'] ?? 'Invalid credentials',
         };
       }
     } catch (e) {
@@ -242,26 +248,38 @@ class ApiService {
         body: json.encode(userData),
       );
 
-      if (response.statusCode == 201) {
-        final data = json.decode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = _decodeJsonResponse(response.body);
         if (data['success'] == true) {
-          final token = data['data']['token'];
-          if (_isLocalMode) {
-            await saveLocalTokens(token, 'refresh_token_placeholder');
-          } else {
-            await saveProductionTokens(token, 'refresh_token_placeholder');
+          final responseData = data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : data;
+          final token = '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
+          if (token.isEmpty) {
+            return {'success': false, 'error': 'Account created but the server did not return a login token'};
           }
-          return {'success': true, 'data': data['data']};
+          if (_isLocalMode) {
+            await saveLocalTokens(
+              token,
+              '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
+            );
+          } else {
+            await saveProductionTokens(
+              token,
+              '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
+            );
+          }
+          return {'success': true, 'data': responseData};
         }
         return {
           'success': false,
           'error': data['message'] ?? 'Registration failed',
         };
       } else {
-        final error = json.decode(response.body);
+        final error = _decodeJsonResponse(response.body);
         return {
           'success': false,
-          'error': error['errors'] ?? error['message'] ?? 'Registration failed',
+          'error': _validationMessage(error) ?? error['errors'] ?? error['message'] ?? 'Registration failed',
         };
       }
     } catch (e) {
@@ -271,6 +289,121 @@ class ApiService {
 
   Future<void> logout() async {
     await clearTokens();
+  }
+
+  // ========== FORGOT PASSWORD ==========
+  // These run unauthenticated, unlike the generic get/post/put/delete
+  // helpers below which all require a saved token.
+
+  /// Step 1: ask the server to email a 6-digit verification code to [email].
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    await loadTokens();
+    final url = '${_getBaseUrl()}forgot-password';
+
+    try {
+      print('📡 Forgot Password Request: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: json.encode({'email': email}),
+      );
+
+      print('📥 Forgot Password Response Status: ${response.statusCode}');
+
+      final data = _decodeJsonResponse(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, 'message': data['message']};
+      }
+      return {
+        'success': false,
+        'error': _validationMessage(data) ?? data['message'] ?? 'Failed to send verification code',
+      };
+    } catch (e) {
+      print('❌ Forgot Password Error: $e');
+      return {'success': false, 'error': 'Cannot reach the server at $url'};
+    }
+  }
+
+  /// Step 2: check the code the user typed in, without changing the password yet.
+  Future<Map<String, dynamic>> verifyResetCode(String email, String code) async {
+    await loadTokens();
+    final url = '${_getBaseUrl()}verify-reset-code';
+
+    try {
+      print('📡 Verify Reset Code Request: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: json.encode({'email': email, 'code': code}),
+      );
+
+      print('📥 Verify Reset Code Response Status: ${response.statusCode}');
+
+      final data = _decodeJsonResponse(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300 && data['success'] == true) {
+        return {'success': true};
+      }
+      return {
+        'success': false,
+        'error': _validationMessage(data) ?? data['message'] ?? 'Invalid or expired code',
+      };
+    } catch (e) {
+      print('❌ Verify Reset Code Error: $e');
+      return {'success': false, 'error': 'Cannot reach the server at $url'};
+    }
+  }
+
+  /// Step 3: verify the code again and set [password] as the new password.
+  Future<Map<String, dynamic>> resetPassword(
+    String email,
+    String code,
+    String password,
+    String passwordConfirmation,
+  ) async {
+    await loadTokens();
+    final url = '${_getBaseUrl()}reset-password';
+
+    try {
+      print('📡 Reset Password Request: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
+        body: json.encode({
+          'email': email,
+          'code': code,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        }),
+      );
+
+      print('📥 Reset Password Response Status: ${response.statusCode}');
+
+      final data = _decodeJsonResponse(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300 && data['success'] == true) {
+        return {'success': true};
+      }
+      return {
+        'success': false,
+        'error': _validationMessage(data) ?? data['message'] ?? 'Failed to reset password',
+      };
+    } catch (e) {
+      print('❌ Reset Password Error: $e');
+      return {'success': false, 'error': 'Cannot reach the server at $url'};
+    }
+  }
+
+  /// Flattens a Laravel `{"errors": {"field": ["message"]}}` payload into one string.
+  String? _validationMessage(Map<String, dynamic> data) {
+    final errors = data['errors'];
+    if (errors is Map) {
+      return errors.values
+          .map((e) => e is List ? e.join(', ') : e.toString())
+          .join('; ');
+    }
+    return null;
   }
 
   // ========== GENERIC HTTP METHODS ==========
@@ -1134,10 +1267,12 @@ class ApiService {
   Future<Map<String, dynamic>> sendChatMessage(
     String message, {
     String? language,
+    String? sessionId,
   }) async {
     return await post('ai-chat/send', {
       'message': message,
       if (language != null) 'language': language,
+      if (sessionId != null) 'session_id': sessionId,
     });
   }
 

@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/screens/home_details/Decision%20support/decison_support.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
+import 'package:jaguza_app/screens/home_details/Equipment/jaguza_equipment.dart';
 import 'package:jaguza_app/screens/home_details/Gestation%20tracker/gestation_tracker.dart';
 import 'package:jaguza_app/screens/home_details/My%20farm/my_farm.dart';
 import 'package:jaguza_app/screens/home_details/Veterinary%20Doctors/veterinary_doctors.dart';
@@ -16,6 +17,7 @@ import '../screens/home_details/Disease Information/disease_diagnosis.dart';
 import '../screens/home_details/Market place/market_place.dart';
 import '../screens/home_details/Settings/settings_screen.dart';
 import './home_details/advertisement.dart';
+import '../services/app_localizations.dart';
 
 // NAVIGATION SHELL
 
@@ -55,7 +57,7 @@ class _MainShellState extends State<MainShell> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Could not open website. Please try again.'),
+              content: Text(context.tr('Could not open website. Please try again.')),
               backgroundColor: errorColor,
             ),
           );
@@ -65,7 +67,7 @@ class _MainShellState extends State<MainShell> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('${context.tr('Error')}: ${e.toString()}'),
             backgroundColor: errorColor,
           ),
         );
@@ -104,10 +106,10 @@ class _MainShellState extends State<MainShell> {
                   ),
                 ),
                 const SizedBox(width: 14),
-                const Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    const Text(
                       'Jaguza',
                       style: TextStyle(
                         color: Colors.white,
@@ -116,8 +118,8 @@ class _MainShellState extends State<MainShell> {
                       ),
                     ),
                     Text(
-                      'Livestock Management',
-                      style: TextStyle(
+                      context.tr('Livestock Management'),
+                      style: const TextStyle(
                         color: Color(0xFF81C784),
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
@@ -136,10 +138,14 @@ class _MainShellState extends State<MainShell> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildDrawerSection(
-                    title: 'Farm Expenses',
+                    title: context.tr('Farm Expenses'),
                     icon: Icons.payments_outlined,
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyFarmScreen()),
+                      );
                     },
                   ),
                   Divider(
@@ -147,31 +153,57 @@ class _MainShellState extends State<MainShell> {
                     height: 1,
                   ),
                   _buildDrawerItem(
-                    icon: Icons.add_rounded,
-                    title: 'Feed',
+                    icon: Icons.dynamic_feed_rounded,
+                    title: context.tr('Feed'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => _FullScreenPage(
+                            title: context.tr('Feed'),
+                            child: const ExploreScreen(),
+                          ),
+                        ),
+                      );
                     },
                   ),
                   _buildDrawerItem(
                     icon: Icons.help_outline_rounded,
-                    title: 'Veterinary Help',
+                    title: context.tr('Veterinary Help'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => _FullScreenPage(
+                            title: context.tr('Veterinary Doctors'),
+                            child: const VeterinaryDoctorsScreen(),
+                          ),
+                        ),
+                      );
                     },
                   ),
                   _buildDrawerItem(
-                    icon: Icons.medical_services_rounded,
-                    title: 'Labour',
+                    icon: Icons.groups_outlined,
+                    title: context.tr('Labour'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MyFarmScreen()),
+                      );
                     },
                   ),
                   _buildDrawerItem(
-                    icon: Icons.people_outline_rounded,
-                    title: 'Equipment and Housing',
+                    icon: Icons.warehouse_rounded,
+                    title: context.tr('Equipment and Housing'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const JaguzaEquipmentScreen()),
+                      );
                     },
                   ),
                   Divider(
@@ -179,7 +211,7 @@ class _MainShellState extends State<MainShell> {
                     height: 16,
                   ),
                   _buildDrawerSection(
-                    title: 'Account',
+                    title: context.tr('Account'),
                     icon: Icons.account_circle_outlined,
                     onTap: () {
                       Navigator.pop(context);
@@ -191,7 +223,7 @@ class _MainShellState extends State<MainShell> {
                   ),
                   _buildDrawerItem(
                     icon: Icons.settings_outlined,
-                    title: 'Settings',
+                    title: context.tr('Settings'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -204,7 +236,7 @@ class _MainShellState extends State<MainShell> {
                   ),
                   _buildDrawerItem(
                     icon: Icons.chat_bubble_outline_rounded,
-                    title: 'Ask Jaguza AI',
+                    title: context.tr('Ask Jaguza AI'),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
@@ -218,7 +250,7 @@ class _MainShellState extends State<MainShell> {
                     height: 16,
                   ),
                   _buildDrawerSection(
-                    title: 'Communicate',
+                    title: context.tr('Communicate'),
                     icon: Icons.chat_outlined,
                     onTap: () {
                       Navigator.pop(context);
@@ -226,14 +258,18 @@ class _MainShellState extends State<MainShell> {
                   ),
                   _buildDrawerItem(
                     icon: Icons.lightbulb_outline_rounded,
-                    title: 'Tips and Suggestions',
+                    title: context.tr('Tips and Suggestions'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const DecisionSupportScreen()),
+                      );
                     },
                   ),
                   _buildDrawerItem(
                     icon: Icons.share_outlined,
-                    title: 'Share JAGUZA',
+                    title: context.tr('Share JAGUZA'),
                     onTap: () {
                       Navigator.pop(context);
                       _showShareDialog(context);
@@ -244,20 +280,28 @@ class _MainShellState extends State<MainShell> {
                     height: 16,
                   ),
                   _buildDrawerSection(
-                    title: 'Others',
+                    title: context.tr('Others'),
                     icon: Icons.more_horiz_rounded,
                     onTap: () {},
                   ),
                   _buildDrawerItem(
                     icon: Icons.handshake_outlined,
-                    title: 'Our Partners/About',
+                    title: context.tr('Our Partners/About'),
                     onTap: () {
                       Navigator.pop(context);
+                      _showInfoDialog(
+                        context,
+                        title: context.tr('Our Partners'),
+                        body: context.tr(
+                            'Jaguza Livestock partners with agribusinesses, veterinary '
+                            'suppliers and cooperatives across Uganda. For the current '
+                            'list of partners, visit jaguzalivestock.com.'),
+                      );
                     },
                   ),
                   _buildDrawerItem(
                     icon: Icons.public_outlined,
-                    title: 'Visit our Website',
+                    title: context.tr('Visit our Website'),
                     onTap: () {
                       Navigator.pop(context);
                       _launchWebsite('https://jaguzalivestock.com');
@@ -265,21 +309,41 @@ class _MainShellState extends State<MainShell> {
                   ),
                   _buildDrawerItem(
                     icon: Icons.privacy_tip_outlined,
-                    title: 'Privacy Policy',
+                    title: context.tr('Privacy Policy'),
                     onTap: () {
                       Navigator.pop(context);
+                      _showInfoDialog(
+                        context,
+                        title: context.tr('Privacy Policy'),
+                        body: context.tr(
+                            'Jaguza Livestock takes your privacy seriously. We collect only '
+                            'the data necessary to deliver our services. Your livestock '
+                            'data, farm records and location information are stored '
+                            'securely and never shared with third parties without your '
+                            'consent.\n\nYou may request deletion of your data at any time '
+                            'by contacting support@jaguzalivestock.com.'),
+                      );
                     },
                   ),
                   _buildDrawerItem(
                     icon: Icons.info_outline_rounded,
-                    title: 'About App',
+                    title: context.tr('About App'),
                     onTap: () {
                       Navigator.pop(context);
+                      _showInfoDialog(
+                        context,
+                        title: context.tr('About Jaguza'),
+                        body: context.tr(
+                            'Jaguza Livestock v1.0.0\n\nA livestock management app for '
+                            'farmers: diagnose diseases, track animals and gestation, '
+                            'reach veterinary doctors, buy and sell in the marketplace, '
+                            'and get AI-powered farming advice — all in one place.'),
+                      );
                     },
                   ),
                   _buildDrawerItem(
                     icon: Icons.logout_outlined,
-                    title: 'Logout',
+                    title: context.tr('Logout'),
                     onTap: () {
                       Navigator.pop(context);
                       _showLogoutDialog(context);
@@ -288,7 +352,7 @@ class _MainShellState extends State<MainShell> {
                   const SizedBox(height: 16),
                   Center(
                     child: Text(
-                      'Version 2.0.0',
+                      '${context.tr('Version')} 2.0.0',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 11,
@@ -367,21 +431,21 @@ class _MainShellState extends State<MainShell> {
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).cardColor,
         title: Text(
-          'Logout',
+          context.tr('Logout'),
           style: TextStyle(
             color: scheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Are you sure you want to logout?',
+          context.tr('Are you sure you want to logout?'),
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              context.tr('Cancel'),
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
           ),
@@ -390,7 +454,31 @@ class _MainShellState extends State<MainShell> {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: scheme.error),
-            child: const Text('Logout'),
+            child: Text(context.tr('Logout')),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showInfoDialog(BuildContext context, {required String title, required String body}) {
+    final scheme = Theme.of(context).colorScheme;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        title: Text(
+          title,
+          style: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.bold),
+        ),
+        content: SingleChildScrollView(
+          child: Text(body, style: TextStyle(color: scheme.onSurfaceVariant, height: 1.5)),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context),
+            style: ElevatedButton.styleFrom(backgroundColor: scheme.primary),
+            child: Text(context.tr('Got it')),
           ),
         ],
       ),
@@ -404,21 +492,21 @@ class _MainShellState extends State<MainShell> {
       builder: (context) => AlertDialog(
         backgroundColor: Theme.of(context).cardColor,
         title: Text(
-          'Share JAGUZA',
+          context.tr('Share JAGUZA'),
           style: TextStyle(
             color: scheme.onSurface,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Share the Jaguza app with your fellow farmers!',
+          context.tr('Share the Jaguza app with your fellow farmers!'),
           style: TextStyle(color: scheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
-              'Cancel',
+              context.tr('Cancel'),
               style: TextStyle(color: scheme.onSurfaceVariant),
             ),
           ),
@@ -427,7 +515,7 @@ class _MainShellState extends State<MainShell> {
               Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(backgroundColor: scheme.primary),
-            child: const Text('Share'),
+            child: Text(context.tr('Share')),
           ),
         ],
       ),
@@ -473,11 +561,11 @@ class _HomeTabState extends State<HomeTab> {
   String get _headerTitle {
     switch (_tabIndex) {
       case 1:
-        return 'User Posts';
+        return context.tr('User Posts');
       case 2:
-        return 'Doctors';
+        return context.tr('Doctors');
       case 3:
-        return 'Diseases';
+        return context.tr('Diseases');
       default:
         return 'Jaguza';
     }
@@ -627,13 +715,13 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _infoCard() {
     final scheme = Theme.of(context).colorScheme;
-    const lines = [
-      'Use Jaguza to Diagnose diseases, Track animals',
-      'Sell your agricultural products in Market',
-      'Know more about animal Diseases',
-      'Track your Expenses and Milk production',
-      'Contact Veterinary Doctors',
-      'Track Animal Gestation and so much more…',
+    final lines = [
+      context.tr('Use Jaguza to Diagnose diseases, Track animals'),
+      context.tr('Sell your agricultural products in Market'),
+      context.tr('Know more about animal Diseases'),
+      context.tr('Track your Expenses and Milk production'),
+      context.tr('Contact Veterinary Doctors'),
+      context.tr('Track Animal Gestation and so much more…'),
     ];
     return Container(
       width: double.infinity,
@@ -824,9 +912,9 @@ class _HomeTabState extends State<HomeTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
-                    'Is there anything that you would like to know in the field of Agriculture?',
-                    style: TextStyle(
+                  Text(
+                    context.tr('Is there anything that you would like to know in the field of Agriculture?'),
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 15,
                       height: 1.35,
@@ -848,9 +936,9 @@ class _HomeTabState extends State<HomeTab> {
                       ),
                       elevation: 0,
                     ),
-                    child: const Text(
-                      'Ask Jaguza AI?',
-                      style: TextStyle(
+                    child: Text(
+                      context.tr('Ask Jaguza AI?'),
+                      style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                       ),
@@ -886,68 +974,68 @@ class _HomeTabState extends State<HomeTab> {
 
     final features = [
       FeatureItem(
-        title: 'Report sickness',
+        title: context.tr('Report sickness'),
         icon: FontAwesomeIcons.bug,
         color: green,
         screen: const ReportSicknessScreen(),
       ),
       FeatureItem(
-        title: 'Diagnosis',
+        title: context.tr('Diagnosis'),
         icon: FontAwesomeIcons.stethoscope,
         color: grey,
         screen: const DiagnosisScreen(),
       ),
       FeatureItem(
-        title: 'Veterinary Doctors',
+        title: context.tr('Veterinary Doctors'),
         icon: FontAwesomeIcons.userNurse,
         color: grey,
         tabIndex: 2,
       ),
       FeatureItem(
-        title: 'Disease Information',
+        title: context.tr('Disease Information'),
         icon: FontAwesomeIcons.circleNodes,
         color: green,
         tabIndex: 3,
       ),
       FeatureItem(
-        title: 'Gestation tracker',
+        title: context.tr('Gestation tracker'),
         icon: FontAwesomeIcons.cow,
         color: green,
         screen: const GestationTrackerScreen(),
       ),
       FeatureItem(
-        title: 'Market',
+        title: context.tr('Market'),
         icon: FontAwesomeIcons.cartShopping,
         color: grey,
         screen: const MarketplaceScreen(),
       ),
       FeatureItem(
-        title: 'Weather updates',
+        title: context.tr('Weather updates'),
         icon: FontAwesomeIcons.sun,
         color: grey,
         screen: const WeatherUpdatesScreen(),
       ),
       FeatureItem(
-        title: 'Decision Support',
+        title: context.tr('Decision Support'),
         icon: FontAwesomeIcons.circleQuestion,
         color: green,
         screen: const DecisionSupportScreen(),
       ),
-      const FeatureItem(
-        title: 'Visit our Website',
+      FeatureItem(
+        title: context.tr('Visit our Website'),
         icon: FontAwesomeIcons.globe,
         color: green,
         isWebsite: true,
         url: 'https://jaguzalivestock.com',
       ),
       FeatureItem(
-        title: 'My farm',
+        title: context.tr('My farm'),
         icon: FontAwesomeIcons.cow,
         color: brown,
         screen: const MyFarmScreen(),
       ),
       FeatureItem(
-        title: 'Videos',
+        title: context.tr('Videos'),
         icon: FontAwesomeIcons.film,
         color: green,
         screen: const VideoScreen(),
@@ -1037,9 +1125,9 @@ class _HomeTabState extends State<HomeTab> {
                           size: 20,
                         ),
                         const SizedBox(width: 8),
-                        const Text(
-                          'Advertise with Jaguza',
-                          style: TextStyle(
+                        Text(
+                          context.tr('Advertise with Jaguza'),
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
                             fontWeight: FontWeight.w700,
@@ -1184,7 +1272,7 @@ class _FeatureCardState extends State<_FeatureCard> {
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Could not open website. Please try again.'),
+              content: Text(context.tr('Could not open website. Please try again.')),
               backgroundColor: errorColor,
             ),
           );
@@ -1194,12 +1282,37 @@ class _FeatureCardState extends State<_FeatureCard> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text('${context.tr('Error')}: ${e.toString()}'),
             backgroundColor: errorColor,
           ),
         );
       }
     }
+  }
+}
+
+/// Wraps a screen that's normally embedded as a tab body inside [HomeTab]
+/// (so it has no app bar of its own) with a proper full-screen app bar —
+/// title, green header, white back button — for when it's opened directly
+/// from the drawer instead of via the bottom icon tabs.
+class _FullScreenPage extends StatelessWidget {
+  final String title;
+  final Widget child;
+  const _FullScreenPage({required this.title, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        elevation: 0,
+        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      body: child,
+    );
   }
 }
 
