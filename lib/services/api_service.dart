@@ -1,18 +1,18 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Defaults to the deployed production server. NOTE: production is
+  // Debug builds use the local server by default. NOTE: production is
   // currently out of sync with several fixes made against the local server
   // (POST /workers route, marketplace schema, video categories, ad
   // approval, animal/worker creation) - those won't work until production
-  // is redeployed. Pass --dart-define=USE_LOCAL_API=true to point at a
-  // local dev server instead.
+  // is redeployed. Override USE_LOCAL_API to select a server explicitly.
   static const bool _forceLocalApi = bool.fromEnvironment(
     'USE_LOCAL_API',
-    defaultValue: false,
+    defaultValue: kDebugMode,
   );
 
   // Production URLs
@@ -30,11 +30,11 @@ class ApiService {
   // Override LOCAL_API_BASE_URL when the phone/network IP changes.
   static const String _localApi = String.fromEnvironment(
     'LOCAL_API_BASE_URL',
-    defaultValue: 'http://192.168.2.160:8000/api/v1/',
+    defaultValue: 'http://192.168.2.148:8000/api/v1/',
   );
   static const String _localToken = String.fromEnvironment(
     'LOCAL_TOKEN_URL',
-    defaultValue: 'http://192.168.2.160:8000/api/token/',
+    defaultValue: 'http://192.168.2.148:8000/api/token/',
   );
 
   // For an Android emulator use:
@@ -154,21 +154,34 @@ class ApiService {
       print('📥 Login Response Status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = _decodeJsonResponse(response.body);
         if (data['success'] == true) {
-          String token = data['data']['token'] ?? data['token'];
+          final responseData = data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : data;
+          final token =
+              '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
+          if (token.isEmpty) {
+            return {
+              'success': false,
+              'error': 'The server did not return a login token',
+            };
+          }
           await saveProductionTokens(
             token,
-            data['data']['refresh_token'] ?? 'refresh_token_placeholder',
+            '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
           );
-          return {'success': true, 'data': data['data']};
+          return {'success': true, 'data': responseData};
         }
         return {'success': false, 'error': data['message'] ?? 'Login failed'};
       } else {
-        final error = json.decode(response.body);
+        final error = _decodeJsonResponse(response.body);
         return {
           'success': false,
-          'error': error['message'] ?? 'Invalid credentials',
+          'error':
+              _validationMessage(error) ??
+              error['message'] ??
+              'Invalid credentials',
         };
       }
     } catch (e) {
@@ -242,26 +255,47 @@ class ApiService {
         body: json.encode(userData),
       );
 
-      if (response.statusCode == 201) {
-        final data = json.decode(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final data = _decodeJsonResponse(response.body);
         if (data['success'] == true) {
-          final token = data['data']['token'];
-          if (_isLocalMode) {
-            await saveLocalTokens(token, 'refresh_token_placeholder');
-          } else {
-            await saveProductionTokens(token, 'refresh_token_placeholder');
+          final responseData = data['data'] is Map
+              ? Map<String, dynamic>.from(data['data'] as Map)
+              : data;
+          final token =
+              '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
+          if (token.isEmpty) {
+            return {
+              'success': false,
+              'error':
+                  'Account created but the server did not return a login token',
+            };
           }
-          return {'success': true, 'data': data['data']};
+          if (_isLocalMode) {
+            await saveLocalTokens(
+              token,
+              '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
+            );
+          } else {
+            await saveProductionTokens(
+              token,
+              '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
+            );
+          }
+          return {'success': true, 'data': responseData};
         }
         return {
           'success': false,
           'error': data['message'] ?? 'Registration failed',
         };
       } else {
-        final error = json.decode(response.body);
+        final error = _decodeJsonResponse(response.body);
         return {
           'success': false,
-          'error': error['errors'] ?? error['message'] ?? 'Registration failed',
+          'error':
+              _validationMessage(error) ??
+              error['errors'] ??
+              error['message'] ??
+              'Registration failed',
         };
       }
     } catch (e) {
@@ -273,11 +307,171 @@ class ApiService {
     await clearTokens();
   }
 
+  // ========== FORGOT PASSWORD ==========
+  // These run unauthenticated, unlike the generic get/post/put/delete
+  // helpers below which all require a saved token.
+
+  /// Step 1: ask the server to email a 6-digit verification code to [email].
+  Future<Map<String, dynamic>> forgotPassword(String email) async {
+    await loadTokens();
+    final url = '${_getBaseUrl()}forgot-password';
+
+    try {
+      print('📡 Forgot Password Request: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({'email': email}),
+      );
+
+      print('📥 Forgot Password Response Status: ${response.statusCode}');
+
+      final data = _decodeJsonResponse(response.body);
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return {'success': true, 'message': data['message']};
+      }
+      return {
+        'success': false,
+        'error':
+            _validationMessage(data) ??
+            data['message'] ??
+            'Failed to send verification code',
+      };
+    } catch (e) {
+      print('❌ Forgot Password Error: $e');
+      return {'success': false, 'error': 'Cannot reach the server at $url'};
+    }
+  }
+
+  /// Step 2: check the code the user typed in, without changing the password yet.
+  Future<Map<String, dynamic>> verifyResetCode(
+    String email,
+    String code,
+  ) async {
+    await loadTokens();
+    final url = '${_getBaseUrl()}verify-reset-code';
+
+    try {
+      print('📡 Verify Reset Code Request: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({'email': email, 'code': code}),
+      );
+
+      print('📥 Verify Reset Code Response Status: ${response.statusCode}');
+
+      final data = _decodeJsonResponse(response.body);
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          data['success'] == true) {
+        return {'success': true};
+      }
+      return {
+        'success': false,
+        'error':
+            _validationMessage(data) ??
+            data['message'] ??
+            'Invalid or expired code',
+      };
+    } catch (e) {
+      print('❌ Verify Reset Code Error: $e');
+      return {'success': false, 'error': 'Cannot reach the server at $url'};
+    }
+  }
+
+  /// Step 3: verify the code again and set [password] as the new password.
+  Future<Map<String, dynamic>> resetPassword(
+    String email,
+    String code,
+    String password,
+    String passwordConfirmation,
+  ) async {
+    await loadTokens();
+    final url = '${_getBaseUrl()}reset-password';
+
+    try {
+      print('📡 Reset Password Request: $url');
+
+      final response = await http.post(
+        Uri.parse(url),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({
+          'email': email,
+          'code': code,
+          'password': password,
+          'password_confirmation': passwordConfirmation,
+        }),
+      );
+
+      print('📥 Reset Password Response Status: ${response.statusCode}');
+
+      final data = _decodeJsonResponse(response.body);
+      if (response.statusCode >= 200 &&
+          response.statusCode < 300 &&
+          data['success'] == true) {
+        return {'success': true};
+      }
+      return {
+        'success': false,
+        'error':
+            _validationMessage(data) ??
+            data['message'] ??
+            'Failed to reset password',
+      };
+    } catch (e) {
+      print('❌ Reset Password Error: $e');
+      return {'success': false, 'error': 'Cannot reach the server at $url'};
+    }
+  }
+
+  /// Flattens a Laravel `{"errors": {"field": ["message"]}}` payload into one string.
+  String? _validationMessage(Map<String, dynamic> data) {
+    final errors = data['errors'];
+    if (errors is Map) {
+      return errors.values
+          .map((e) => e is List ? e.join(', ') : e.toString())
+          .join('; ');
+    }
+    return null;
+  }
+
   // ========== GENERIC HTTP METHODS ==========
 
   // Get the base URL based on mode
   String _getBaseUrl() {
     return _isLocalMode ? _localApi : baseUrl;
+  }
+
+  String resolveMediaUrl(String value) {
+    final uri = Uri.tryParse(value.trim());
+    if (uri == null) return value;
+
+    final localHosts = {'localhost', '127.0.0.1', '0.0.0.0'};
+    if (uri.hasScheme && !localHosts.contains(uri.host.toLowerCase())) {
+      return uri.toString();
+    }
+
+    final base = Uri.parse(_getBaseUrl());
+    final path = uri.path.startsWith('/') ? uri.path : '/storage/${uri.path}';
+    return base
+        .replace(
+          path: path,
+          query: uri.hasQuery ? uri.query : null,
+          fragment: uri.hasFragment ? uri.fragment : null,
+        )
+        .toString();
   }
 
   // Get the current token
@@ -525,22 +719,24 @@ class ApiService {
       );
     }
 
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse('${_getBaseUrl()}$endpoint'),
-    )
-      ..headers['Authorization'] = 'Bearer $token'
-      ..headers['Accept'] = 'application/json';
+    final request =
+        http.MultipartRequest('POST', Uri.parse('${_getBaseUrl()}$endpoint'))
+          ..headers['Authorization'] = 'Bearer $token'
+          ..headers['Accept'] = 'application/json';
 
     data.forEach((key, value) {
       if (value == null) return;
-      request.fields[key] = value is List ? json.encode(value) : value.toString();
+      request.fields[key] = value is List
+          ? json.encode(value)
+          : value.toString();
     });
 
     for (final entry in files.entries) {
       for (final file in entry.value) {
         if (await file.exists()) {
-          request.files.add(await http.MultipartFile.fromPath(entry.key, file.path));
+          request.files.add(
+            await http.MultipartFile.fromPath(entry.key, file.path),
+          );
         }
       }
     }
@@ -1026,37 +1222,54 @@ class ApiService {
   ) {
     final animal = animalType.toLowerCase();
     final normalizedSymptoms = symptoms.map((s) => s.toLowerCase()).toList();
-    final results = diseases.whereType<Map>().map((raw) {
-      final disease = Map<String, dynamic>.from(raw);
-      final text = '${disease['name'] ?? ''} ${disease['species_affected'] ?? ''} '
-          '${disease['symptoms'] ?? ''}'.toLowerCase();
-      final symptomMatches = normalizedSymptoms.where((symptom) {
-        return text.contains(symptom) ||
-            symptom.split(' ').where((word) => word.length > 3).any((word) => text.contains(word));
-      }).length;
-      final species = '${disease['species_affected'] ?? ''}'.toLowerCase();
-      final speciesMatches = species.contains(animal) ||
-          (animal == 'poultry' && (species.contains('chicken') || species.contains('bird')));
-      final score = normalizedSymptoms.isEmpty
-          ? 0
-          : ((symptomMatches / normalizedSymptoms.length) * 80).round() +
-              (speciesMatches ? 20 : 0);
-      return <String, dynamic>{
-        ...disease,
-        'match': score.clamp(0, 100).toInt(),
-        'severity': '${disease['severity'] ?? 'medium'}'.replaceFirstMapped(
-          RegExp(r'^.'),
-          (match) => match.group(0)!.toUpperCase(),
-        ),
-        'description': disease['symptoms'] ?? '',
-      };
-    }).where((disease) => (disease['match'] as int) > 0).toList()
-      ..sort((a, b) => (b['match'] as int).compareTo(a['match'] as int));
+    final results =
+        diseases
+            .whereType<Map>()
+            .map((raw) {
+              final disease = Map<String, dynamic>.from(raw);
+              final text =
+                  '${disease['name'] ?? ''} ${disease['species_affected'] ?? ''} '
+                          '${disease['symptoms'] ?? ''}'
+                      .toLowerCase();
+              final symptomMatches = normalizedSymptoms.where((symptom) {
+                return text.contains(symptom) ||
+                    symptom
+                        .split(' ')
+                        .where((word) => word.length > 3)
+                        .any((word) => text.contains(word));
+              }).length;
+              final species = '${disease['species_affected'] ?? ''}'
+                  .toLowerCase();
+              final speciesMatches =
+                  species.contains(animal) ||
+                  (animal == 'poultry' &&
+                      (species.contains('chicken') ||
+                          species.contains('bird')));
+              final score = normalizedSymptoms.isEmpty
+                  ? 0
+                  : ((symptomMatches / normalizedSymptoms.length) * 80)
+                            .round() +
+                        (speciesMatches ? 20 : 0);
+              return <String, dynamic>{
+                ...disease,
+                'match': score.clamp(0, 100).toInt(),
+                'severity': '${disease['severity'] ?? 'medium'}'
+                    .replaceFirstMapped(
+                      RegExp(r'^.'),
+                      (match) => match.group(0)!.toUpperCase(),
+                    ),
+                'description': disease['symptoms'] ?? '',
+              };
+            })
+            .where((disease) => (disease['match'] as int) > 0)
+            .toList()
+          ..sort((a, b) => (b['match'] as int).compareTo(a['match'] as int));
 
     return {
       'diseases': results.take(5).toList(),
       'matches': results.length,
-      'message': 'Matches are based on symptoms from the backend disease catalog.',
+      'message':
+          'Matches are based on symptoms from the backend disease catalog.',
     };
   }
 
@@ -1106,9 +1319,19 @@ class ApiService {
   }) async {
     dynamic response;
     if (imageFile != null && imageFile.existsSync()) {
-      response = await postWithFile('advertisements', data, 'image_file', imageFile);
+      response = await postWithFile(
+        'advertisements',
+        data,
+        'image_file',
+        imageFile,
+      );
     } else if (videoFile != null && videoFile.existsSync()) {
-      response = await postWithFile('advertisements', data, 'video_file', videoFile);
+      response = await postWithFile(
+        'advertisements',
+        data,
+        'video_file',
+        videoFile,
+      );
     } else {
       response = await post('advertisements', data);
     }
@@ -1134,10 +1357,12 @@ class ApiService {
   Future<Map<String, dynamic>> sendChatMessage(
     String message, {
     String? language,
+    String? sessionId,
   }) async {
     return await post('ai-chat/send', {
       'message': message,
       if (language != null) 'language': language,
+      if (sessionId != null) 'session_id': sessionId,
     });
   }
 
@@ -1210,9 +1435,9 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> createMarketplaceListing(
-    Map<String, dynamic> data,
-    {File? imageFile}
-  ) async {
+    Map<String, dynamic> data, {
+    File? imageFile,
+  }) async {
     final response = imageFile != null && imageFile.existsSync()
         ? await postWithFile('marketplace', data, 'image', imageFile)
         : await post('marketplace', data);

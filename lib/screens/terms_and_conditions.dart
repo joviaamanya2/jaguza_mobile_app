@@ -274,11 +274,11 @@ class _TermsAndConditionsScreenState extends State<TermsAndConditionsScreen> {
                           runSpacing: 8,
                           children: [
                             _buildContactChip(Icons.email_outlined,
-                                'legal@jaguzalivestock.com'),
+                                ' info@jaguzafarm.com'),
                             _buildContactChip(
-                                Icons.phone_outlined, '+256 XXX XXX XXX'),
+                                Icons.phone_outlined, ' +256 414 660 365 | +256 703 034 758'),
                             _buildContactChip(
-                                Icons.location_on_outlined, 'Kampala, Uganda'),
+                                Icons.location_on_outlined, ' Teacher’s House, Bombo Road, Kampala'),
                           ],
                         ),
                       ],

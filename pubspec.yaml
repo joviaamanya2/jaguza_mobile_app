@@ -31,11 +31,13 @@ dependencies:
   
   flutter:
     sdk: flutter
-  font_awesome_flutter: ^10.1.0
+  font_awesome_flutter: ^11.0.0
   flutter_localizations:
     sdk: flutter
   intl: ^0.20.2
   url_launcher: ^6.2.1
+  video_player: ^2.9.2
+  share_plus: ^10.1.4
   image_picker: ^1.0.7
   google_maps_flutter: ^2.6.1
   geolocator: ^12.0.0
@@ -97,20 +99,11 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_background: "assets/icon/app_icon_background.png"
   adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
   web:
     generate: true
     image_path: "assets/icon/app_icon.png"
-    background_color: "#FFFFFF"
-    theme_color: "#35B850"
-  macos:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-  windows:
-    generate: true
-    image_path: "assets/icon/app_icon.png"
-    icon_size: 256
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -138,6 +131,7 @@ flutter:
     - lib/assets/images/detail image/sheep/finances.jpg
     - lib/assets/images/image.png
     - lib/assets/images/marketplace/
+    - lib/assets/images/home icons/
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

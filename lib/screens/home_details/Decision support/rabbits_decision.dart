@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import './decision_topic_card.dart';
 
 class RabbitDecisionScreen extends StatefulWidget {
   const RabbitDecisionScreen({super.key});
@@ -22,71 +23,6 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
         'Wool breeds: Angora, English Angora, French Angora',
         'Dual-purpose: New Zealand, Californian, Champagne d\'Argent',
         'Climate adaptation and local market preferences',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Housing & Caging Systems',
-      description:
-          'Proper housing is crucial for rabbit health, productivity, and welfare. Good cage design prevents diseases, reduces stress, and improves feed efficiency and growth rates.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/59/A_colony_of_rabbits_in_their_hutch_at_Mlinza_Farm_01.jpg/960px-A_colony_of_rabbits_in_their_hutch_at_Mlinza_Farm_01.jpg',
-      details: [
-        'Cage space: 2-6 sq ft per rabbit (breed dependent)',
-        'Wire cage floors: 1/2 x 1 inch mesh (prevents sore hocks)',
-        'Tray or droppings collection system',
-        'Individual cages for breeding, group pens for growers',
-        'Clean, dry environment: 60-70°F (15-21°C)',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Feeding & Nutrition',
-      description:
-          'Rabbits require a balanced diet of hay, pellets, and fresh vegetables for optimal health, growth, and reproduction. Digestive health is critical in rabbit production.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/PermaLiv_kaninforing_i_kaninbur_02-01-20.jpg/960px-PermaLiv_kaninforing_i_kaninbur_02-01-20.jpg',
-      details: [
-        'Hay: 70-80% of diet (timothy, orchard, or oat hay)',
-        'Pellets: 16-18% protein, 14-18% fiber for growing rabbits',
-        'Fresh vegetables: Leafy greens in limited quantities',
-        'Fresh water: Clean water available 24/7',
-        'Feed conversion: 2.5-3.0 lbs feed per lb gain',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Health Management & Disease Prevention',
-      description:
-          'Rabbit health management includes vaccination, parasite control, and regular monitoring. A proactive health program prevents common diseases and reduces losses.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Little_Bunny_In_Hands_%28121780523%29.jpeg/960px-Little_Bunny_In_Hands_%28121780523%29.jpeg',
-      details: [
-        'Common diseases: Pasteurellosis, Enteritis, Coccidiosis',
-        'Vaccination: Myxomatosis, RHD (Rabbit Hemorrhagic Disease)',
-        'Parasite control: Coccidiosis prevention and treatment',
-        'Regular health checks: Nails, teeth, fur, weight',
-        'Quarantine new rabbits for minimum 14-21 days',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Breeding & Reproduction',
-      description:
-          'Strategic breeding decisions improve herd genetics, increase productivity, and ensure healthy kits. Understanding rabbit reproduction is essential for profitability.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/9/96/Rabbits_in_a_cage.jpg/960px-Rabbits_in_a_cage.jpg',
-      details: [
-        'Age at first breeding: 4-6 months (does)',
-        'Breeding frequency: 3-5 litters per year',
-        'Gestation period: 28-31 days (average 30 days)',
-        'Litter size: 6-10 kits (breed dependent)',
-        'Weaning age: 4-8 weeks (depending on system)',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Kindling Management',
-      description:
-          'Kindling (birthing) is a critical phase in rabbit production. Proper management during kindling and lactation ensures high kit survival rates and doe productivity.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Newborn_rabbits_in_a_fur_nest.jpg/960px-Newborn_rabbits_in_a_fur_nest.jpg',
-      details: [
-        'Nest box: Provide 1-2 days before kindling',
-        'Kindling materials: Hay, straw, wood shavings',
-        'Kit survival: 80-90% with proper management',
-        'Lactation: Doe can nurse 6-12 kits effectively',
-        'Cross-fostering: Reduce large litters, equalize sizes',
       ],
     ),
     DecisionTopic(
@@ -193,8 +129,10 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
   }
 
   Widget _buildDecisionCard(DecisionTopic topic) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
+    return DecisionTopicCard(
+      title: topic.title,
+      imageUrl: topic.image,
+      description: topic.description,
       onTap: () {
         Navigator.push(
           context,
@@ -203,76 +141,6 @@ class _RabbitDecisionScreenState extends State<RabbitDecisionScreen> {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title at the top
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Text(
-                topic.title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ),
-            // Image in the middle - USING ASSET IMAGE
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-              child: CachedNetworkImage(
-                imageUrl: topic.image,
-                width: double.infinity,
-                height: 180,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Shimmer.fromColors(
-                  baseColor: scheme.surfaceContainerHighest,
-                  highlightColor: scheme.surface,
-                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  height: 180,
-                  color: scheme.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.image_not_supported,
-                    size: 50,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-            // Description at the bottom
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                topic.description,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

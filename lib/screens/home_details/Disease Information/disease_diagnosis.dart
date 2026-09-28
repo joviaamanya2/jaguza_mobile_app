@@ -13,22 +13,28 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
   final _formKey = GlobalKey<FormState>();
   final ApiService _apiService = ApiService();
   final TextEditingController _customSymptomsController = TextEditingController();
-  
-  String _selectedAnimalType = 'Cattle';
-  String _selectedPrimarySymptom = 'Fever';
+  final GlobalKey<FormFieldState<List<String>>> _symptomsFieldKey =
+      GlobalKey<FormFieldState<List<String>>>();
+
+  static const int _minSymptoms = 2;
+
+  String? _selectedAnimalType;
+  final List<String> _selectedSymptoms = [];
   bool _isAnalyzing = false;
   bool _showResults = false;
-  
+
   Map<String, dynamic>? _diagnosisResults;
 
   final List<String> _animalTypes = [
     'Cattle', 'Goat', 'Sheep', 'Pig', 'Poultry', 'Rabbit', 'Fish', 'Other'
   ];
 
-  final List<String> _primarySymptoms = [
+  final List<String> _symptomOptions = [
     'Fever', 'Loss of Appetite', 'Diarrhea', 'Coughing', 'Lethargy',
     'Weight Loss', 'Skin Lesions', 'Difficulty Breathing', 'Swelling',
-    'Discharge', 'Vomiting', 'Lameness'
+    'Discharge', 'Vomiting', 'Lameness', 'Nasal Discharge',
+    'Reduced Milk Production', 'Dehydration', 'Abnormal Behavior',
+    'Pale Gums', 'Bloating',
   ];
 
   final List<Map<String, dynamic>> _possibleDiseases = [
@@ -179,7 +185,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                 icon: Icons.pets_rounded,
                 onChanged: (value) {
                   setState(() {
-                    _selectedAnimalType = value ?? 'Cattle';
+                    _selectedAnimalType = value;
                   });
                 },
                 validator: (value) {
@@ -189,33 +195,16 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
                   return null;
                 },
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               _buildSectionHeader('Symptoms'),
               const SizedBox(height: 12),
-              
-              _buildDropdownField(
-                label: 'Primary Symptom',
-                hint: 'Select the main symptom observed',
-                value: _selectedPrimarySymptom,
-                items: _primarySymptoms,
-                icon: Icons.medical_information_rounded,
-                onChanged: (value) {
-                  setState(() {
-                    _selectedPrimarySymptom = value ?? 'Fever';
-                  });
-                },
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please select a primary symptom';
-                  }
-                  return null;
-                },
-              ),
-              
+
+              _buildSymptomsField(),
+
               const SizedBox(height: 14),
-              
+
               _buildCustomSymptomsField(),
               
               const SizedBox(height: 24),
@@ -392,6 +381,161 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     );
   }
 
+  Widget _buildSymptomsField() {
+    final scheme = Theme.of(context).colorScheme;
+    final availableOptions = _symptomOptions
+        .where((symptom) => !_selectedSymptoms.contains(symptom))
+        .toList();
+
+    return FormField<List<String>>(
+      key: _symptomsFieldKey,
+      initialValue: _selectedSymptoms,
+      validator: (selected) {
+        if (selected == null || selected.length < _minSymptoms) {
+          return 'Select at least $_minSymptoms symptoms';
+        }
+        return null;
+      },
+      builder: (fieldState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Text(
+                    'Symptom',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: scheme.onSurface,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${_selectedSymptoms.length} selected',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: _selectedSymptoms.length >= _minSymptoms
+                        ? Colors.green[700]
+                        : scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Select at least $_minSymptoms symptoms, one at a time',
+              style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: scheme.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: fieldState.hasError
+                      ? scheme.error
+                      : scheme.outlineVariant,
+                  width: fieldState.hasError ? 1.5 : 1,
+                ),
+              ),
+              // Rebuilding with a fresh key whenever the selection changes
+              // resets the dropdown back to its empty hint after each pick,
+              // so it always reads as an "add a symptom" control.
+              child: DropdownButtonFormField<String>(
+                key: ValueKey(_selectedSymptoms.length),
+                initialValue: null,
+                hint: Text(
+                  availableOptions.isEmpty
+                      ? 'All symptoms added'
+                      : 'Select a symptom to add',
+                  style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+                ),
+                decoration: InputDecoration(
+                  prefixIcon: Icon(Icons.medical_information_rounded, size: 20, color: scheme.onSurfaceVariant),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  filled: true,
+                  fillColor: scheme.surface,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                ),
+                items: availableOptions.map((symptom) {
+                  return DropdownMenuItem<String>(
+                    value: symptom,
+                    child: Text(
+                      symptom,
+                      style: TextStyle(color: scheme.onSurface, fontSize: 14),
+                    ),
+                  );
+                }).toList(),
+                onChanged: availableOptions.isEmpty
+                    ? null
+                    : (value) {
+                        if (value == null) return;
+                        setState(() {
+                          _selectedSymptoms.add(value);
+                        });
+                        fieldState.didChange(_selectedSymptoms);
+                      },
+                isExpanded: true,
+                icon: Icon(Icons.arrow_drop_down_rounded, color: scheme.onSurfaceVariant),
+                dropdownColor: scheme.surface,
+                style: TextStyle(color: scheme.onSurface, fontSize: 14),
+              ),
+            ),
+            if (_selectedSymptoms.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: _selectedSymptoms.map((symptom) {
+                  return Chip(
+                    label: Text(symptom),
+                    labelStyle: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: scheme.onPrimary,
+                    ),
+                    backgroundColor: scheme.primary,
+                    deleteIcon: Icon(Icons.close_rounded, size: 16, color: scheme.onPrimary),
+                    onDeleted: () {
+                      setState(() {
+                        _selectedSymptoms.remove(symptom);
+                      });
+                      fieldState.didChange(_selectedSymptoms);
+                    },
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    side: BorderSide.none,
+                  );
+                }).toList(),
+              ),
+            ],
+            if (fieldState.hasError) ...[
+              const SizedBox(height: 6),
+              Text(
+                fieldState.errorText ?? '',
+                style: TextStyle(fontSize: 12, color: scheme.error),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
   Widget _buildCustomSymptomsField() {
     final scheme = Theme.of(context).colorScheme;
     return TextFormField(
@@ -400,7 +544,7 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
       maxLines: 4,
       textCapitalization: TextCapitalization.sentences,
       decoration: InputDecoration(
-        labelText: 'Describe other symptoms (optional)',
+        labelText: 'Additional notes (optional)',
         hintText: 'For example: nasal discharge, weakness, or unusual behavior',
         hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
         prefixIcon: Icon(Icons.edit_note_rounded, color: scheme.onSurfaceVariant),
@@ -728,14 +872,14 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     });
 
     final symptoms = <String>[
-      _selectedPrimarySymptom,
+      ..._selectedSymptoms,
       if (_customSymptomsController.text.trim().isNotEmpty)
         _customSymptomsController.text.trim(),
     ];
 
     try {
       final results = await _apiService.diagnoseSymptoms(
-        animalType: _selectedAnimalType,
+        animalType: _selectedAnimalType!,
         symptoms: symptoms,
       );
       if (!mounted) return;

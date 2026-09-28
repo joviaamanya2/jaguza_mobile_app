@@ -55,19 +55,6 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
           icon: const Icon(Icons.arrow_back_ios_new, size: 20),
           onPressed: () => Navigator.pop(context),
         ),
-        actions: [
-          TextButton(
-            onPressed: _isSubmitting ? null : _submitAdvert,
-            child: const Text(
-              'Submit',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: Color(0xFFF57C00),
-              ),
-            ),
-          ),
-        ],
       ),
       body: SingleChildScrollView(
         physics: const BouncingScrollPhysics(),
@@ -79,11 +66,28 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
             children: [
               // Choose Advert Plan
               _buildSectionHeader('Choose Advert Plan'),
-              const SizedBox(height: 8),
-              _buildPlanSelector(),
-              
-              const SizedBox(height: 20),
-              
+              const SizedBox(height: 10),
+              _buildDropdown(
+                label: 'Advert plan',
+                icon: Icons.workspace_premium_rounded,
+                value: _selectedPlan,
+                items: _plans,
+                onChanged: (value) => setState(() => _selectedPlan = value),
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Text(
+                  'Runs for ${_planDurationDays[_selectedPlan] ?? 7} days',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 22),
+
               // Advert Details
               _buildSectionHeader('Advert Details'),
               const SizedBox(height: 12),
@@ -138,6 +142,7 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
                 label: 'Attach link/URL',
                 hint: 'https://example.com',
                 icon: Icons.link_rounded,
+                keyboardType: TextInputType.url,
               ),
               const SizedBox(height: 12),
               
@@ -157,7 +162,13 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
               const SizedBox(height: 12),
               
               // Country Selector
-              _buildCountrySelector(),
+              _buildDropdown(
+                label: 'Country',
+                icon: Icons.public_rounded,
+                value: _selectedCountry,
+                items: _countries,
+                onChanged: (value) => setState(() => _selectedCountry = value),
+              ),
               const SizedBox(height: 12),
               
               // Full Name
@@ -276,49 +287,51 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
   }
 
   // ═══════════════════════════════════════
-  //  PLAN SELECTOR
+  //  DROPDOWN
   // ═══════════════════════════════════════
-  Widget _buildPlanSelector() {
+  Widget _buildDropdown({
+    required String label,
+    required IconData icon,
+    required String value,
+    required List<String> items,
+    required ValueChanged<String> onChanged,
+  }) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant),
+    OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return InputDecorator(
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+        floatingLabelStyle: TextStyle(fontSize: 13, color: scheme.primary),
+        prefixIcon: Icon(icon, size: 20, color: scheme.onSurfaceVariant),
+        filled: true,
+        fillColor: Theme.of(context).cardColor,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        enabledBorder: border(scheme.outlineVariant),
+        focusedBorder: border(scheme.primary, 1.5),
       ),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        children: _plans.map((plan) {
-          final isSelected = _selectedPlan == plan;
-          return GestureDetector(
-            onTap: () {
-              setState(() {
-                _selectedPlan = plan;
-              });
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? scheme.primary : Theme.of(context).cardColor,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: isSelected ? scheme.primary : scheme.outlineVariant,
-                ),
-              ),
-              child: Text(
-                plan,
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          );
-        }).toList(),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: value,
+          isExpanded: true,
+          borderRadius: BorderRadius.circular(12),
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: scheme.onSurface,
+          ),
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: scheme.onSurfaceVariant),
+          items: items
+              .map((item) => DropdownMenuItem(value: item, child: Text(item)))
+              .toList(),
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
+        ),
       ),
     );
   }
@@ -414,46 +427,35 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
     required String hint,
     required IconData icon,
     int maxLines = 1,
+    TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
     final scheme = Theme.of(context).colorScheme;
-    return Container(
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: TextFormField(
-        controller: controller,
-        maxLines: maxLines,
-        validator: validator,
-        decoration: InputDecoration(
-          labelText: label,
-          hintText: hint,
-          hintStyle: TextStyle(
-            fontSize: 13,
-            color: scheme.onSurfaceVariant,
-          ),
-          labelStyle: TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w500,
-            color: scheme.onSurface,
-          ),
-          prefixIcon: Icon(
-            icon,
-            size: 20,
-            color: scheme.primary,
-          ),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: scheme.primary, width: 2),
-          ),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        ),
+    OutlineInputBorder border(Color color, [double width = 1]) => OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: color, width: width),
+        );
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      validator: validator,
+      style: TextStyle(fontSize: 14, color: scheme.onSurface),
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: hint,
+        hintStyle: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+        labelStyle: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant),
+        floatingLabelStyle: TextStyle(fontSize: 13, color: scheme.primary),
+        prefixIcon: Icon(icon, size: 20, color: scheme.onSurfaceVariant),
+        filled: true,
+        fillColor: Theme.of(context).cardColor,
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        enabledBorder: border(scheme.outlineVariant),
+        focusedBorder: border(scheme.primary, 1.5),
+        errorBorder: border(scheme.error),
+        focusedErrorBorder: border(scheme.error, 1.5),
       ),
     );
   }
@@ -724,59 +726,6 @@ class _CreateAdvertScreenState extends State<CreateAdvertScreen> {
             ),
           ],
         ],
-      ),
-    );
-  }
-
-  // ═══════════════════════════════════════
-  //  COUNTRY SELECTOR
-  // ═══════════════════════════════════════
-  Widget _buildCountrySelector() {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: scheme.outlineVariant),
-      ),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: _selectedCountry,
-          isExpanded: true,
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: scheme.onSurface,
-          ),
-          icon: Icon(
-            Icons.arrow_drop_down_rounded,
-            color: scheme.onSurfaceVariant,
-          ),
-          items: _countries.map((country) {
-            return DropdownMenuItem(
-              value: country,
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.location_on_rounded,
-                    size: 16,
-                    color: scheme.primary,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(country),
-                ],
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              setState(() {
-                _selectedCountry = value;
-              });
-            }
-          },
-        ),
       ),
     );
   }

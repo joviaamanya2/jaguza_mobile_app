@@ -92,78 +92,10 @@ class _MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
+      // Sourced from LanguageService.getSupportedLanguages() — currently
+      // English, Luganda and Swahili. Add a language there (plus its
+      // translations in AppLocalizations) to make it selectable app-wide.
       supportedLocales: LanguageService.supportedLocales,
-      /* const [
-        Locale('en'), // English
-        Locale('fr'), // French
-        Locale('es'), // Spanish
-        Locale('de'), // German
-        Locale('it'), // Italian
-        Locale('pt'), // Portuguese
-        Locale('ar'), // Arabic
-        Locale('zh'), // Chinese
-        Locale('ja'), // Japanese
-        Locale('sw'), // Swahili
-        Locale('ha'), // Hausa
-        Locale('yo'), // Yoruba
-        Locale('ig'), // Igbo
-        Locale('zu'), // Zulu
-        Locale('xh'), // Xhosa
-        Locale('sn'), // Shona
-        Locale('so'), // Somali
-        Locale('am'), // Amharic
-        Locale('ti'), // Tigrinya
-        Locale('om'), // Oromo
-        Locale('rw'), // Kinyarwanda
-        Locale('rn'), // Kirundi
-        Locale('lg'), // Luganda
-        Locale('ach'), // Acholi
-        Locale('alz'), // Alur
-        Locale('lgg'), // Lugbara
-        Locale('nyn'), // Runyankore
-        Locale('nyo'), // Runyoro
-        Locale('ttj'), // Rutooro
-        Locale('cgg'), // Rukiga
-        Locale('myx'), // Lumasaba/Lugisu
-        Locale('gwr'), // Lugwere
-        Locale('luo'), // Luo
-        Locale('ln'), // Lingala
-        Locale('ff'), // Fula
-        Locale('wo'), // Wolof
-        Locale('tw'), // Twi
-        Locale('ber'), // Berber
-        Locale('ny'), // Chichewa
-        Locale('st'), // Sesotho
-        Locale('tn'), // Setswana
-        Locale('ko'), // Korean
-        Locale('ru'), // Russian
-        Locale('hi'), // Hindi
-        Locale('ur'), // Urdu
-        Locale('bn'), // Bengali
-        Locale('ta'), // Tamil
-        Locale('te'), // Telugu
-        Locale('ml'), // Malayalam
-        Locale('si'), // Sinhala
-        Locale('ne'), // Nepali
-        Locale('km'), // Khmer
-        Locale('th'), // Thai
-        Locale('vi'), // Vietnamese
-        Locale('id'), // Indonesian
-        Locale('ms'), // Malay
-        Locale('tl'), // Tagalog
-        Locale('el'), // Greek
-        Locale('tr'), // Turkish
-        Locale('pl'), // Polish
-        Locale('uk'), // Ukrainian
-        Locale('cs'), // Czech
-        Locale('hu'), // Hungarian
-        Locale('ro'), // Romanian
-        Locale('bg'), // Bulgarian
-        Locale('hr'), // Croatian
-        Locale('sr'), // Serbian
-        Locale('sq'), // Albanian
-        Locale('mk'), // Macedonian
-      ], */
       localeResolutionCallback: (Locale? locale, Iterable<Locale> supportedLocales) {
         if (locale == null) return const Locale('en');
         

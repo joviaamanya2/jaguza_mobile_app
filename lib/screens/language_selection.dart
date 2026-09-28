@@ -14,78 +14,9 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
   String? _selectedLanguage;
   bool _isLoading = true;
 
-  final List<Map<String, String>> _languages = [
-    {'name': 'English', 'code': 'en'},
-    {'name': 'French', 'code': 'fr'},
-    {'name': 'Spanish', 'code': 'es'},
-    {'name': 'German', 'code': 'de'},
-    {'name': 'Italian', 'code': 'it'},
-    {'name': 'Portuguese', 'code': 'pt'},
-    {'name': 'Arabic', 'code': 'ar'},
-    {'name': 'Chinese', 'code': 'zh'},
-    {'name': 'Japanese', 'code': 'ja'},
-    {'name': 'Swahili', 'code': 'sw'},
-    {'name': 'Hausa', 'code': 'ha'},
-    {'name': 'Yoruba', 'code': 'yo'},
-    {'name': 'Igbo', 'code': 'ig'},
-    {'name': 'Zulu', 'code': 'zu'},
-    {'name': 'Xhosa', 'code': 'xh'},
-    {'name': 'Shona', 'code': 'sn'},
-    {'name': 'Somali', 'code': 'so'},
-    {'name': 'Amharic', 'code': 'am'},
-    {'name': 'Tigrinya', 'code': 'ti'},
-    {'name': 'Oromo', 'code': 'om'},
-    {'name': 'Kinyarwanda', 'code': 'rw'},
-    {'name': 'Kirundi', 'code': 'rn'},
-    {'name': 'Luganda', 'code': 'lg'},
-    {'name': 'Acholi', 'code': 'ach'},
-    {'name': 'Alur', 'code': 'alz'},
-    {'name': 'Lugbara', 'code': 'lgg'},
-    {'name': 'Runyankore', 'code': 'nyn'},
-    {'name': 'Runyoro', 'code': 'nyo'},
-    {'name': 'Rutooro', 'code': 'ttj'},
-    {'name': 'Rukiga', 'code': 'cgg'},
-    {'name': 'Lumasaba', 'code': 'myx'},
-    {'name': 'Lugisu', 'code': 'myx'},
-    {'name': 'Lugwere', 'code': 'gwr'},
-    {'name': 'Luo', 'code': 'luo'},
-    {'name': 'Lingala', 'code': 'ln'},
-    {'name': 'Fula', 'code': 'ff'},
-    {'name': 'Wolof', 'code': 'wo'},
-    {'name': 'Twi', 'code': 'tw'},
-    {'name': 'Berber', 'code': 'ber'},
-    {'name': 'Chichewa', 'code': 'ny'},
-    {'name': 'Sesotho', 'code': 'st'},
-    {'name': 'Setswana', 'code': 'tn'},
-    {'name': 'Korean', 'code': 'ko'},
-    {'name': 'Russian', 'code': 'ru'},
-    {'name': 'Hindi', 'code': 'hi'},
-    {'name': 'Urdu', 'code': 'ur'},
-    {'name': 'Bengali', 'code': 'bn'},
-    {'name': 'Tamil', 'code': 'ta'},
-    {'name': 'Telugu', 'code': 'te'},
-    {'name': 'Malayalam', 'code': 'ml'},
-    {'name': 'Sinhala', 'code': 'si'},
-    {'name': 'Nepali', 'code': 'ne'},
-    {'name': 'Khmer', 'code': 'km'},
-    {'name': 'Thai', 'code': 'th'},
-    {'name': 'Vietnamese', 'code': 'vi'},
-    {'name': 'Indonesian', 'code': 'id'},
-    {'name': 'Malay', 'code': 'ms'},
-    {'name': 'Tagalog', 'code': 'tl'},
-    {'name': 'Greek', 'code': 'el'},
-    {'name': 'Turkish', 'code': 'tr'},
-    {'name': 'Polish', 'code': 'pl'},
-    {'name': 'Ukrainian', 'code': 'uk'},
-    {'name': 'Czech', 'code': 'cs'},
-    {'name': 'Hungarian', 'code': 'hu'},
-    {'name': 'Romanian', 'code': 'ro'},
-    {'name': 'Bulgarian', 'code': 'bg'},
-    {'name': 'Croatian', 'code': 'hr'},
-    {'name': 'Serbian', 'code': 'sr'},
-    {'name': 'Albanian', 'code': 'sq'},
-    {'name': 'Macedonian', 'code': 'mk'},
-  ];
+  // Scoped to the languages Jaguza has real translations for today.
+  // Grow this list (and AppLocalizations) as more languages are completed.
+  final List<Map<String, String>> _languages = LanguageService.getSupportedLanguages();
 
   @override
   void initState() {
@@ -121,34 +52,37 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
     }
   }
 
-  Future<void> _changeLanguage() async {
-    if (_selectedLanguage == null) return;
-    
-    try {
-      // Get the language code for the selected language
-      final languageEntry = _languages.firstWhere(
-        (lang) => lang['name'] == _selectedLanguage,
-        orElse: () => {'name': 'English', 'code': 'en'},
-      );
+  // Applies the picked language to the whole app the moment it's tapped in
+  // the dropdown, instead of waiting for DONE — LanguageService.saveLanguage
+  // updates the shared locale notifier, which MyApp listens to, so every
+  // translated string on screen (including this one) switches instantly.
+  Future<void> _selectLanguage(String languageName) async {
+    setState(() => _selectedLanguage = languageName);
 
-      final languageCode = languageEntry['code']!;
-      
-      // Saving also updates the app-wide locale notifier immediately.
-      await LanguageService.saveLanguage(languageCode, _selectedLanguage!);
-      
-      if (mounted) {
-        // Navigate to home with rebuild
-        Navigator.pushAndRemoveUntil(
-          context,
-          MaterialPageRoute(
-            builder: (context) => const MainShell(),
-          ),
-          (route) => false,
-        );
-      }
+    final languageEntry = _languages.firstWhere(
+      (lang) => lang['name'] == languageName,
+      orElse: () => {'name': 'English', 'code': 'en'},
+    );
+
+    try {
+      await LanguageService.saveLanguage(languageEntry['code']!, languageName);
     } catch (e) {
-      _showErrorSnackBar('Failed to change language. Please try again.');
+      if (mounted) {
+        _showErrorSnackBar('Failed to change language. Please try again.');
+      }
     }
+  }
+
+  void _continueToHome() {
+    if (_selectedLanguage == null) return;
+    // The language is already applied — this just moves on to the app.
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const MainShell(),
+      ),
+      (route) => false,
+    );
   }
 
   void _showErrorSnackBar(String message) {
@@ -316,9 +250,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                               icon: Icon(Icons.keyboard_arrow_down, color: scheme.onSurfaceVariant),
                               onChanged: (String? newValue) {
                                 if (newValue != null) {
-                                  setState(() {
-                                    _selectedLanguage = newValue;
-                                  });
+                                  _selectLanguage(newValue);
                                 }
                               },
                               items: _languages.map<DropdownMenuItem<String>>((Map<String, String> lang) {
@@ -360,7 +292,7 @@ class _LanguageSelectionScreenState extends State<LanguageSelectionScreen> {
                               ),
                               elevation: 0,
                             ),
-                            onPressed: _changeLanguage,
+                            onPressed: _continueToHome,
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
