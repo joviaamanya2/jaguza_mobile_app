@@ -51,6 +51,16 @@ String displayCategory(String value) {
   return cleaned[0].toUpperCase() + cleaned.substring(1).toLowerCase();
 }
 
+String categoryFilterKey(String value) {
+  final category = value.trim().toLowerCase();
+  return switch (category) {
+    'pig' || 'pigs' => 'pig',
+    'goat' || 'goats' => 'goat',
+    'rabbit' || 'rabbits' => 'rabbit',
+    _ => category,
+  };
+}
+
 Color categoryColorFor(String category) {
   switch (category.toLowerCase()) {
     case 'poultry':
@@ -178,11 +188,24 @@ class _ExploreScreenState extends State<ExploreScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   int _selectedCategory = 0;
+  String _selectedTopic = '';
   bool _isLoading = true;
   String? _loadError;
   List<FeedPost> _feedPosts = [];
 
   final List<CategoryItem> _categories = exploreCategories;
+
+  List<String> get _availableTopics {
+    final topics =
+        _feedPosts
+            .map((post) => post.topic.trim())
+            .where((topic) => topic.isNotEmpty)
+            .map(displayCategory)
+            .toSet()
+            .toList()
+          ..sort();
+    return topics;
+  }
 
   @override
   void initState() {
@@ -222,17 +245,19 @@ class _ExploreScreenState extends State<ExploreScreen> {
   FeedPost _resourceToPost(Map raw) {
     final item = Map<String, dynamic>.from(raw);
     final category = displayCategory('${item['category'] ?? 'General'}');
+    final topic = '${item['topic'] ?? ''}'.trim();
     final title = '${item['title'] ?? 'Jaguza farming resource'}';
     final content = '${item['summary'] ?? item['content'] ?? ''}';
     return FeedPost(
       id: 'resource_${item['id'] ?? title.hashCode}',
       author: 'Jaguza',
-      location: category,
+      location: topic.isEmpty ? category : displayCategory(topic),
       dateTime: dateLabelFor(item['created_at']),
       timeAgo: timeAgoFor(item['created_at']),
       title: title,
       excerpt: content,
       category: category,
+      topic: topic,
       likes: int.tryParse('${item['views_count'] ?? 0}') ?? 0,
       comments: 0,
       isVerified: true,
@@ -251,12 +276,21 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   List<FeedPost> get _filteredPosts {
-    final source = _feedPosts;
-    if (_selectedCategory == 0) return _filterSearch(source);
-    final catLabel = _categories[_selectedCategory].label.toLowerCase();
-    return _filterSearch(
-      source.where((p) => p.category.toLowerCase() == catLabel).toList(),
-    );
+    var source = _feedPosts;
+    if (_selectedCategory != 0) {
+      final catLabel = categoryFilterKey(_categories[_selectedCategory].label);
+      source = source
+          .where((post) => categoryFilterKey(post.category) == catLabel)
+          .toList();
+    }
+    if (_selectedTopic.isNotEmpty) {
+      source = source
+          .where(
+            (post) => post.topic.toLowerCase() == _selectedTopic.toLowerCase(),
+          )
+          .toList();
+    }
+    return _filterSearch(source);
   }
 
   List<FeedPost> _filterSearch(List<FeedPost> posts) {
@@ -265,7 +299,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     return posts
         .where(
           (post) =>
-              '${post.title} ${post.excerpt} ${post.category} ${post.author}'
+              '${post.title} ${post.excerpt} ${post.category} ${post.topic} ${post.author}'
                   .toLowerCase()
                   .contains(query),
         )
@@ -279,6 +313,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       body: Column(
         children: [
           _buildCategoryIcons(),
+          if (_availableTopics.isNotEmpty) _buildTopicFilters(),
           _buildSearchBar(),
           const SizedBox(height: 6),
           Expanded(child: _buildFeed()),
@@ -338,6 +373,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
             );
           },
         ),
+      ),
+    );
+  }
+
+  Widget _buildTopicFilters() {
+    final topics = _availableTopics;
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        itemCount: topics.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final topic = index == 0 ? '' : topics[index - 1];
+          final selected = _selectedTopic == topic;
+          return ChoiceChip(
+            label: Text(topic.isEmpty ? 'All topics' : topic),
+            selected: selected,
+            onSelected: (_) => setState(() => _selectedTopic = topic),
+            visualDensity: VisualDensity.compact,
+          );
+        },
       ),
     );
   }
@@ -1526,6 +1584,7 @@ class FeedPost {
   final String title;
   final String excerpt;
   final String category;
+  final String topic;
   final int likes;
   final int comments;
   final bool isVerified;
@@ -1557,6 +1616,7 @@ class FeedPost {
     required this.title,
     required this.excerpt,
     required this.category,
+    this.topic = '',
     required this.likes,
     required this.comments,
     this.isVerified = false,

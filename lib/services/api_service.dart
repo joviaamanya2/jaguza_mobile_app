@@ -1377,17 +1377,25 @@ class ApiService {
   // ========== DECISION SUPPORT API ==========
 
   Future<List<dynamic>> getDecisionSupport({String? category}) async {
-    String url = 'decision-support/resources';
-    if (category != null) {
-      url += '?category=$category';
+    final resources = <dynamic>[];
+    for (var page = 1; ; page++) {
+      final query = Uri(
+        queryParameters: {
+          'page': '$page',
+          if (category != null) 'category': category,
+        },
+      ).query;
+      final response = await get('decision-support/resources?$query');
+      final pageResources = response is List
+          ? response
+          : response is Map<String, dynamic> && response['data'] is List
+          ? response['data'] as List<dynamic>
+          : <dynamic>[];
+
+      resources.addAll(pageResources);
+      if (pageResources.length < 15) break;
     }
-    final response = await get(url);
-    if (response is List) return response;
-    if (response is Map<String, dynamic>) {
-      final data = response['data'];
-      return data is List ? data : [];
-    }
-    return [];
+    return resources;
   }
 
   Future<Map<String, dynamic>> getDecisionCategories() async {
