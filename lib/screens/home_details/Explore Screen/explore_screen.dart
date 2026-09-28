@@ -139,7 +139,7 @@ FeedPost videoJsonToFeedPost(Map raw) {
 
   final imageUrl = isImage
       ? (cleanUrl(item['image_url']) ?? cleanUrl(item['thumbnail_url']))
-      : cleanUrl(item['thumbnail_url']);
+      : (cleanUrl(item['thumbnail_url']) ?? cleanUrl(item['image_url']));
 
   return FeedPost(
     id: 'video_${item['id'] ?? title.hashCode}',
@@ -161,7 +161,7 @@ FeedPost videoJsonToFeedPost(Map raw) {
         : Icons.play_circle_fill_rounded,
     imageGradientStart: const Color(0xFF1565C0),
     imageGradientEnd: const Color(0xFF42A5F5),
-    imageUrl: imageUrl,
+    imageUrl: imageUrl == null ? null : ApiService().resolveMediaUrl(imageUrl),
     isVideo: !isImage,
     videoUrl: isImage ? null : cleanUrl(item['video_url']),
   );
@@ -454,7 +454,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
       );
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 4, 16, 100),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 100),
       physics: const BouncingScrollPhysics(),
       itemCount: posts.length,
       itemBuilder: (context, index) => FeedPostCard(post: posts[index]),
@@ -542,8 +542,15 @@ class _FeedPostCardState extends State<FeedPostCard> {
       margin: const EdgeInsets.only(bottom: 14),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.7)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -552,36 +559,35 @@ class _FeedPostCardState extends State<FeedPostCard> {
           // floating over the bottom of the image — carrying the Jaguza
           // logo, author name and date — rather than a shadow/gradient.
           GestureDetector(
-            onTap: post.isVideo ? () => _openVideo(post) : null,
+            onTap: () => post.isVideo
+                ? _openVideo(post)
+                : Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => PostDetailScreen(post: post),
+                    ),
+                  ),
             child: ClipRRect(
               borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(14),
+                top: Radius.circular(18),
               ),
               child: Stack(
                 children: [
                   _buildMedia(post),
                   Positioned(
-                    left: 10,
-                    right: 10,
-                    bottom: 10,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
                     child: Container(
-                      padding: const EdgeInsets.fromLTRB(6, 6, 10, 6),
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.15),
-                            blurRadius: 10,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
+                        color: Colors.black.withValues(alpha: 0.48),
                       ),
                       child: Row(
                         children: [
                           Container(
-                            width: 30,
-                            height: 30,
+                            width: 40,
+                            height: 40,
                             decoration: BoxDecoration(
                               color: post.authorColor,
                               shape: BoxShape.circle,
@@ -608,18 +614,19 @@ class _FeedPostCardState extends State<FeedPostCard> {
                             child: Text(
                               post.author,
                               style: const TextStyle(
-                                fontSize: 13.5,
+                                fontSize: 14,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF1A1F36),
+                                color: Colors.white,
                               ),
                             ),
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            post.dateTime,
+                            post.dateTime.replaceFirst(' · ', '\n'),
+                            textAlign: TextAlign.right,
                             style: const TextStyle(
-                              fontSize: 10.5,
-                              color: Color(0xFF6B7280),
+                              fontSize: 11.5,
+                              color: Colors.white,
                             ),
                           ),
                         ],
@@ -633,13 +640,13 @@ class _FeedPostCardState extends State<FeedPostCard> {
 
           // Title
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 14, 2),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 4),
             child: Text(
               post.title,
               style: TextStyle(
-                fontSize: 14.5,
+                fontSize: 17,
                 fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
+                color: const Color(0xFF145A3A),
                 height: 1.3,
               ),
             ),
@@ -648,11 +655,11 @@ class _FeedPostCardState extends State<FeedPostCard> {
           // Location / subtitle
           if (post.location.isNotEmpty)
             Padding(
-              padding: const EdgeInsets.fromLTRB(14, 2, 14, 6),
+              padding: const EdgeInsets.fromLTRB(14, 2, 14, 8),
               child: Text(
                 post.location,
                 style: TextStyle(
-                  fontSize: 12.5,
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
                   color: scheme.primary,
                 ),
@@ -661,64 +668,49 @@ class _FeedPostCardState extends State<FeedPostCard> {
 
           // Description
           Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 4),
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 12),
             child: Text(
               post.excerpt,
               style: TextStyle(
-                fontSize: 12.5,
+                fontSize: 14,
                 color: scheme.onSurfaceVariant,
                 height: 1.5,
               ),
-              maxLines: 3,
+              maxLines: 2,
               overflow: TextOverflow.ellipsis,
-            ),
-          ),
-
-          // Learn more
-          Padding(
-            padding: const EdgeInsets.fromLTRB(14, 0, 14, 8),
-            child: GestureDetector(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => PostDetailScreen(post: post)),
-              ),
-              child: Text(
-                'Learn more',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: scheme.primary,
-                  decoration: TextDecoration.underline,
-                  decorationColor: scheme.primary.withValues(alpha: 0.3),
-                ),
-              ),
             ),
           ),
 
           // Action bar: Share, Like, Comment
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 10, 10),
-            child: Row(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: Column(
               children: [
-                _actionBtn(
-                  icon: Icons.share_rounded,
-                  label: 'Share',
-                  color: scheme.onSurfaceVariant,
-                  onTap: _sharePost,
-                ),
-                _actionBtn(
-                  icon: _isLiked
-                      ? Icons.thumb_up_alt_rounded
-                      : Icons.thumb_up_alt_outlined,
-                  label: '$_likeCount',
-                  color: _isLiked ? scheme.primary : scheme.onSurfaceVariant,
-                  onTap: _toggleLike,
-                ),
-                _actionBtn(
-                  icon: Icons.chat_bubble_outline_rounded,
-                  label: '$_commentCount',
-                  color: scheme.onSurfaceVariant,
-                  onTap: () => _showCommentsSheet(context, post),
+                Divider(height: 1, color: scheme.outlineVariant),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _actionBtn(
+                      icon: Icons.share_rounded,
+                      label: 'Share',
+                      color: scheme.onSurfaceVariant,
+                      onTap: _sharePost,
+                    ),
+                    _actionBtn(
+                      icon: _isLiked
+                          ? Icons.thumb_up_alt_rounded
+                          : Icons.thumb_up_alt_outlined,
+                      label: '$_likeCount',
+                      color: _isLiked ? scheme.primary : scheme.onSurface,
+                      onTap: _toggleLike,
+                    ),
+                    _actionBtn(
+                      icon: Icons.chat_bubble_outline_rounded,
+                      label: '$_commentCount',
+                      color: scheme.onSurfaceVariant,
+                      onTap: () => _showCommentsSheet(context, post),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -758,7 +750,7 @@ class _FeedPostCardState extends State<FeedPostCard> {
   }
 
   Widget _buildMedia(FeedPost post) {
-    const height = 180.0;
+    final height = (MediaQuery.sizeOf(context).width - 16) * 0.74;
 
     Widget placeholder() => Container(
       width: double.infinity,

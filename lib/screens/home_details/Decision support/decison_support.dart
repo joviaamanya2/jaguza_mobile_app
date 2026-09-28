@@ -50,125 +50,86 @@ class DecisionSupportScreen extends StatelessWidget {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Select Animal',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: scheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Get decision support for your livestock',
-              style: TextStyle(
-                fontSize: 12,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                  childAspectRatio: 1.0,
+        padding: const EdgeInsets.all(10),
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            crossAxisSpacing: 18,
+            mainAxisSpacing: 18,
+            childAspectRatio: 0.97,
+          ),
+          physics: const BouncingScrollPhysics(),
+          itemCount: _animals.length,
+          itemBuilder: (context, index) {
+            final animal = _animals[index];
+            final imageSize =
+                ((MediaQuery.sizeOf(context).width - 56) / 2 * 0.62)
+                    .clamp(84.0, 140.0)
+                    .toDouble();
+            return GestureDetector(
+              onTap: () => _navigateToAnimalScreen(context, animal.name),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
                 ),
-                physics: const BouncingScrollPhysics(),
-                itemCount: _animals.length,
-                itemBuilder: (context, index) {
-                  final animal = _animals[index];
-                  return GestureDetector(
-                    onTap: () {
-                      _navigateToAnimalScreen(context, animal.name);
-                    },
-                    child: Container(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: scheme.outlineVariant),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.06),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      height: imageSize,
+                      width: imageSize,
                       decoration: BoxDecoration(
-                        color: Theme.of(context).cardColor,
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: scheme.outlineVariant),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.06),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        shape: BoxShape.circle,
+                        border: Border.all(color: scheme.primary, width: 1),
                       ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            height: 78,
-                            width: 78,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: scheme.primary.withValues(alpha: 0.18),
-                                width: 2,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.06),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                animal.imagePath,
-                                height: 78,
-                                width: 78,
-                                fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Icon(
-                                    Icons.image_not_supported,
-                                    size: 48,
-                                    color: scheme.onSurfaceVariant,
-                                  );
-                                },
-                              ),
-                            ),
+                      child: ClipOval(
+                        child: Image.asset(
+                          animal.imagePath,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Icon(
+                            Icons.image_not_supported,
+                            size: 48,
+                            color: scheme.onSurfaceVariant,
                           ),
-                          const SizedBox(height: 10),
-                          Text(
-                            animal.name,
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              color: scheme.onSurface,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: scheme.primary.withValues(alpha: 0.08),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              'View Decisions',
-                              style: TextStyle(
-                                fontSize: 10,
-                                fontWeight: FontWeight.w600,
-                                color: scheme.primary,
-                              ),
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
-                  );
-                },
+                    const SizedBox(height: 8),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 18),
+                      child: Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: scheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      animal.name,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w500,
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -198,7 +159,9 @@ class DecisionSupportScreen extends StatelessWidget {
       case 'Poultry':
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const PoultryDecisionScreen()),
+          MaterialPageRoute(
+            builder: (context) => const PoultryDecisionScreen(),
+          ),
         );
         break;
       case 'Pigs':
@@ -263,23 +226,24 @@ class DecisionSupportScreen extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close', style: TextStyle(color: scheme.onSurfaceVariant)),
+            child: Text(
+              'Close',
+              style: TextStyle(color: scheme.onSurfaceVariant),
+            ),
           ),
           ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AIChatTab(),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: scheme.primary,
-                foregroundColor: scheme.onPrimary,
-              ),
-              child: const Text('Ask AI'),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const AIChatTab()),
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: scheme.primary,
+              foregroundColor: scheme.onPrimary,
             ),
+            child: const Text('Ask AI'),
+          ),
         ],
       ),
     );

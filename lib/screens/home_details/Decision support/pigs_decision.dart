@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import './decision_topic_card.dart';
 
 class PigDecisionScreen extends StatefulWidget {
   const PigDecisionScreen({super.key});
@@ -193,8 +194,10 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
   }
 
   Widget _buildDecisionCard(DecisionTopic topic) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
+    return DecisionTopicCard(
+      title: topic.title,
+      imageUrl: topic.image,
+      description: topic.description,
       onTap: () {
         Navigator.push(
           context,
@@ -203,76 +206,6 @@ class _PigDecisionScreenState extends State<PigDecisionScreen> {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title at the top
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Text(
-                topic.title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ),
-            // Image in the middle
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-              child: CachedNetworkImage(
-                imageUrl: topic.image,
-                width: double.infinity,
-                height: 180,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Shimmer.fromColors(
-                  baseColor: scheme.surfaceContainerHighest,
-                  highlightColor: scheme.surface,
-                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  height: 180,
-                  color: scheme.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.image_not_supported,
-                    size: 50,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-            // Description at the bottom
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                topic.description,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

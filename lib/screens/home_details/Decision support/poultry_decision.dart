@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
+import './decision_topic_card.dart';
 
 class PoultryDecisionScreen extends StatefulWidget {
   const PoultryDecisionScreen({super.key});
@@ -22,71 +23,6 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
         'Dual-purpose: Rhode Island Red, Plymouth Rock, Sussex',
         'Heritage breeds: Cornish, Wyandotte, Orpington',
         'Climate adaptation and local market preferences',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Housing & Infrastructure',
-      description:
-          'Proper housing is essential for poultry health, productivity, and welfare. Good housing design protects birds from predators, weather, and diseases while optimizing production.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/f/fa/A_brood_of_hens_in_a_coop_at_Mlinza_Farm_01.jpg/960px-A_brood_of_hens_in_a_coop_at_Mlinza_Farm_01.jpg',
-      details: [
-        'Space: 1-2 sq ft per bird (layers), 0.5-1 sq ft (broilers)',
-        'Ventilation: 4-8 air changes per hour minimum',
-        'Temperature: 65-75°F for optimal production',
-        'Lighting: 14-16 hours for layers, 23 hours for broilers',
-        'Litter management: 4-6 inches deep (wood shavings)',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Feeding & Nutrition',
-      description:
-          'Proper nutrition is critical for poultry performance, egg production, and growth. Feed costs represent 60-70% of production costs, making feed efficiency crucial for profitability.',
-      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e0/Layer_Chicken_feeding_03.jpg/960px-Layer_Chicken_feeding_03.jpg',
-      details: [
-        'Starter feed: 20-22% protein (0-6 weeks)',
-        'Grower feed: 18-20% protein (6-18 weeks)',
-        'Layer feed: 16-18% protein with calcium (18+ weeks)',
-        'Broiler feed: 22-24% protein starter, 18-20% finisher',
-        'Feed conversion: 1.8-2.2 kg feed per kg live weight',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Health Management & Biosecurity',
-      description:
-          'Maintaining flock health through vaccination, biosecurity, and regular monitoring prevents costly diseases and improves productivity. A proactive health program is essential.',
-      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/Chicken_vaccination_afghanistan.jpg/960px-Chicken_vaccination_afghanistan.jpg',
-      details: [
-        'Common diseases: Newcastle, Gumboro, Infectious Bronchitis',
-        'Vaccination program: Marek\'s, IBD, ND, IB, IBH, Fowl Pox',
-        'Biosecurity: All-in-all-out system, footbaths, restricted access',
-        'Parasite control: Worming every 3-4 months',
-        'Regular health monitoring and record keeping',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Layer Management',
-      description:
-          'Layer management focuses on optimizing egg production, quality, and consistency while maintaining hen health and welfare. Proper management extends laying cycles and improves profitability.',
-      image: 'https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/A_hen_with_an_egg.jpg/960px-A_hen_with_an_egg.jpg',
-      details: [
-        'Peak production: 90-95% at 26-32 weeks of age',
-        'Annual production: 280-320 eggs per hen per year',
-        'Egg weight: 55-65 grams average',
-        'Molting: 10-14 days for production breaks',
-        'Lighting program: 14-16 hours for consistent production',
-      ],
-    ),
-    DecisionTopic(
-      title: 'Broiler Management',
-      description:
-          'Broiler management focuses on maximizing growth rate and feed efficiency from day-old to market weight, directly impacting profitability in meat production.',
-      image: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/22/Broiler_Chicken_at_a_farm.jpg/960px-Broiler_Chicken_at_a_farm.jpg',
-      details: [
-        'Growth rate: 40-60 grams per day',
-        'Market weight: 1.5-2.5 kg (depending on market)',
-        'Market age: 6-8 weeks (depending on target weight)',
-        'Feed conversion ratio: 1.8-2.2 kg feed per kg gain',
-        'Stocking density: 15-20 birds per square meter',
       ],
     ),
     DecisionTopic(
@@ -206,8 +142,10 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
   }
 
   Widget _buildDecisionCard(DecisionTopic topic) {
-    final scheme = Theme.of(context).colorScheme;
-    return GestureDetector(
+    return DecisionTopicCard(
+      title: topic.title,
+      imageUrl: topic.image,
+      description: topic.description,
       onTap: () {
         Navigator.push(
           context,
@@ -216,76 +154,6 @@ class _PoultryDecisionScreenState extends State<PoultryDecisionScreen> {
           ),
         );
       },
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.08),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Title at the top
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Text(
-                topic.title,
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: scheme.onSurface,
-                ),
-              ),
-            ),
-            // Image in the middle - Using AssetImage
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(12),
-                bottomRight: Radius.circular(12),
-              ),
-              child: CachedNetworkImage(
-                imageUrl: topic.image,
-                width: double.infinity,
-                height: 180,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Shimmer.fromColors(
-                  baseColor: scheme.surfaceContainerHighest,
-                  highlightColor: scheme.surface,
-                  child: Container(height: 180, color: scheme.surfaceContainerHighest),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  height: 180,
-                  color: scheme.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.image_not_supported,
-                    size: 50,
-                    color: scheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ),
-            // Description at the bottom
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(
-                topic.description,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.5,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
