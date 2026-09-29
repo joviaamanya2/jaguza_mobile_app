@@ -24,12 +24,15 @@ class User {
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    final fullName = [json['first_name'], json['surname']]
+        .where((part) => part != null && part.toString().trim().isNotEmpty)
+        .join(' ');
     return User(
       id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}') ?? 0,
-      name: json['name'] ?? '',
+      name: (json['name'] ?? json['full_name'] ?? fullName).toString(),
       email: json['email'] ?? '',
       role: json['role'] ?? 'farmer',
-      phoneNumber: json['phone_number'],
+      phoneNumber: (json['phone_number'] ?? json['telephone'])?.toString(),
       farmName: json['farm_name'],
       profileImage: json['profile_image'],
       isVerified: json['is_verified'] ?? false,

@@ -33,14 +33,17 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
 
     try {
       final apiService = ApiService();
-      final response = await apiService.getFarms();
+      final userId = _currentUser?.id;
+      if (userId == null) throw Exception('Could not identify the signed-in user.');
+      final response = await apiService.getFarms(userId: userId);
       final loadedFarms = <Farm>[];
 
       for (final item in response) {
         if (item is Map) {
           final farmData = Map<String, dynamic>.from(item);
           final farm = Farm.fromJson(farmData);
-          final farmOwnerId = farmData['user_id'] ?? farmData['owner_id'];
+            final farmOwnerId =
+              farmData['user_id'] ?? farmData['owner_id'] ?? farmData['farm_owner'];
           final currentUserId = _currentUser?.id;
 
           if (currentUserId != null && farmOwnerId != null) {
@@ -58,21 +61,60 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
         final farmId = int.tryParse(farm.id);
         if (farmId != null) {
           try {
-            final workersData = await apiService.getWorkers(farmId: farmId);
-            if (workersData.isNotEmpty) {
-              final fetchedWorkers = workersData
-                  .whereType<Map>()
-                  .map((w) => Worker(
-                        id: w['id']?.toString(),
-                        name: w['name'] ?? '',
-                        role: w['role'] ?? '',
-                        phone: w['phone'] ?? w['phone_number'] ?? '',
-                      ))
-                  .toList();
-              if (fetchedWorkers.isNotEmpty) {
-                farm.workers = fetchedWorkers;
-              }
+            final categories =
+                await apiService.legacyGetAnimalCategories(farmId);
+            final animalCategories = <AnimalCategory>[];
+            for (final item in categories.whereType<Map>()) {
+              final category = Map<String, dynamic>.from(item);
+              final categoryId = int.tryParse(
+                '${category['id'] ?? category['animal_category_id'] ?? ''}',
+              );
+              if (categoryId == null) continue;
+
+              final animals = await apiService.legacyGetAnimals(
+                farmId: farmId,
+                animalCategoryId: categoryId,
+              );
+              final animalIds = animals.whereType<Map>().map((animal) {
+                return (animal['animal_ref'] ?? animal['id'])?.toString() ?? '';
+              }).where((id) => id.isNotEmpty).toList();
+              animalCategories.add(
+                AnimalCategory(
+                  Farm.normalizeCategoryName(
+                    (category['name'] ?? category['type_name'] ?? 'Other')
+                        .toString(),
+                  ),
+                  animals.length,
+                  (category['picture'] ?? category['icon'] ?? '').toString(),
+                  ids: animalIds,
+                  categoryId: categoryId.toString(),
+                ),
+              );
             }
+            farm.animals = animalCategories;
+          } catch (e) {
+            print('Animal categories fetch note for farm $farmId: $e');
+          }
+
+          try {
+            final workersData = await apiService.getWorkers(farmId: farmId);
+            farm.workers = workersData.whereType<Map>().map((worker) {
+              final fullName = [worker['first_name'], worker['surname']]
+                  .where((part) => part != null && part.toString().trim().isNotEmpty)
+                  .join(' ');
+              return Worker(
+                id: worker['id']?.toString(),
+                name: fullName.isNotEmpty
+                    ? fullName
+                    : worker['name']?.toString() ?? '',
+                role: worker['role']?.toString() ?? '',
+                phone: worker['telephone']?.toString() ??
+                    worker['phone']?.toString() ??
+                    worker['phone_number']?.toString() ??
+                    '',
+                email: worker['email']?.toString() ?? '',
+              );
+            }).toList();
           } catch (e) {
             print('Workers fetch note for farm $farmId: $e');
           }
@@ -234,17 +276,24 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
   }
 
   void _navigateToCreateFarm(BuildContext context) {
+    final currentUser = _currentUser;
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not identify the signed-in user.')),
+      );
+      return;
+    }
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const CreateFarmScreen()),
-    ).then((result) async {
-      if (result != null && result is Farm) {
-        if (!mounted) return;
+      MaterialPageRoute(
+        builder: (context) => CreateFarmScreen(ownerId: currentUser.id),
+      ),
+    ).then((result) {
+      if (result is Farm && mounted) {
         setState(() {
           _farms.add(result);
           _selectedFarmIndex = _farms.length - 1;
         });
-        await _saveFarms();
       }
     });
   }
@@ -579,6 +628,11 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   ),
                 ),
                 const Spacer(),
+                IconButton(
+                  tooltip: 'Enable animal categories',
+                  onPressed: _enableAnimalCategories,
+                  icon: const Icon(Icons.category_outlined),
+                ),
                 ElevatedButton.icon(
                   onPressed: () => _showAddAnimalDialog(context),
                   icon: const Icon(Icons.add_rounded, size: 16),
@@ -683,11 +737,9 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: scheme.onSurfaceVariant, size: 20),
             onSelected: (value) {
-              if (value == 'edit') _editAnimal(animal);
               if (value == 'delete') _deleteAnimal(animal);
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit animals')),
               PopupMenuItem(value: 'delete', child: Text('Delete animals')),
             ],
           ),
@@ -887,12 +939,10 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
           PopupMenuButton<String>(
             icon: Icon(Icons.more_vert, color: scheme.onSurfaceVariant, size: 20),
             onSelected: (value) {
-              if (value == 'edit') _editWorker(worker);
               if (value == 'delete') _deleteWorker(worker);
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit worker')),
-              PopupMenuItem(value: 'delete', child: Text('Delete worker')),
+              PopupMenuItem(value: 'delete', child: Text('Remove from farm')),
             ],
           ),
         ],
@@ -979,83 +1029,14 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
     }
   }
 
-  String _apiAnimalType(String type) {
-    const values = {
-      'cattle': 'cattle', 'goats': 'goat', 'goat': 'goat',
-      'sheep': 'sheep', 'pigs': 'pig', 'pig': 'pig',
-      'poultry': 'poultry', 'rabbits': 'rabbit', 'rabbit': 'rabbit',
-      'horse': 'horse', 'fish': 'other', 'other': 'other',
-    };
-    return values[type.toLowerCase()] ?? 'other';
-  }
-
-  Future<void> _editAnimal(AnimalCategory animal) async {
-    final count = TextEditingController(text: animal.count.toString());
-    String selectedType = animal.name;
-    final changed = await showDialog<bool>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Edit animals'),
-        content: Column(mainAxisSize: MainAxisSize.min, children: [
-          DropdownButtonFormField<String>(
-            initialValue: ['Cattle', 'Goats', 'Sheep', 'Pigs', 'Poultry', 'Rabbits', 'Other'].contains(selectedType) ? selectedType : 'Other',
-            items: const ['Cattle', 'Goats', 'Sheep', 'Pigs', 'Poultry', 'Rabbits', 'Other']
-                .map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
-            onChanged: (value) => selectedType = value ?? selectedType,
-            decoration: const InputDecoration(labelText: 'Animal type'),
-          ),
-          TextField(controller: count, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Number')),
-        ]),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save')),
-        ],
-      ),
-    ) ?? false;
-    if (!changed || !mounted) return;
-    final newCount = int.tryParse(count.text) ?? 0;
-    if (newCount < 1) {
-      _showMessage('Enter a valid animal count.', error: true);
-      return;
-    }
-    try {
-      final farm = _farms[_selectedFarmIndex];
-      final farmId = int.tryParse(farm.id);
-      if (farmId == null || animal.ids.isEmpty) throw Exception('Animal records have no server IDs. Refresh the farm and try again.');
-      final type = _apiAnimalType(selectedType);
-      final ids = [...animal.ids];
-      for (final id in ids.take(newCount)) {
-        await ApiService().updateAnimal(int.parse(id), {'type': type, 'farm_id': farmId});
-      }
-      if (newCount > ids.length) {
-        for (var i = ids.length; i < newCount; i++) {
-          final created = await ApiService().createAnimal({
-            'identification_number': '${type}_${DateTime.now().millisecondsSinceEpoch}_$i',
-            'type': type, 'breed': 'Unknown', 'gender': 'male', 'age': 0,
-            'health_status': 'healthy', 'farm_id': farmId,
-          });
-          if (created is Map && created['id'] != null) ids.add(created['id'].toString());
-        }
-      } else if (newCount < ids.length) {
-        for (final id in ids.skip(newCount)) {
-          await ApiService().deleteAnimal(int.parse(id));
-        }
-        ids.removeRange(newCount, ids.length);
-      }
-      await _loadFarms();
-    } catch (e) {
-      if (mounted) _showMessage('Failed to edit animals: $e', error: true);
-    }
-  }
-
   Future<void> _deleteAnimal(AnimalCategory animal) async {
     if (!await _confirm('Delete animals?', 'Delete all ${animal.count} ${animal.name} records?')) return;
     try {
-      if (animal.ids.isNotEmpty) {
-        for (final id in animal.ids) {
-          final intId = int.tryParse(id);
-          if (intId != null) await ApiService().deleteAnimal(intId);
-        }
+      if (animal.ids.isEmpty) {
+        throw Exception('No server animal references are available for this category.');
+      }
+      for (final animalRef in animal.ids) {
+        await ApiService().deleteAnimal(animalRef);
       }
       if (mounted) {
         setState(() {
@@ -1068,63 +1049,17 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
     }
   }
 
-  Future<void> _editWorker(Worker worker) async {
-    final name = TextEditingController(text: worker.name);
-    final role = TextEditingController(text: worker.role);
-    final phone = TextEditingController(text: worker.phone);
-    bool isSubmitting = false;
-
-    final changed = await showDialog<bool>(
-      context: context,
-      barrierDismissible: true,
-      builder: (dialogContext) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Edit worker'),
-          content: Column(mainAxisSize: MainAxisSize.min, children: [
-            TextField(controller: name, enabled: !isSubmitting, decoration: const InputDecoration(labelText: 'Full name')),
-            TextField(controller: role, enabled: !isSubmitting, decoration: const InputDecoration(labelText: 'Role')),
-            TextField(controller: phone, enabled: !isSubmitting, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone')),
-          ]),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-            FilledButton(
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child: const Text('Save'),
-            ),
-          ],
-        ),
-      ),
-    ) ?? false;
-
-    if (!changed || !mounted) return;
-    try {
-      final id = int.tryParse(worker.id ?? '');
-      if (id != null) {
-        await ApiService().updateWorker(id, {
-          'name': name.text.trim(),
-          'role': role.text.trim(),
-          'phone': phone.text.trim(),
-        });
-      }
-      await _loadFarms();
-    } catch (e) {
-      if (mounted) _showMessage('Failed to edit worker: $e', error: true);
-    }
-  }
-
   Future<void> _deleteWorker(Worker worker) async {
     if (!await _confirm('Delete worker?', 'Remove ${worker.name} from this farm?')) return;
     try {
       final id = int.tryParse(worker.id ?? '');
-      if (id != null) {
-        await ApiService().deleteWorker(id);
+      final farmId = int.tryParse(_farms[_selectedFarmIndex].id);
+      if (id == null || farmId == null) {
+        throw Exception('The farm user is missing a valid server ID.');
       }
-      if (mounted) {
-        setState(() {
-          _farms[_selectedFarmIndex].workers.removeWhere((w) => w.id == worker.id || w.name == worker.name);
-        });
-        _showMessage('Worker removed successfully!');
-      }
+      await ApiService().deleteWorker(id, farmId: farmId);
+      await _loadFarms();
+      if (mounted) _showMessage('Farm user removed successfully!');
     } catch (e) {
       if (mounted) _showMessage('Failed to delete worker: $e', error: true);
     }
@@ -1147,11 +1082,18 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
     final countController = TextEditingController(text: '1');
     final tagController = TextEditingController();
     final breedController = TextEditingController();
-    final ageController = TextEditingController();
+    final birthDateController = TextEditingController();
 
-    String selectedType = 'Cattle';
+    final enabledCategories = _farms[_selectedFarmIndex].animals
+        .where((category) => category.categoryId.isNotEmpty)
+        .toList();
+    if (enabledCategories.isEmpty) {
+      _showMessage('Enable an animal category for this farm first.', error: true);
+      return;
+    }
+
+    String selectedType = enabledCategories.first.name;
     String selectedGender = 'male';
-    String selectedHealth = 'healthy';
     bool isBatchMode = true;
     bool isSubmitting = false;
     String? errorMessage;
@@ -1254,17 +1196,12 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.category_rounded, size: 20),
                     ),
-                    items: const [
-                      'Cattle',
-                      'Goats',
-                      'Sheep',
-                      'Pigs',
-                      'Poultry',
-                      'Rabbits',
-                      'Fish',
-                      'Horses',
-                      'Other',
-                    ].map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                    items: enabledCategories
+                        .map((category) => DropdownMenuItem(
+                              value: category.name,
+                              child: Text(category.name),
+                            ))
+                        .toList(),
                     onChanged: isSubmitting
                         ? null
                         : (value) {
@@ -1289,84 +1226,67 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                       ),
                       keyboardType: TextInputType.number,
                     ),
-                  ] else ...[
-                    TextFormField(
-                      controller: tagController,
-                      enabled: !isSubmitting,
-                      decoration: const InputDecoration(
-                        labelText: 'Tag / ID (Optional)',
-                        hintText: 'e.g., COW-102',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.qr_code_rounded, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: breedController,
-                      enabled: !isSubmitting,
-                      decoration: const InputDecoration(
-                        labelText: 'Breed (Optional)',
-                        hintText: 'e.g., Friesian, Ankole',
-                        border: OutlineInputBorder(),
-                        prefixIcon: Icon(Icons.pets_rounded, size: 20),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            initialValue: selectedGender,
-                            decoration: const InputDecoration(
-                              labelText: 'Gender',
-                              border: OutlineInputBorder(),
-                            ),
-                            items: const [
-                              DropdownMenuItem(value: 'male', child: Text('Male')),
-                              DropdownMenuItem(value: 'female', child: Text('Female')),
-                            ],
-                            onChanged: isSubmitting
-                                ? null
-                                : (val) {
-                                    if (val != null) setDialogState(() => selectedGender = val);
-                                  },
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: TextFormField(
-                            controller: ageController,
-                            enabled: !isSubmitting,
-                            decoration: const InputDecoration(
-                              labelText: 'Age (Years)',
-                              border: OutlineInputBorder(),
-                            ),
-                            keyboardType: TextInputType.number,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedHealth,
-                      decoration: const InputDecoration(
-                        labelText: 'Health Status',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: const [
-                        DropdownMenuItem(value: 'healthy', child: Text('Healthy')),
-                        DropdownMenuItem(value: 'sick', child: Text('Sick')),
-                        DropdownMenuItem(value: 'treatment', child: Text('Under Treatment')),
-                        DropdownMenuItem(value: 'quarantine', child: Text('Quarantine')),
-                        DropdownMenuItem(value: 'recovering', child: Text('Recovering')),
-                      ],
-                      onChanged: isSubmitting
-                          ? null
-                          : (val) {
-                              if (val != null) setDialogState(() => selectedHealth = val);
-                            },
-                    ),
                   ],
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: tagController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(
+                      labelText: 'Tag / ID (Optional)',
+                      hintText: 'e.g., COW-102',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.qr_code_rounded, size: 20),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: breedController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(
+                      labelText: 'Breed *',
+                      hintText: 'Enter the breed name in the farm catalog',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.pets_rounded, size: 20),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: DropdownButtonFormField<String>(
+                          initialValue: selectedGender,
+                          decoration: const InputDecoration(
+                            labelText: 'Sex *',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: const [
+                            DropdownMenuItem(value: 'male', child: Text('Male')),
+                            DropdownMenuItem(value: 'female', child: Text('Female')),
+                          ],
+                          onChanged: isSubmitting
+                              ? null
+                              : (value) {
+                                  if (value != null) {
+                                    setDialogState(() => selectedGender = value);
+                                  }
+                                },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: TextFormField(
+                          controller: birthDateController,
+                          enabled: !isSubmitting,
+                          decoration: const InputDecoration(
+                            labelText: 'Date of birth *',
+                            hintText: 'YYYY-MM-DD',
+                            border: OutlineInputBorder(),
+                          ),
+                          keyboardType: TextInputType.datetime,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -1384,6 +1304,15 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                     });
                     return;
                   }
+                  final birthDate = DateTime.tryParse(
+                    birthDateController.text.trim(),
+                  );
+                  if (birthDate == null || breedController.text.trim().isEmpty) {
+                    setDialogState(() {
+                      errorMessage = 'Enter a catalog breed and date of birth (YYYY-MM-DD).';
+                    });
+                    return;
+                  }
 
                   setDialogState(() {
                     isSubmitting = true;
@@ -1393,62 +1322,48 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   try {
                     final farm = _farms[_selectedFarmIndex];
                     final farmId = int.tryParse(farm.id);
-                    final createdIds = <String>[];
-                    final apiType = _apiAnimalType(selectedType);
-
-                    if (farmId != null) {
-                      if (isBatchMode) {
-                        for (int i = 0; i < count; i++) {
-                          final created = await ApiService().createAnimal({
-                            'identification_number': '${apiType}_${DateTime.now().millisecondsSinceEpoch}_$i',
-                            'type': apiType,
-                            'breed': 'Unknown',
-                            'gender': 'male',
-                            'age': 0,
-                            'health_status': 'healthy',
-                            'farm_id': farmId,
-                          });
-                          if (created is Map) {
-                            final id = created['id'] ?? (created['data'] is Map ? created['data']['id'] : null);
-                            if (id != null) createdIds.add(id.toString());
-                          }
-                        }
-                      } else {
-                        final tag = tagController.text.trim().isNotEmpty
-                            ? tagController.text.trim()
-                            : '${apiType}_${DateTime.now().millisecondsSinceEpoch}';
-                        final created = await ApiService().createAnimal({
-                          'identification_number': tag,
-                          'type': apiType,
-                          'breed': breedController.text.trim().isNotEmpty ? breedController.text.trim() : 'Unknown',
-                          'gender': selectedGender,
-                          'age': int.tryParse(ageController.text.trim()) ?? 0,
-                          'health_status': selectedHealth,
-                          'farm_id': farmId,
-                        });
-                        if (created is Map) {
-                          final id = created['id'] ?? (created['data'] is Map ? created['data']['id'] : null);
-                          if (id != null) createdIds.add(id.toString());
-                        }
-                      }
+                    final userId = _currentUser?.id;
+                    final category = enabledCategories.firstWhere(
+                      (item) => item.name == selectedType,
+                    );
+                    final categoryId = int.tryParse(category.categoryId);
+                    if (farmId == null || userId == null || categoryId == null) {
+                      throw Exception('Farm, user, or animal category ID is missing.');
                     }
 
-                    final normalizedCatName = Farm.normalizeCategoryName(selectedType);
-                    if (mounted) {
-                      setState(() {
-                        final currentFarm = _farms[_selectedFarmIndex];
-                        final existingIndex = currentFarm.animals.indexWhere(
-                          (a) => a.name.toLowerCase() == normalizedCatName.toLowerCase(),
-                        );
+                    final requestedBreed = breedController.text.trim().toLowerCase();
+                    final breeds = await ApiService().legacyGetAnimalBreeds(categoryId);
+                    Map? selectedBreed;
+                    for (final item in breeds) {
+                      if (item is Map &&
+                          '${item['breed_name'] ?? ''}'.trim().toLowerCase() ==
+                              requestedBreed) {
+                        selectedBreed = item;
+                        break;
+                      }
+                    }
+                    final breedId = selectedBreed?['breed_id'];
+                    if (breedId == null) {
+                      throw Exception('That breed was not found for $selectedType.');
+                    }
 
-                        if (existingIndex != -1) {
-                          currentFarm.animals[existingIndex].count += count;
-                          currentFarm.animals[existingIndex].ids.addAll(createdIds);
-                        } else {
-                          currentFarm.animals.add(
-                            AnimalCategory(normalizedCatName, count, '', ids: createdIds),
-                          );
-                        }
+                    final tagBase = tagController.text.trim().isNotEmpty
+                        ? tagController.text.trim()
+                        : '${selectedType.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}';
+                    for (var index = 0; index < count; index++) {
+                      await ApiService().createAnimal({
+                        'farm_id': farmId,
+                        'animal_type_id': categoryId,
+                        'breed_id': breedId,
+                        'sex': selectedGender,
+                        'dob': birthDate.toIso8601String().split('T').first,
+                        'weight': '0',
+                        'tag_id': count == 1 ? tagBase : '$tagBase-${index + 1}',
+                        'alias_name': '',
+                        'description': '',
+                        'user_id': userId,
+                        'sensor_temp_id': '',
+                        'sensor_location_id': '',
                       });
                     }
 
@@ -1456,8 +1371,9 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                       Navigator.pop(dialogContext);
                     }
 
+                    await _loadFarms();
                     if (mounted) {
-                      _showMessage('$selectedType added successfully!');
+                      _showMessage('$count $selectedType record(s) added successfully!');
                     }
                   } catch (e) {
                     setDialogState(() {
@@ -1486,15 +1402,97 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
     );
   }
 
+  Future<void> _enableAnimalCategories() async {
+    if (_farms.isEmpty) return;
+    final farmId = int.tryParse(_farms[_selectedFarmIndex].id);
+    if (farmId == null) {
+      _showMessage('This farm has no valid server ID.', error: true);
+      return;
+    }
+
+    try {
+      final catalog = await ApiService().legacyGetAnimalCategoryCatalog();
+      final enabledIds = _farms[_selectedFarmIndex].animals
+          .map((category) => category.categoryId)
+          .toSet();
+      final available = catalog.whereType<Map>().where((category) {
+        final id = '${category['id'] ?? ''}';
+        return id.isNotEmpty && !enabledIds.contains(id);
+      }).toList();
+      if (available.isEmpty) {
+        _showMessage('All animal categories are already enabled.');
+        return;
+      }
+
+      final selected = <String>{};
+      final categoriesToEnable = await showDialog<List<Map<String, dynamic>>>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Enable animal categories'),
+            content: SizedBox(
+              width: 360,
+              height: 320,
+              child: ListView(
+                children: available.map((raw) {
+                  final category = Map<String, dynamic>.from(raw);
+                  final id = '${category['id']}';
+                  return CheckboxListTile(
+                    value: selected.contains(id),
+                    title: Text('${category['name'] ?? 'Unknown'}'),
+                    onChanged: (enabled) => setDialogState(() {
+                      if (enabled == true) {
+                        selected.add(id);
+                      } else {
+                        selected.remove(id);
+                      }
+                    }),
+                  );
+                }).toList(),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(
+                  dialogContext,
+                  available
+                      .where((category) => selected.contains('${category['id']}'))
+                      .map((category) => Map<String, dynamic>.from(category))
+                      .toList(),
+                ),
+                child: const Text('Enable'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (categoriesToEnable == null || categoriesToEnable.isEmpty) return;
+      for (final category in categoriesToEnable) {
+        final categoryId = int.tryParse('${category['id'] ?? ''}');
+        if (categoryId == null) continue;
+        await ApiService().legacyEnableAnimalCategory(
+          farmId: farmId,
+          animalCategoryId: categoryId,
+        );
+      }
+      await _loadFarms();
+    } catch (error) {
+      if (mounted) _showMessage('Could not enable categories: $error', error: true);
+    }
+  }
+
   void _showAddWorkerDialog(BuildContext context) {
     if (_farms.isEmpty) {
       _showMessage('Please create or select a farm first.', error: true);
       return;
     }
 
-    final nameController = TextEditingController();
     final roleController = TextEditingController();
-    final phoneController = TextEditingController();
     final emailController = TextEditingController();
 
     bool isSubmitting = false;
@@ -1534,7 +1532,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                 ),
                 const SizedBox(width: 10),
                 const Text(
-                  'Add Worker',
+                  'Invite Farm User',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
                 ),
               ],
@@ -1559,18 +1557,6 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                       ),
                     ),
                   ],
-
-                  TextFormField(
-                    controller: nameController,
-                    enabled: !isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Full Name *',
-                      hintText: 'e.g. John Okello',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.person_rounded, size: 20),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
 
                   TextFormField(
                     controller: roleController,
@@ -1605,23 +1591,10 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                   const SizedBox(height: 12),
 
                   TextFormField(
-                    controller: phoneController,
-                    enabled: !isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number *',
-                      hintText: 'e.g., +256 772 123 456',
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.phone_rounded, size: 20),
-                    ),
-                    keyboardType: TextInputType.phone,
-                  ),
-                  const SizedBox(height: 12),
-
-                  TextFormField(
                     controller: emailController,
                     enabled: !isSubmitting,
                     decoration: const InputDecoration(
-                      labelText: 'Email Address (Optional)',
+                      labelText: 'Email Address *',
                       hintText: 'e.g., john@example.com',
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.email_rounded, size: 20),
@@ -1640,14 +1613,12 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                 onPressed: isSubmitting
                     ? null
                     : () async {
-                        final name = nameController.text.trim();
                         final role = roleController.text.trim();
-                        final phone = phoneController.text.trim();
                         final email = emailController.text.trim();
 
-                        if (name.isEmpty || role.isEmpty || phone.isEmpty) {
+                        if (role.isEmpty || email.isEmpty) {
                           setDialogState(() {
-                            errorMessage = 'Please fill in Name, Role, and Phone Number.';
+                            errorMessage = 'Please enter an email address and role.';
                           });
                           return;
                         }
@@ -1660,44 +1631,22 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                         try {
                           final farm = _farms[_selectedFarmIndex];
                           final farmId = int.tryParse(farm.id);
-                          String? newWorkerId;
-
-                          if (farmId != null) {
-                            final created = await ApiService().createWorker({
-                              'farm_id': farmId,
-                              'name': name,
-                              'role': role,
-                              'phone': phone,
-                              if (email.isNotEmpty) 'email': email,
-                            });
-
-                            if (created is Map) {
-                              final directId = created['id'];
-                              final nested = created['data'];
-                              final nestedId = nested is Map ? nested['id'] : null;
-                              newWorkerId = (directId ?? nestedId)?.toString();
-                            }
+                          if (farmId == null) {
+                            throw Exception('This farm has no valid server ID.');
                           }
-
-                          if (mounted) {
-                            setState(() {
-                              _farms[_selectedFarmIndex].workers.add(
-                                    Worker(
-                                      id: newWorkerId,
-                                      name: name,
-                                      role: role,
-                                      phone: phone,
-                                    ),
-                                  );
-                            });
-                          }
+                          await ApiService().createWorker({
+                            'farm_id': farmId,
+                            'role': role,
+                            'email': email,
+                          });
+                          await _loadFarms();
 
                           if (dialogContext.mounted) {
                             Navigator.pop(dialogContext);
                           }
 
                           if (mounted) {
-                            _showMessage('Worker added successfully!');
+                            _showMessage('Farm user invited successfully!');
                           }
                         } catch (e) {
                           setDialogState(() {
@@ -1717,7 +1666,7 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
                         height: 18,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                       )
-                    : const Text('Add Worker'),
+                    : const Text('Invite User'),
               ),
             ],
           );
@@ -1729,7 +1678,9 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
 
 // CREATE FARM FULL SCREEN FORM
 class CreateFarmScreen extends StatefulWidget {
-  const CreateFarmScreen({super.key});
+  const CreateFarmScreen({super.key, required this.ownerId});
+
+  final int ownerId;
 
   @override
   State<CreateFarmScreen> createState() => _CreateFarmScreenState();
@@ -1852,12 +1803,15 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
 
               _buildTextField(
                 controller: _locationController,
-                label: 'Physical Location *',
+                label: 'District, Country *',
                 hint: 'e.g., Wakiso, Uganda',
                 icon: Icons.location_city_rounded,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter location';
+                    return 'Please enter district and country';
+                  }
+                  if (!value.contains(',')) {
+                    return 'Enter district and country separated by a comma';
                   }
                   return null;
                 },
@@ -2180,11 +2134,14 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
     try {
       final response = await ApiService().createFarm(
         newFarm.toApiPayload(),
+        farmOwnerId: widget.ownerId,
         imageFile: _farmImage,
       );
-      final createdFarm = response is Map
-          ? Farm.fromJson(Map<String, dynamic>.from(response))
-          : newFarm;
+      final responseFarmId = response['farm_id'] ?? response['id'];
+      final createdFarm = Farm.fromJson({
+        ...newFarm.toJson(),
+        'id': responseFarmId?.toString() ?? newFarm.id,
+      });
 
       if (!mounted) return;
 

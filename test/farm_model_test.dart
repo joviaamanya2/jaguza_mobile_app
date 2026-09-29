@@ -33,4 +33,23 @@ void main() {
     expect(farm.animals.single.count, 5);
     expect(farm.workers.single.role, 'Manager');
   });
+
+  test('parses documented legacy V2 farm fields', () {
+    final farm = Farm.fromJson({
+      'farm_id': 27,
+      'name': 'Hill Farm',
+      'district': 'Wakiso',
+      'country': 'Uganda',
+      'farm_owner': 5,
+      'farm_size': '12 acres',
+      'gps_lat': '0.31',
+      'gps_lon': '32.58',
+    });
+
+    expect(farm.id, '27');
+    expect(farm.location, 'Wakiso, Uganda');
+    expect(farm.owner, '5');
+    expect(farm.size, '12 acres');
+    expect(farm.coordinates, '0.31, 32.58');
+  });
 }

@@ -58,6 +58,13 @@ class _SignInScreenState extends State<SignInScreen>
       if (!mounted) return;
       setState(() => _isLoading = false);
 
+      if (result['requires_password_reset'] == true) {
+        await _promptTemporaryPasswordReset(
+          int.tryParse('${result['user_id'] ?? ''}'),
+        );
+        return;
+      }
+
       if (result['success'] == true) {
         _showSnack(context.tr('Login successful! Welcome back'));
         Navigator.pushReplacement(
@@ -71,6 +78,89 @@ class _SignInScreenState extends State<SignInScreen>
       if (!mounted) return;
       setState(() => _isLoading = false);
       _showSnack('${context.tr('Network error')}: ${e.toString()}', isError: true);
+    }
+  }
+
+  Future<void> _promptTemporaryPasswordReset(int? userId) async {
+    if (userId == null) {
+      _showSnack('The server did not return a valid user ID.', isError: true);
+      return;
+    }
+
+    final passwordController = TextEditingController();
+    final confirmationController = TextEditingController();
+    String? validationError;
+    final passwords = await showDialog<(String, String)?>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Set a new password'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'New password'),
+              ),
+              TextField(
+                controller: confirmationController,
+                obscureText: true,
+                decoration: const InputDecoration(labelText: 'Confirm password'),
+              ),
+              if (validationError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    validationError!,
+                    style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  ),
+                ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final password = passwordController.text;
+                if (password.length < 8 || password != confirmationController.text) {
+                  setDialogState(() {
+                    validationError = password.length < 8
+                        ? 'Use at least 8 characters.'
+                        : 'Passwords do not match.';
+                  });
+                  return;
+                }
+                Navigator.pop(dialogContext, (password, confirmationController.text));
+              },
+              child: const Text('Update password'),
+            ),
+          ],
+        ),
+      ),
+    );
+    passwordController.dispose();
+    confirmationController.dispose();
+    if (passwords == null || !mounted) return;
+
+    setState(() => _isLoading = true);
+    final result = await ApiService().resetLegacyPassword(
+      userId: userId,
+      password: passwords.$1,
+    );
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+    if (result['success'] == true) {
+      _showSnack('Password updated successfully.');
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+      );
+    } else {
+      _showSnack(result['error'] ?? 'Could not update password.', isError: true);
     }
   }
 

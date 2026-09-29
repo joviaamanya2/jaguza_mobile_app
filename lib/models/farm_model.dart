@@ -28,24 +28,38 @@ class Farm {
   });
 
   factory Farm.fromJson(Map<String, dynamic> json) {
+    final location = json['location'] ?? json['farm_location'];
+    final district = json['district']?.toString() ?? '';
+    final country = json['country']?.toString() ?? '';
+    final gpsLat = json['gps_lat']?.toString() ?? '';
+    final gpsLon = json['gps_lon']?.toString() ?? '';
+
     return Farm(
-      id: json['id']?.toString() ?? '',
+      id: (json['id'] ?? json['farm_id'])?.toString() ?? '',
       name: json['name'] ?? json['farm_name'] ?? '',
-      location: json['location'] ?? json['farm_location'] ?? '',
+      location: location?.toString() ??
+          [district, country].where((part) => part.isNotEmpty).join(', '),
       established: json['established_year']?.toString() ?? json['established']?.toString() ?? '',
-      size: json['size'] ?? '',
-      owner: json['owner_name'] ?? json['farm_owner'] ?? json['owner'] ?? '',
+      size: json['size'] ?? json['farm_size'] ?? '',
+        owner: (json['owner_name'] ?? json['farm_owner'] ?? json['owner'] ?? '')
+          .toString(),
       animals: Farm._groupAnimalsByType(json['animals'] as List<dynamic>? ?? []),
       workers: (json['workers'] as List<dynamic>? ?? [])
           .whereType<Map>()
           .map((worker) => Worker(
                 id: worker['id']?.toString(),
-                name: worker['name'] ?? '',
+                name: worker['name'] ??
+                  '${worker['first_name'] ?? ''} ${worker['surname'] ?? ''}'.trim(),
                 role: worker['role'] ?? '',
-                phone: worker['phone'] ?? worker['phone_number'] ?? '',
+                phone: worker['telephone'] ??
+                  worker['phone'] ??
+                  worker['phone_number'] ??
+                  '',
+                email: worker['email'] ?? '',
               ))
           .toList(),
-      coordinates: json['coordinates'],
+        coordinates: json['coordinates'] ??
+          (gpsLat.isNotEmpty || gpsLon.isNotEmpty ? '$gpsLat, $gpsLon' : null),
       description: json['description'],
       facilities: (json['facilities'] as List<dynamic>? ?? [])
           .map((f) => f.toString())
@@ -157,9 +171,15 @@ class AnimalCategory {
   int count;
   final String imagePath;
   final List<String> ids;
+  final String categoryId;
 
-  AnimalCategory(this.name, this.count, this.imagePath, {List<String>? ids})
-      : ids = ids ?? <String>[];
+  AnimalCategory(
+    this.name,
+    this.count,
+    this.imagePath, {
+    List<String>? ids,
+    this.categoryId = '',
+  }) : ids = ids ?? <String>[];
 }
 
 class Worker {
@@ -167,6 +187,13 @@ class Worker {
   final String name;
   final String role;
   final String phone;
+  final String email;
 
-  Worker({this.id, required this.name, required this.role, required this.phone});
+  Worker({
+    this.id,
+    required this.name,
+    required this.role,
+    required this.phone,
+    this.email = '',
+  });
 }

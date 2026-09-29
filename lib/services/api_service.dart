@@ -25,6 +25,22 @@ class ApiService {
     defaultValue: 'http://188.166.8.72:9044/api/token/',
   );
 
+  // Legacy Jaguza backend compatibility endpoints reversed from the Android app.
+  // These are intentionally separate from the newer token-based backend and
+  // use the form-urlencoded contracts documented by the old livestock client.
+  static const String legacyV2BaseUrl = String.fromEnvironment(
+    'LEGACY_V2_BASE_URL',
+    defaultValue: 'http://livestock.jaguzafarm.com:8000/v2/',
+  );
+  static const String legacyCmdBaseUrl = String.fromEnvironment(
+    'LEGACY_CMD_BASE_URL',
+    defaultValue: 'https://jaguzalivestockug.com/mobileapp/api/',
+  );
+  static const String legacyMarketBaseUrl = String.fromEnvironment(
+    'LEGACY_MARKET_BASE_URL',
+    defaultValue: 'https://market.jaguzafarm.com/api/',
+  );
+
   // Local development URLs
   // Physical phones must use the computer's LAN IP, not 127.0.0.1.
   // Override LOCAL_API_BASE_URL when the phone/network IP changes.
@@ -44,6 +60,7 @@ class ApiService {
   String? _productionToken;
   String? _localTokenValue;
   String? _refreshToken;
+  Map<String, dynamic>? _legacyUserData;
 
   // Mode tracking
   bool _isLocalMode = false;
@@ -63,6 +80,11 @@ class ApiService {
     _productionToken = prefs.getString('production_token');
     _localTokenValue = prefs.getString('local_token');
     _refreshToken = prefs.getString('refresh_token');
+    final storedUser = prefs.getString('legacy_user');
+    if (storedUser != null) {
+      final decoded = _decodeJsonResponse(storedUser);
+      _legacyUserData = decoded.isEmpty ? null : decoded;
+    }
     // The selected API is controlled by USE_LOCAL_API, so debug and release
     // builds use the same server configuration.
     _isLocalMode = _forceLocalApi;
@@ -108,9 +130,11 @@ class ApiService {
     await prefs.remove('local_token');
     await prefs.remove('refresh_token');
     await prefs.remove('is_local_mode');
+    await prefs.remove('legacy_user');
     _productionToken = null;
     _localTokenValue = null;
     _refreshToken = null;
+    _legacyUserData = null;
     _isLocalMode = false;
     print('🗑️ All tokens cleared');
   }
@@ -132,61 +156,117 @@ class ApiService {
   }
 
   // Check if authenticated in current mode
-  bool get isAuthenticated => _currentToken != null;
+  bool get isAuthenticated => _currentToken != null || _legacyUserData != null;
+
+  Future<Map<String, dynamic>> _cacheLegacyUser(dynamic rawUser) async {
+    dynamic user = rawUser;
+    if (user is String) {
+      try {
+        user = json.decode(user);
+      } catch (_) {}
+    }
+    if (user is! Map) {
+      throw const FormatException('The auth API returned an invalid user.');
+    }
+    final userData = Map<String, dynamic>.from(user);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('legacy_user', json.encode(userData));
+    _legacyUserData = userData;
+    return userData;
+  }
 
   // ========== AUTHENTICATION ==========
 
   // Login to production server
   Future<Map<String, dynamic>> login(String email, String password) async {
-    if (_forceLocalApi) {
-      return loginLocal(email, password);
-    }
-
     try {
-      print('🌐 Logging in to PRODUCTION server');
-
-      final response = await http.post(
-        Uri.parse('${baseUrl}login'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({'email': email, 'password': password}),
+      final legacyResult = await legacySignIn(
+        emailPhone: email,
+        password: password,
       );
 
-      print('📥 Login Response Status: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = _decodeJsonResponse(response.body);
-        if (data['success'] == true) {
-          final responseData = data['data'] is Map
-              ? Map<String, dynamic>.from(data['data'] as Map)
-              : data;
-          final token =
-              '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
-          if (token.isEmpty) {
-            return {
-              'success': false,
-              'error': 'The server did not return a login token',
-            };
-          }
-          await saveProductionTokens(
-            token,
-            '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
-          );
-          return {'success': true, 'data': responseData};
-        }
-        return {'success': false, 'error': data['message'] ?? 'Login failed'};
-      } else {
-        final error = _decodeJsonResponse(response.body);
+      final statusCode = legacyResult['status_code'] ?? legacyResult['code'];
+      if (statusCode == 300) {
+        final rawUser = legacyResult['user'];
+        final userData = rawUser == null
+            ? <String, dynamic>{}
+            : await _cacheLegacyUser(rawUser);
         return {
           'success': false,
-          'error':
-              _validationMessage(error) ??
-              error['message'] ??
-              'Invalid credentials',
+          'data': userData,
+          'status_code': statusCode,
+          'requires_password_reset': true,
+          'user_id': userData['id'],
+          'error': legacyResult['status_message'] ??
+              'A password reset is required before signing in.',
         };
       }
-    } catch (e) {
-      print('❌ Login Error: $e');
-      return {'success': false, 'error': 'Cannot reach the server at $baseUrl'};
+      if (statusCode == 200) {
+        final userData = await _cacheLegacyUser(legacyResult['user']);
+        return {
+          'success': true,
+          'data': userData,
+          'status_code': statusCode,
+          'status_message': legacyResult['status_message'] ?? 'Login successful',
+        };
+      }
+
+      final legacyError = legacyResult['status_message'] ??
+          legacyResult['message'] ??
+          'Invalid credentials';
+      return {'success': false, 'error': legacyError};
+    } catch (_) {
+      // Fallback to the app's newer API if the legacy server is unreachable.
+      if (_forceLocalApi) {
+        return loginLocal(email, password);
+      }
+
+      try {
+        print('🌐 Logging in to PRODUCTION server');
+
+        final response = await http.post(
+          Uri.parse('${baseUrl}login'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode({'email': email, 'password': password}),
+        );
+
+        print('📥 Login Response Status: ${response.statusCode}');
+
+        if (response.statusCode == 200) {
+          final data = _decodeJsonResponse(response.body);
+          if (data['success'] == true) {
+            final responseData = data['data'] is Map
+                ? Map<String, dynamic>.from(data['data'] as Map)
+                : data;
+            final token =
+                '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
+            if (token.isEmpty) {
+              return {
+                'success': false,
+                'error': 'The server did not return a login token',
+              };
+            }
+            await saveProductionTokens(
+              token,
+              '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
+            );
+            return {'success': true, 'data': responseData};
+          }
+          return {'success': false, 'error': data['message'] ?? 'Login failed'};
+        } else {
+          final error = _decodeJsonResponse(response.body);
+          return {
+            'success': false,
+            'error':
+                _validationMessage(error) ??
+                error['message'] ??
+                'Invalid credentials',
+          };
+        }
+      } catch (e) {
+        print('❌ Login Error: $e');
+        return {'success': false, 'error': 'Cannot reach the server at $baseUrl'};
+      }
     }
   }
 
@@ -247,64 +327,120 @@ class ApiService {
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
     try {
-      await loadTokens();
-      final registrationBaseUrl = _getBaseUrl();
-      final response = await http.post(
-        Uri.parse('${registrationBaseUrl}register'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode(userData),
+      final fullName = (userData['name'] ?? userData['full_name'] ?? '').toString().trim();
+      final firstName = (userData['first_name'] ??
+          (fullName.isNotEmpty ? fullName.split(' ').first : '')).toString();
+      final surname = (userData['surname'] ??
+          (fullName.isNotEmpty && fullName.split(' ').length > 1
+              ? fullName.split(' ').skip(1).join(' ')
+              : '')).toString();
+      final email = (userData['email'] ?? '').toString();
+      final password = (userData['password'] ?? '').toString();
+      final telephone = (userData['phone_number'] ??
+          userData['telephone'] ??
+          userData['phone'] ?? '').toString();
+
+      final legacyResult = await legacySignUp(
+        surname: surname,
+        firstName: firstName,
+        email: email,
+        password: password,
+        telephone: telephone,
       );
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        final data = _decodeJsonResponse(response.body);
-        if (data['success'] == true) {
-          final responseData = data['data'] is Map
-              ? Map<String, dynamic>.from(data['data'] as Map)
-              : data;
-          final token =
-              '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
-          if (token.isEmpty) {
-            return {
-              'success': false,
-              'error':
-                  'Account created but the server did not return a login token',
-            };
-          }
-          if (_isLocalMode) {
-            await saveLocalTokens(
-              token,
-              '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
-            );
-          } else {
-            await saveProductionTokens(
-              token,
-              '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
-            );
-          }
-          return {'success': true, 'data': responseData};
-        }
+      final statusCode = legacyResult['status_code'] ?? legacyResult['code'];
+      if (statusCode == 200) {
+        final userDataMap = await _cacheLegacyUser(legacyResult['user']);
+
         return {
-          'success': false,
-          'error': data['message'] ?? 'Registration failed',
-        };
-      } else {
-        final error = _decodeJsonResponse(response.body);
-        return {
-          'success': false,
-          'error':
-              _validationMessage(error) ??
-              error['errors'] ??
-              error['message'] ??
-              'Registration failed',
+          'success': true,
+          'data': userDataMap,
+          'status_code': statusCode,
+          'status_message': legacyResult['status_message'] ?? 'Registration successful',
         };
       }
-    } catch (e) {
-      return {'success': false, 'error': e.toString()};
+
+      final legacyError = legacyResult['status_message'] ??
+          legacyResult['message'] ??
+          'Registration failed';
+      return {'success': false, 'error': legacyError};
+    } catch (_) {
+      try {
+        await loadTokens();
+        final registrationBaseUrl = _getBaseUrl();
+        final response = await http.post(
+          Uri.parse('${registrationBaseUrl}register'),
+          headers: {'Content-Type': 'application/json'},
+          body: json.encode(userData),
+        );
+
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final data = _decodeJsonResponse(response.body);
+          if (data['success'] == true) {
+            final responseData = data['data'] is Map
+                ? Map<String, dynamic>.from(data['data'] as Map)
+                : data;
+            final token =
+                '${responseData['token'] ?? responseData['access_token'] ?? data['token'] ?? ''}';
+            if (token.isEmpty) {
+              return {
+                'success': false,
+                'error':
+                    'Account created but the server did not return a login token',
+              };
+            }
+            if (_isLocalMode) {
+              await saveLocalTokens(
+                token,
+                '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
+              );
+            } else {
+              await saveProductionTokens(
+                token,
+                '${responseData['refresh_token'] ?? data['refresh_token'] ?? 'refresh_token_placeholder'}',
+              );
+            }
+            return {'success': true, 'data': responseData};
+          }
+          return {
+            'success': false,
+            'error': data['message'] ?? 'Registration failed',
+          };
+        } else {
+          final error = _decodeJsonResponse(response.body);
+          return {
+            'success': false,
+            'error':
+                _validationMessage(error) ??
+                error['errors'] ??
+                error['message'] ??
+                'Registration failed',
+          };
+        }
+      } catch (e) {
+        return {'success': false, 'error': e.toString()};
+      }
     }
   }
 
   Future<void> logout() async {
     await clearTokens();
+  }
+
+  Future<Map<String, dynamic>> resetLegacyPassword({
+    required int userId,
+    required String password,
+  }) async {
+    try {
+      final result = await legacyFormPost(
+        'reset_password.php',
+        fields: {'user_id': userId, 'password': password},
+      );
+      final userData = await _cacheLegacyUser(result['user']);
+      return {'success': true, 'data': userData};
+    } catch (error) {
+      return {'success': false, 'error': error.toString()};
+    }
   }
 
   // ========== FORGOT PASSWORD ==========
@@ -313,37 +449,55 @@ class ApiService {
 
   /// Step 1: ask the server to email a 6-digit verification code to [email].
   Future<Map<String, dynamic>> forgotPassword(String email) async {
-    await loadTokens();
-    final url = '${_getBaseUrl()}forgot-password';
-
     try {
-      print('📡 Forgot Password Request: $url');
-
-      final response = await http.post(
-        Uri.parse(url),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: json.encode({'email': email}),
+      final legacyResult = await legacyCmd(
+        'forgotPassword',
+        fields: {'email': email},
       );
-
-      print('📥 Forgot Password Response Status: ${response.statusCode}');
-
-      final data = _decodeJsonResponse(response.body);
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return {'success': true, 'message': data['message']};
+      final statusCode = legacyResult['status_code'];
+      if (statusCode is num && statusCode >= 400) {
+        return {
+          'success': false,
+          'error': legacyResult['status_message'] ?? 'Password reset request failed.',
+        };
       }
       return {
-        'success': false,
-        'error':
-            _validationMessage(data) ??
-            data['message'] ??
-            'Failed to send verification code',
+        'success': true,
+        'message': 'Password reset request sent.',
       };
-    } catch (e) {
-      print('❌ Forgot Password Error: $e');
-      return {'success': false, 'error': 'Cannot reach the server at $url'};
+    } catch (_) {
+      await loadTokens();
+      final url = '${_getBaseUrl()}forgot-password';
+
+      try {
+        print('📡 Forgot Password Request: $url');
+
+        final response = await http.post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+          },
+          body: json.encode({'email': email}),
+        );
+
+        print('📥 Forgot Password Response Status: ${response.statusCode}');
+
+        final data = _decodeJsonResponse(response.body);
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          return {'success': true, 'message': data['message']};
+        }
+        return {
+          'success': false,
+          'error':
+              _validationMessage(data) ??
+              data['message'] ??
+              'Failed to send verification code',
+        };
+      } catch (e) {
+        print('❌ Forgot Password Error: $e');
+        return {'success': false, 'error': 'Cannot reach the server at $url'};
+      }
     }
   }
 
@@ -481,6 +635,11 @@ class ApiService {
 
   Future<dynamic> get(String endpoint) async {
     await loadTokens();
+
+    if ((endpoint == 'user' || endpoint == 'users/profile/') &&
+        _legacyUserData != null) {
+      return Map<String, dynamic>.from(_legacyUserData!);
+    }
 
     String token = _getToken() ?? '';
     String baseUrlToUse = _getBaseUrl();
@@ -995,11 +1154,49 @@ class ApiService {
   }
 
   Future<dynamic> createAnimal(Map<String, dynamic> data) async {
-    if (data.containsKey('type')) {
-      data['type'] = data['type'].toString().toLowerCase();
+    const requiredFields = [
+      'farm_id',
+      'animal_type_id',
+      'breed_id',
+      'sex',
+      'dob',
+      'user_id',
+    ];
+    for (final field in requiredFields) {
+      if ('${data[field] ?? ''}'.trim().isEmpty) {
+        throw ArgumentError('$field is required to create an animal.');
+      }
     }
 
-    return await post('animals', data);
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse('${legacyV2BaseUrl}frm_create_animal.php'),
+    );
+    data.forEach((key, value) {
+      if (value != null) request.fields[key] = value.toString();
+    });
+    final response = await request.send();
+    final rawBody = (await response.stream.bytesToString()).trim();
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(rawBody.isNotEmpty ? rawBody : 'Animal creation failed.');
+    }
+
+    dynamic decoded;
+    try {
+      decoded = json.decode(rawBody);
+    } catch (_) {
+      decoded = null;
+    }
+    final result = decoded is Map
+        ? Map<String, dynamic>.from(decoded)
+        : <String, dynamic>{'raw': rawBody};
+    final statusCode = int.tryParse(
+      '${result['status_code'] ?? result['code'] ?? ''}',
+    );
+    if (statusCode != null && statusCode != 200) {
+      throw Exception(result['status_message'] ?? 'Animal creation failed.');
+    }
+    return result;
   }
 
   Future<Map<String, dynamic>> updateAnimal(
@@ -1009,8 +1206,15 @@ class ApiService {
     return await put('animals/$id', data);
   }
 
-  Future<void> deleteAnimal(int id) async {
-    await delete('animals/$id');
+  Future<void> deleteAnimal(String animalRef) async {
+    final result = await legacyFormPost(
+      'frm_delete_animal.php',
+      fields: {'animal_ref': animalRef},
+    );
+    final statusCode = int.tryParse('${result['status_code'] ?? ''}');
+    if (statusCode != null && statusCode >= 400) {
+      throw Exception(result['status_message'] ?? 'Animal deletion failed.');
+    }
   }
 
   Future<Map<String, dynamic>> updateAnimalHealth(int id, String status) async {
@@ -1089,24 +1293,44 @@ class ApiService {
 
   // ========== FARMS API ==========
 
-  Future<List<dynamic>> getFarms() async {
-    return _extractList(await get('farms'));
+  Future<List<dynamic>> getFarms({required int userId}) async {
+    return legacyGetFarms(userId);
   }
 
   Future<dynamic> createFarm(
     Map<String, dynamic> data, {
+    required int farmOwnerId,
     File? imageFile,
   }) async {
-    try {
-      if (imageFile != null && imageFile.existsSync()) {
-        return await postWithFile('farms', data, 'image', imageFile);
-      } else {
-        return await post('farms', data);
-      }
-    } catch (e) {
-      print('❌ Failed to create farm: $e');
-      rethrow;
+    final locationParts = (data['location'] ?? '').toString().split(',');
+    if (locationParts.length < 2) {
+      throw FormatException('Enter the farm location as district, country.');
     }
+
+    final coordinates = _parseLegacyFarmCoordinates(
+      data['coordinates']?.toString(),
+    );
+    final image = imageFile != null && await imageFile.exists()
+        ? base64Encode(await imageFile.readAsBytes())
+        : '';
+    final result = await legacyCmd(
+      'AddFarm',
+      fields: {
+        'userId': farmOwnerId,
+        'farm_name': data['name'] ?? '',
+        'actual_location': data['location'] ?? '',
+        'district': locationParts.first.trim(),
+        'longitude': coordinates.$2,
+        'latitude': coordinates.$1,
+        'image': image,
+      },
+    );
+
+    final statusCode = result['status_code'];
+    if (statusCode is num && statusCode >= 400) {
+      throw Exception(result['status_message'] ?? 'Farm creation failed.');
+    }
+    return result;
   }
 
   Future<Map<String, dynamic>> updateFarm(
@@ -1127,18 +1351,62 @@ class ApiService {
   }
 
   Future<void> deleteFarm(int id) async {
-    await delete('farms/$id');
+    final result = await legacyFormPost(
+      'frm_delete_farm.php',
+      fields: {'farm_id': id},
+    );
+    final statusCode = result['status_code'];
+    if (statusCode is num && statusCode >= 400) {
+      throw Exception(result['status_message'] ?? 'Farm deletion failed.');
+    }
+  }
+
+  (String, String) _parseLegacyFarmCoordinates(String? value) {
+    if (value == null || value.trim().isEmpty) return ('', '');
+    final parts = value.split(',');
+    if (parts.length < 2) return ('', '');
+
+    String parse(String part) {
+      final number = RegExp(r'[-+]?\d+(?:\.\d+)?').firstMatch(part)?.group(0);
+      if (number == null) return '';
+      var coordinate = double.tryParse(number);
+      if (coordinate == null) return '';
+      final direction = part.toUpperCase();
+      if (direction.contains('S') || direction.contains('W')) {
+        coordinate = -coordinate.abs();
+      } else if (direction.contains('N') || direction.contains('E')) {
+        coordinate = coordinate.abs();
+      }
+      return coordinate.toString();
+    }
+
+    return (parse(parts[0]), parse(parts[1]));
   }
 
   // ========== WORKERS API ==========
 
   Future<List<dynamic>> getWorkers({int? farmId}) async {
-    final endpoint = farmId != null ? 'workers?farm_id=$farmId' : 'workers';
-    return _extractList(await get(endpoint));
+    if (farmId == null) return const [];
+    return legacyGetFarmUsers(farmId);
   }
 
   Future<dynamic> createWorker(Map<String, dynamic> data) async {
-    return await post('workers', data);
+    final farmId = int.tryParse('${data['farm_id'] ?? ''}');
+    final email = '${data['email'] ?? ''}'.trim();
+    final role = '${data['role'] ?? ''}'.trim();
+    if (farmId == null || email.isEmpty || role.isEmpty) {
+      throw ArgumentError('A farm ID, email, and role are required.');
+    }
+
+    final result = await legacyFormPost(
+      'frm_save_farm_user.php',
+      fields: {'farm_id': farmId, 'email': email, 'role': role},
+    );
+    final code = result['code'] ?? result['status_code'];
+    if (code != 200) {
+      throw Exception(result['status_message'] ?? result['message'] ?? 'Could not add farm user.');
+    }
+    return result;
   }
 
   Future<Map<String, dynamic>> updateWorker(
@@ -1148,8 +1416,15 @@ class ApiService {
     return await put('workers/$id', data);
   }
 
-  Future<void> deleteWorker(int id) async {
-    await delete('workers/$id');
+  Future<void> deleteWorker(int id, {required int farmId}) async {
+    final result = await legacyFormPost(
+      'frm_remove_frm_user.php',
+      fields: {'farm_id': farmId, 'user_id': id},
+    );
+    final statusCode = result['status_code'];
+    if (statusCode is num && statusCode >= 400) {
+      throw Exception(result['status_message'] ?? 'Could not remove farm user.');
+    }
   }
 
   // ========== DOCTORS API ==========
@@ -1440,6 +1715,250 @@ class ApiService {
 
   Future<List<dynamic>> getMarketplaceListings() async {
     return _extractList(await get('marketplace'));
+  }
+
+  // ========== LEGACY JAGUZA API COMPATIBILITY ==========
+  // These helpers map the legacy Android endpoints from the reverse-engineered
+  // API document into a Flutter-friendly service layer. They are intentionally
+  // isolated so the main app can keep working against the modern backend while
+  // still being able to integrate the original Jaguza APIs when needed.
+
+  Future<Map<String, dynamic>> legacyFormPost(
+    String endpoint, {
+    required Map<String, dynamic> fields,
+    String baseUrl = legacyV2BaseUrl,
+  }) async {
+    final body = fields.entries
+        .map(
+          (entry) =>
+              '${Uri.encodeComponent(entry.key)}=${Uri.encodeComponent(entry.value.toString())}',
+        )
+        .join('&');
+
+    final response = await http.post(
+      Uri.parse('$baseUrl$endpoint'),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: body,
+    );
+
+    final rawBody = response.body.trim();
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      if (rawBody.isEmpty) {
+        return {'status_code': response.statusCode};
+      }
+
+      try {
+        final decoded = json.decode(rawBody);
+        if (decoded is Map<String, dynamic>) {
+          return decoded;
+        }
+        if (decoded is Map) {
+          return Map<String, dynamic>.from(decoded);
+        }
+        if (decoded is List) {
+          return {'data': decoded};
+        }
+      } catch (_) {
+        return {'raw': rawBody};
+      }
+
+      return {'raw': rawBody};
+    }
+
+    try {
+      final decoded = json.decode(rawBody);
+      if (decoded is Map) {
+        return Map<String, dynamic>.from(decoded);
+      }
+    } catch (_) {}
+
+    return {
+      'status_code': response.statusCode,
+      'status_message': rawBody.isNotEmpty ? rawBody : 'Request failed',
+    };
+  }
+
+  Future<List<dynamic>> legacyListFromV2(
+    String endpoint, {
+    required Map<String, dynamic> fields,
+  }) async {
+    final result = await legacyFormPost(endpoint, fields: fields);
+    final payload = result['data'] ?? result['result'] ?? result;
+    if (payload is List) return payload;
+    if (payload is Map && payload['data'] is List) {
+      return List<dynamic>.from(payload['data']);
+    }
+    if (payload is Map && payload['items'] is List) {
+      return List<dynamic>.from(payload['items']);
+    }
+    return const [];
+  }
+
+  Future<Map<String, dynamic>> legacySignIn({
+    required String emailPhone,
+    required String password,
+  }) async {
+    return legacyFormPost(
+      'sign_in.php',
+      fields: {'email_phone': emailPhone, 'password': password},
+    );
+  }
+
+  Future<Map<String, dynamic>> legacySignUp({
+    required String surname,
+    required String firstName,
+    required String email,
+    required String password,
+    required String telephone,
+  }) async {
+    return legacyFormPost(
+      'sign_up.php',
+      fields: {
+        'surname': surname,
+        'first_name': firstName,
+        'email': email,
+        'password': password,
+        'telephone': telephone,
+      },
+    );
+  }
+
+  Future<List<dynamic>> legacyGetFarms(int userId) async {
+    return legacyListFromV2('frm_get_farms.php', fields: {'user_id': userId});
+  }
+
+  Future<List<dynamic>> legacyGetFarmUsers(int farmId) async {
+    return legacyListFromV2('frm_get_farm_users.php', fields: {'farm_id': farmId});
+  }
+
+  Future<List<dynamic>> legacyGetAnimalCategories(int farmId) async {
+    return legacyListFromV2(
+      'frm_get_frm_animal_categories.php',
+      fields: {'farm_id': farmId},
+    );
+  }
+
+  Future<List<dynamic>> legacyGetAnimalCategoryCatalog() async {
+    final response = await http.get(
+      Uri.parse('${legacyV2BaseUrl}get_animal_categories.php'),
+      headers: const {'Accept': 'application/json'},
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Could not load animal categories (${response.statusCode}).');
+    }
+    final decoded = json.decode(response.body);
+    if (decoded is List) return decoded;
+    if (decoded is Map && decoded['data'] is List) {
+      return List<dynamic>.from(decoded['data'] as List);
+    }
+    throw const FormatException('The category catalog response was invalid.');
+  }
+
+  Future<void> legacyEnableAnimalCategory({
+    required int farmId,
+    required int animalCategoryId,
+  }) async {
+    final result = await legacyFormPost(
+      'frm_save_frm_animal_categories.php',
+      fields: {'farm_id': farmId, 'animal_category_id': animalCategoryId},
+    );
+    final statusCode = int.tryParse(
+      '${result['status_code'] ?? result['code'] ?? ''}',
+    );
+    if (statusCode != null && statusCode != 200) {
+      throw Exception(result['status_message'] ?? result['message'] ?? 'Could not enable category.');
+    }
+  }
+
+  Future<List<dynamic>> legacyGetAnimalBreeds(int animalCategoryId) async {
+    return legacyListFromV2(
+      'get_animal_breeds.php',
+      fields: {'animal_category_id': animalCategoryId},
+    );
+  }
+
+  Future<List<dynamic>> legacyGetAnimals({
+    required int farmId,
+    required int animalCategoryId,
+    String? sex,
+  }) async {
+    final fields = <String, dynamic>{
+      'farm_id': farmId,
+      'animal_category_id': animalCategoryId,
+    };
+    if (sex != null && sex.isNotEmpty) {
+      fields['sex'] = sex;
+    }
+    return legacyListFromV2('frm_get_frm_animals.php', fields: fields);
+  }
+
+  Future<List<dynamic>> legacyGetBreedingRecords({
+    required String endpoint,
+    required int farmId,
+    required int animalTypeId,
+  }) async {
+    return legacyListFromV2(
+      endpoint,
+      fields: {'farm_id': farmId, 'animal_type_id': animalTypeId},
+    );
+  }
+
+  Future<List<dynamic>> legacyGetMilkingRecords({
+    required int farmId,
+    required int animalTypeId,
+  }) async {
+    return legacyListFromV2(
+      'frm_get_frm_milking_analysis.php',
+      fields: {'farm_id': farmId, 'animal_category_id': animalTypeId},
+    );
+  }
+
+  Future<List<dynamic>> legacyGetExpenses(int farmId) async {
+    return legacyListFromV2('frm_get_expenses.php', fields: {'farm_id': farmId});
+  }
+
+  Future<List<dynamic>> legacyGetIncome(int farmId) async {
+    return legacyListFromV2('frm_get_income_records.php', fields: {'farm_id': farmId});
+  }
+
+  Future<Map<String, dynamic>> legacyCmd(
+    String command, {
+    required Map<String, dynamic> fields,
+  }) async {
+    final payload = <String, dynamic>{'cmd': command, ...fields};
+    final response = await http.post(
+      Uri.parse(legacyCmdBaseUrl),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Accept': 'application/json',
+      },
+      body: payload.entries
+          .map(
+            (entry) =>
+                '${Uri.encodeComponent(entry.key)}=${Uri.encodeComponent(entry.value.toString())}',
+          )
+          .join('&'),
+    );
+
+    final rawBody = response.body.trim();
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      try {
+        final decoded = json.decode(rawBody);
+        if (decoded is Map<String, dynamic>) return decoded;
+        if (decoded is Map) return Map<String, dynamic>.from(decoded);
+        return {'raw': decoded};
+      } catch (_) {
+        return {'raw': rawBody};
+      }
+    }
+
+    return {
+      'status_code': response.statusCode,
+      'status_message': rawBody.isNotEmpty ? rawBody : 'Legacy command failed',
+    };
   }
 
   Future<Map<String, dynamic>> createMarketplaceListing(

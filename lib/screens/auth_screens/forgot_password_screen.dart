@@ -55,12 +55,14 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
     setState(() => _isSending = false);
 
     if (result['success'] == true) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VerificationScreen(email: email),
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Reset request sent. If you received a temporary password, sign in to set a new one.',
+          ),
         ),
       );
+      Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(result['error']?.toString() ?? context.tr('Failed to send verification code'))),
