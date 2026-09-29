@@ -11,6 +11,7 @@ import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/vibrosis.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/white_muscle_disease.dart';
 import 'package:jaguza_app/services/api_service.dart';
+import 'package:jaguza_app/services/legacy_api_service.dart';
 class AnimalDiseasesScreen extends StatefulWidget {
   const AnimalDiseasesScreen({super.key});
 
@@ -194,6 +195,44 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   void initState() {
     super.initState();
     _loadBackendDiseases();
+    _loadLegacyDiseases();
+  }
+
+  /// Adds entries from the legacy CMD API's `getDiseasesList`
+  /// (jaguzalivestockug.com) alongside the Laravel catalog and the built-in
+  /// one. That command only returns `{id, name, description}` — no
+  /// severity or species — so those are inferred the same way the
+  /// built-in catalog's category is.
+  Future<void> _loadLegacyDiseases() async {
+    try {
+      final records = await LegacyApiService.getDiseasesList();
+      final diseases = records.whereType<Map>().map((raw) {
+        final disease = Map<String, dynamic>.from(raw);
+        final name = '${disease['name'] ?? 'Disease'}'.trim();
+        final description = '${disease['description'] ?? ''}';
+        final category = _diseaseCategory('$name $description');
+        return DiseaseItem(
+          title: name,
+          animal: category == 'Poultry' || category == 'Swine'
+              ? category
+              : 'Livestock',
+          severity: 'Medium',
+          severityColor: _severityColor('medium'),
+          icon: Icons.medical_information_rounded,
+          category: category,
+          description: description,
+          screen: _PlaceholderDetailScreen(title: name),
+        );
+      }).toList();
+      if (mounted && diseases.isNotEmpty) {
+        setState(() {
+          _allDiseases.addAll(diseases);
+        });
+      }
+    } catch (_) {
+      // Optional extra source — the built-in and Laravel catalogs are
+      // enough on their own if this is unreachable.
+    }
   }
 
   Future<void> _loadBackendDiseases() async {
