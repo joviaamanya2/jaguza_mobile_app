@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:jaguza_app/screens/onboarding%20screens/onboarding1.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
+import '../services/legacy_auth_service.dart';
 import '../services/app_localizations.dart';
 import 'home_screen.dart';
 import 'language_selection.dart';
@@ -67,6 +68,10 @@ class _SplashScreenState extends State<SplashScreen>
     try {
       final apiService = ApiService();
       await apiService.loadTokens();
+      await LegacyAuthService.loadSession();
+      final isSignedIn = LegacyAuthService.enabled
+          ? LegacyAuthService.hasSession
+          : apiService.isAuthenticated;
 
       final prefs = await SharedPreferences.getInstance();
       final savedLanguage = prefs.getString('language_code');
@@ -74,7 +79,7 @@ class _SplashScreenState extends State<SplashScreen>
       if (!mounted) return;
       setState(() => _hasNavigated = true);
 
-      if (apiService.isAuthenticated) {
+      if (isSignedIn) {
         if (savedLanguage != null && savedLanguage.isNotEmpty) {
           Navigator.pushReplacement(
             context,

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'legacy_auth_service.dart';
 
 class ApiService {
   // Debug builds use the local server by default. NOTE: production is
@@ -112,6 +113,7 @@ class ApiService {
     _localTokenValue = null;
     _refreshToken = null;
     _isLocalMode = false;
+    await LegacyAuthService.clearSession();
     print('🗑️ All tokens cleared');
   }
 

@@ -4,6 +4,7 @@ import '../language_selection.dart';
 import '../auth_screens/forgot_password_screen.dart';
 import '../auth_screens/Signup_screen.dart';
 import '../../services/api_service.dart';
+import '../../services/legacy_auth_service.dart';
 import '../../services/app_localizations.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -49,11 +50,10 @@ class _SignInScreenState extends State<SignInScreen>
     setState(() => _isLoading = true);
 
     try {
-      final apiService = ApiService();
-      final result = await apiService.login(
-        _emailController.text.trim(),
-        _passwordController.text,
-      );
+      final identifier = _emailController.text.trim();
+      final result = LegacyAuthService.enabled
+          ? await LegacyAuthService.signIn(identifier, _passwordController.text)
+          : await ApiService().login(identifier, _passwordController.text);
 
       if (!mounted) return;
       setState(() => _isLoading = false);

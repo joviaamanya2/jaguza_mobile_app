@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../terms_and_conditions.dart';
 import '../language_selection.dart';
 import '../../services/api_service.dart';
+import '../../services/legacy_auth_service.dart';
 import '../../services/app_localizations.dart';
 
 // ─── Theme constants ─
@@ -137,6 +138,14 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
+  static const _kDialCodeToCountry = {
+    '+256': 'UG', '+254': 'KE', '+255': 'TZ', '+250': 'RW',
+    '+251': 'ET', '+234': 'NG', '+27': 'ZA', '+1': 'US', '+44': 'GB',
+  };
+
+  String _countryCodeForDialCode(String dialCode) =>
+      _kDialCodeToCountry[dialCode] ?? 'UG';
+
   Future<void> _handleRegister() async {
     FocusScope.of(context).unfocus();
 
@@ -153,24 +162,33 @@ class _RegisterScreenState extends State<RegisterScreen>
     setState(() => _isLoading = true);
     
     try {
-      final apiService = ApiService();
-      
       final String email = _emailCtrl.text.trim();
-      final String username = email.split('@').first;
-      
-      final userData = {
-        'name': '${_firstNameCtrl.text.trim()} ${_lastNameCtrl.text.trim()}',
-        'username': username,
-        'email': email,
-        'password': _passwordCtrl.text,
-        'password_confirmation': _confirmPasswordCtrl.text,
-        'phone_number': _phoneCtrl.text.trim(),
-        'role': 'farmer',
-        'farm_name': '',
-        'farm_location': '',
-      };
-      
-      final result = await apiService.register(userData);
+
+      final Map<String, dynamic> result;
+      if (LegacyAuthService.enabled) {
+        result = await LegacyAuthService.signUp(
+          // The CMD API has no first/last-name fields on registration
+          // (§15) — only a single `username`. Using the email's local part
+          // matches what the Laravel path below already did.
+          username: email.split('@').first,
+          email: email,
+          phone: '$_selectedCountryCode${_phoneCtrl.text.trim()}',
+          password: _passwordCtrl.text,
+          country: _countryCodeForDialCode(_selectedCountryCode),
+        );
+      } else {
+        result = await ApiService().register({
+          'name': '${_firstNameCtrl.text.trim()} ${_lastNameCtrl.text.trim()}',
+          'username': email.split('@').first,
+          'email': email,
+          'password': _passwordCtrl.text,
+          'password_confirmation': _confirmPasswordCtrl.text,
+          'phone_number': _phoneCtrl.text.trim(),
+          'role': 'farmer',
+          'farm_name': '',
+          'farm_location': '',
+        });
+      }
       
       if (!mounted) return;
       setState(() => _isLoading = false);
