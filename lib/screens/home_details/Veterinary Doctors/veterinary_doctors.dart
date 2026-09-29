@@ -2,6 +2,8 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/screens/home_details/Profile/profile_screen.dart';
 import 'package:jaguza_app/services/api_service.dart';
+import 'package:jaguza_app/services/legacy_api_service.dart';
+import 'package:jaguza_app/services/legacy_auth_service.dart';
 
 class VeterinaryDoctorsScreen extends StatefulWidget {
   const VeterinaryDoctorsScreen({super.key});
@@ -98,6 +100,13 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
       workersError = error;
     }
 
+    // Additive: the legacy CMD API's `getDoctors`/`getExtensionWorkers`
+    // response fields have never been observed live, so this never
+    // replaces the curated/Laravel lists above — only adds to them, and
+    // any parsing surprise just yields a generically-labelled extra card
+    // rather than corrupting existing data.
+    await _loadLegacyProfessionals();
+
     if (!mounted) return;
     setState(() => _isLoadingProfessionals = false);
     if (doctorsError != null || workersError != null) {
@@ -112,6 +121,40 @@ class _VeterinaryDoctorsScreenState extends State<VeterinaryDoctorsScreen>
           action: SnackBarAction(label: 'Retry', onPressed: _loadProfessionals),
         ),
       );
+    }
+  }
+
+  /// Adds legacy CMD results on top of whatever `_doctors`/`_workers`
+  /// ended up as above. Not gated on `LegacyAuthService.enabled` — these
+  /// are read-only GETs, harmless to try regardless of which backend
+  /// login uses, and simply add nothing if they fail or return no data.
+  Future<void> _loadLegacyProfessionals() async {
+    try {
+      final userId = LegacyAuthService.userId ?? '0';
+      final doctors = await LegacyApiService.getDoctors(userId);
+      final legacyDoctors = doctors
+          .whereType<Map>()
+          .map((item) => VetDoctor.fromLegacyApi(Map<String, dynamic>.from(item)))
+          .toList();
+      if (mounted && legacyDoctors.isNotEmpty) {
+        setState(() => _doctors = [..._doctors, ...legacyDoctors]);
+      }
+    } catch (_) {
+      // Response shape unconfirmed — see LegacyApiService.getDoctors.
+    }
+
+    try {
+      final userId = LegacyAuthService.userId ?? '0';
+      final workers = await LegacyApiService.getExtensionWorkers(userId);
+      final legacyWorkers = workers
+          .whereType<Map>()
+          .map((item) => ExtensionWorker.fromLegacyApi(Map<String, dynamic>.from(item)))
+          .toList();
+      if (mounted && legacyWorkers.isNotEmpty) {
+        setState(() => _workers = [..._workers, ...legacyWorkers]);
+      }
+    } catch (_) {
+      // Response shape unconfirmed — see LegacyApiService.getExtensionWorkers.
     }
   }
 
@@ -369,6 +412,40 @@ class VetDoctor {
       longitude: double.tryParse('${json['longitude'] ?? 0}') ?? 0,
     );
   }
+
+  /// The legacy CMD API's `getDoctors` response fields are undocumented —
+  /// §15 lists only the request params. This tries several plausible key
+  /// names and falls back to the same generic placeholders [fromApi] uses,
+  /// so a wrong guess produces a generically-labelled card, not garbled text.
+  factory VetDoctor.fromLegacyApi(Map<String, dynamic> json) {
+    final name = (json['name'] ??
+            json['full_name'] ??
+            json['doctor_name'] ??
+            [json['first_name'], json['surname']]
+                .where((v) => v != null && '$v'.trim().isNotEmpty)
+                .join(' '))
+        .toString();
+    final displayName = name.trim().isEmpty ? 'Veterinary Doctor' : name.trim();
+    return VetDoctor(
+      name: displayName,
+      specialty: (json['specialty'] ?? json['specialization'] ?? 'Veterinary Medicine')
+          .toString(),
+      location: (json['location'] ?? json['district'] ?? json['address'] ?? 'Location unavailable')
+          .toString(),
+      rating: double.tryParse('${json['rating'] ?? 0}') ?? 0,
+      isVerified: false,
+      isNearby: false,
+      bio: 'Veterinary professional from the Jaguza legacy directory.',
+      availability: 'Contact to confirm availability',
+      consultFee: 'Contact for fee',
+      avatarColor: const Color(0xFF2E7D32),
+      tagColor: const Color(0xFF2E7D32),
+      initials: _initials(displayName),
+      phone: (json['phone'] ?? json['telephone'] ?? json['phone_number'] ?? '').toString(),
+      latitude: double.tryParse('${json['latitude'] ?? 0}') ?? 0,
+      longitude: double.tryParse('${json['longitude'] ?? 0}') ?? 0,
+    );
+  }
 }
 
 class ExtensionWorker {
@@ -431,6 +508,36 @@ class ExtensionWorker {
       tagColor: const Color(0xFF2E7D32),
       initials: _initials(name),
       phone: (json['phone_number'] ?? '').toString(),
+      latitude: double.tryParse('${json['latitude'] ?? 0}') ?? 0,
+      longitude: double.tryParse('${json['longitude'] ?? 0}') ?? 0,
+    );
+  }
+
+  /// See [VetDoctor.fromLegacyApi] — same undocumented-response caveat.
+  factory ExtensionWorker.fromLegacyApi(Map<String, dynamic> json) {
+    final name = (json['name'] ??
+            json['full_name'] ??
+            [json['first_name'], json['surname']]
+                .where((v) => v != null && '$v'.trim().isNotEmpty)
+                .join(' '))
+        .toString();
+    final displayName = name.trim().isEmpty ? 'Extension Worker' : name.trim();
+    return ExtensionWorker(
+      name: displayName,
+      specialty: (json['specialty'] ?? json['expertise_area'] ?? 'Livestock Extension')
+          .toString(),
+      location: (json['location'] ?? json['district'] ?? 'Location unavailable').toString(),
+      rating: double.tryParse('${json['rating'] ?? 0}') ?? 0,
+      isVerified: false,
+      isNearby: false,
+      bio: 'Extension worker from the Jaguza legacy directory.',
+      availability: 'Contact to confirm availability',
+      serviceArea: (json['district'] ?? 'Contact for service area').toString(),
+      languages: 'English',
+      avatarColor: const Color(0xFF2E7D32),
+      tagColor: const Color(0xFF2E7D32),
+      initials: _initials(displayName),
+      phone: (json['phone'] ?? json['telephone'] ?? json['phone_number'] ?? '').toString(),
       latitude: double.tryParse('${json['latitude'] ?? 0}') ?? 0,
       longitude: double.tryParse('${json['longitude'] ?? 0}') ?? 0,
     );

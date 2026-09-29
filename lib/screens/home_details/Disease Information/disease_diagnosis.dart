@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/services/api_service.dart';
+import 'package:jaguza_app/services/legacy_api_service.dart';
 
 class DiagnosisScreen extends StatefulWidget {
   const DiagnosisScreen({super.key});
@@ -36,6 +37,48 @@ class _DiagnosisScreenState extends State<DiagnosisScreen> {
     'Reduced Milk Production', 'Dehydration', 'Abnormal Behavior',
     'Pale Gums', 'Bloating',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLegacySymptomOptions();
+  }
+
+  /// Adds symptom names from the legacy CMD API's `getAllSignsList` to the
+  /// checkbox options — additive only, never replacing the built-in list.
+  /// Unlike `getDoctors`/`getExtensionWorkers`, this is the same
+  /// `{"listing": [...]}` shape already confirmed live for
+  /// `getDiseasesList`, so the `symptom_name` field (per the documented
+  /// `Symptom` model, §18) is a reasonably confident guess — not confirmed
+  /// for this specific command, but a much smaller leap than the doctor
+  /// listings. This only ever adds checkbox *options*; it does not touch
+  /// [_analyzeSymptoms] or the `diagnosis` cmd itself — see the class doc
+  /// note below on why that stays on Laravel.
+  Future<void> _loadLegacySymptomOptions() async {
+    try {
+      final signs = await LegacyApiService.getAllSignsList();
+      final names = signs
+          .whereType<Map>()
+          .map((s) => '${s['symptom_name'] ?? s['name'] ?? ''}'.trim())
+          .where((name) => name.isNotEmpty)
+          .toSet();
+      final newOnes = names.difference(_symptomOptions.toSet());
+      if (mounted && newOnes.isNotEmpty) {
+        setState(() => _symptomOptions.addAll(newOnes));
+      }
+    } catch (_) {
+      // Optional extra source — the built-in list is enough on its own.
+    }
+  }
+
+  // NOTE ON DIAGNOSIS: the legacy `diagnosis` cmd (§14/§15) takes a
+  // `signs_list` param whose encoding is entirely undocumented — no
+  // capture has ever shown whether it expects symptom ids, comma-joined
+  // names, or something else. `_analyzeSymptoms` below deliberately keeps
+  // using Laravel's `diagnoseSymptoms`. Guessing wrong here doesn't just
+  // mis-render a card, it could hand a farmer a wrong or meaningless
+  // disease match, so unlike the symptom *list* above this isn't wired
+  // until that shape is confirmed from a real capture.
 
   final List<Map<String, dynamic>> _possibleDiseases = [
     {

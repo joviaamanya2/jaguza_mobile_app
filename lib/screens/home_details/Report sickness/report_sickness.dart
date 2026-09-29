@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'dart:convert';
 import '../../../services/api_service.dart';
+import '../../../services/legacy_api_service.dart';
+import '../../../services/legacy_auth_service.dart';
 
 class ReportSicknessScreen extends StatefulWidget {
   const ReportSicknessScreen({super.key});
@@ -155,6 +158,55 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
     );
   }
 
+  /// `AddSicknessPost` has no structured symptom fields, so the form's
+  /// fields are folded into free-text `title`/`content`. The form collects
+  /// no location or phone number, so those go through empty — the docs
+  /// confirm the server doesn't validate its fields, so this is a known
+  /// gap rather than a guess likely to cause a rejection. `post_type`'s
+  /// valid values are undocumented; `'sickness'` is a placeholder pending
+  /// a real capture. At most one image is base64-encoded into the `image`
+  /// field (video/audio are blocked before this is called, see
+  /// [_submitReport]) — base64 is inferred from `UploadImageApp`'s `img`
+  /// field using the same convention (§15), not confirmed for this
+  /// specific command.
+  Future<void> _submitLegacyReport() async {
+    String image = '';
+    if (_images.isNotEmpty) {
+      try {
+        image = base64Encode(await File(_images.first.path).readAsBytes());
+      } catch (_) {
+        // Fall back to no image rather than fail the whole report over it.
+      }
+    }
+
+    final title = '${_selectedAnimalType ?? 'Animal'} sickness report'
+        ' (${_selectedSeverity ?? 'unspecified severity'})';
+    final content = [
+      if (_selectedSymptom != null) 'Symptom: $_selectedSymptom',
+      if (_otherSymptomsController.text.trim().isNotEmpty)
+        'Additional notes: ${_otherSymptomsController.text.trim()}',
+      'Severity: ${_selectedSeverity ?? 'Unspecified'}',
+    ].join('. ');
+
+    final result = await LegacyApiService.addSicknessPost(
+      userId: LegacyAuthService.userId ?? '',
+      title: title,
+      location: '',
+      content: content,
+      postType: 'sickness',
+      telephone: '${LegacyAuthService.user?['phone'] ?? ''}',
+      image: image,
+    );
+
+    if (result['error'] != null) {
+      throw Exception(result['error']);
+    }
+    if ('${result['status']}'.toLowerCase() == 'wrong' ||
+        '${result['status']}'.toLowerCase() == 'missing') {
+      throw Exception(result['message'] ?? 'The report could not be submitted');
+    }
+  }
+
   Future<void> _submitReport() async {
     // Validate the form
     if (!_formKey.currentState!.validate()) {
@@ -167,26 +219,44 @@ class _ReportSicknessScreenState extends State<ReportSicknessScreen> {
       return;
     }
 
+    // The legacy CMD API's AddSicknessPost (§15) has a single `image`
+    // field and no video/audio fields at all. Rather than silently drop
+    // attached video/audio for an animal-health report, block submission
+    // and tell the user to remove them — losing them silently would be
+    // worse than an extra tap.
+    if (LegacyAuthService.enabled &&
+        (_videos.isNotEmpty || _audioFile != null)) {
+      _showSnackBar(
+        'Video and audio attachments aren\'t supported right now. '
+        'Please remove them (photos are fine) and submit again.',
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     try {
-      // Prepare the data with proper validation
-      final data = {
-        'affected_animal_type': _selectedAnimalType,
-        'affected_animal_count': 1,
-        'symptom_primary': _selectedSymptom,
-        'symptom_other': _otherSymptomsController.text.trim().isNotEmpty
-            ? _otherSymptomsController.text.trim()
-            : null,
-        'severity_level': _selectedSeverity,
-      };
+      if (LegacyAuthService.enabled) {
+        await _submitLegacyReport();
+      } else {
+        // Prepare the data with proper validation
+        final data = {
+          'affected_animal_type': _selectedAnimalType,
+          'affected_animal_count': 1,
+          'symptom_primary': _selectedSymptom,
+          'symptom_other': _otherSymptomsController.text.trim().isNotEmpty
+              ? _otherSymptomsController.text.trim()
+              : null,
+          'severity_level': _selectedSeverity,
+        };
 
-      await _apiService.createReportWithMedia(
-        data,
-        images: _images.map<File>((image) => File(image.path)).toList(),
-        videos: _videos.map<File>((video) => File(video.path)).toList(),
-        audio: _audioFile == null ? null : File(_audioFile!.path),
-      );
+        await _apiService.createReportWithMedia(
+          data,
+          images: _images.map<File>((image) => File(image.path)).toList(),
+          videos: _videos.map<File>((video) => File(video.path)).toList(),
+          audio: _audioFile == null ? null : File(_audioFile!.path),
+        );
+      }
 
       // Reset form after successful submission
       setState(() {

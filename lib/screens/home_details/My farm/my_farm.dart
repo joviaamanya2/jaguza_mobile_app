@@ -4,6 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import 'package:jaguza_app/models/user.dart';
 import 'package:jaguza_app/models/farm_model.dart';
 import 'package:jaguza_app/services/api_service.dart';
+import 'package:jaguza_app/services/legacy_api_service.dart';
+import 'package:jaguza_app/services/legacy_auth_service.dart';
+import 'package:jaguza_app/services/legacy_farm_store.dart';
 
 class MyFarmScreen extends StatefulWidget {
   const MyFarmScreen({super.key});
@@ -30,6 +33,11 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
     setState(() {
       _isLoading = true;
     });
+
+    if (LegacyAuthService.enabled) {
+      await _loadLegacyFarms();
+      return;
+    }
 
     try {
       final apiService = ApiService();
@@ -98,6 +106,55 @@ class _MyFarmScreenState extends State<MyFarmScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Unable to load farms from the server: $e'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  /// The CMD API has no "list my farms" command (see [LegacyFarmStore]), so
+  /// farms come from this device's local record of what it created via
+  /// `AddFarm`. Each is refreshed with `getFarmDetails` on a best-effort
+  /// basis — that response shape is unverified, so a failure there just
+  /// falls back to the cached fields rather than dropping the farm.
+  Future<void> _loadLegacyFarms() async {
+    try {
+      final cached = await LegacyFarmStore.list();
+      final userId = LegacyAuthService.userId ?? '';
+      final loadedFarms = <Farm>[];
+
+      for (final farmData in cached) {
+        var data = farmData;
+        try {
+          final details = await LegacyApiService.getFarmDetails(
+            userId,
+            '${farmData['id']}',
+          );
+          if (details['error'] == null && details.isNotEmpty) {
+            data = {...farmData, ...details};
+          }
+        } catch (_) {
+          // Keep the cached fields — this is a best-effort refresh.
+        }
+        loadedFarms.add(Farm.fromJson(data));
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _farms
+          ..clear()
+          ..addAll(loadedFarms);
+        _isLoading = false;
+        if (_farms.isNotEmpty && _selectedFarmIndex >= _farms.length) {
+          _selectedFarmIndex = 0;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Unable to load farms: $e'),
           backgroundColor: Theme.of(context).colorScheme.error,
         ),
       );
@@ -2155,6 +2212,55 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
     } catch (_) {}
   }
 
+  /// `AddFarm` has no documented response shape; like `addUsers` (confirmed
+  /// live to return `user_id`), it's assumed to return the new row's id
+  /// under `farm_id` — unverified. The form has no `district` field, so the
+  /// location text doubles as one; `GPS Coordinates` is free text (hint:
+  /// "0.3136° N, 32.5811° E"), parsed best-effort into lon/lat.
+  Future<Farm> _saveLegacyFarm(Farm newFarm) async {
+    final coords = _parseCoordinates(_coordinatesController.text);
+    final result = await LegacyApiService.addFarm(
+      userId: LegacyAuthService.userId ?? '',
+      farmName: newFarm.name,
+      actualLocation: newFarm.location,
+      district: newFarm.location,
+      longitude: coords.$1,
+      latitude: coords.$2,
+    );
+
+    final id = result['farm_id'] ?? result['id'];
+    if (result['error'] != null || id == null) {
+      throw Exception(result['error'] ?? result['message'] ?? 'Farm could not be saved');
+    }
+
+    final farm = Farm.fromJson({
+      'id': id,
+      'farm_name': newFarm.name,
+      'farm_location': newFarm.location,
+      'farm_owner': newFarm.owner,
+      'size': newFarm.size,
+      'description': newFarm.description,
+      'coordinates': newFarm.coordinates,
+      'facilities': newFarm.facilities ?? [],
+    });
+    await LegacyFarmStore.add(farm.toJson());
+    return farm;
+  }
+
+  /// Best-effort parse of a free-text GPS field like "0.3136° N, 32.5811° E"
+  /// into `(longitude, latitude)` strings. Falls back to `('0', '0')` when
+  /// nothing numeric is found — the legacy server requires the fields, but
+  /// has no documented tolerance for missing coordinates.
+  (String, String) _parseCoordinates(String raw) {
+    final numbers = RegExp(r'-?\d+(\.\d+)?')
+        .allMatches(raw)
+        .map((m) => m.group(0)!)
+        .toList();
+    if (numbers.length < 2) return ('0', '0');
+    // Hint order is "lat, lng"; AddFarm wants (longitude, latitude).
+    return (numbers[1], numbers[0]);
+  }
+
   Future<void> _saveFarm() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -2178,13 +2284,18 @@ class _CreateFarmScreenState extends State<CreateFarmScreen> {
     );
 
     try {
-      final response = await ApiService().createFarm(
-        newFarm.toApiPayload(),
-        imageFile: _farmImage,
-      );
-      final createdFarm = response is Map
-          ? Farm.fromJson(Map<String, dynamic>.from(response))
-          : newFarm;
+      final Farm createdFarm;
+      if (LegacyAuthService.enabled) {
+        createdFarm = await _saveLegacyFarm(newFarm);
+      } else {
+        final response = await ApiService().createFarm(
+          newFarm.toApiPayload(),
+          imageFile: _farmImage,
+        );
+        createdFarm = response is Map
+            ? Farm.fromJson(Map<String, dynamic>.from(response))
+            : newFarm;
+      }
 
       if (!mounted) return;
 
