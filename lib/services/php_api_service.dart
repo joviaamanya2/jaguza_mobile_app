@@ -272,7 +272,8 @@ class PhpApiService {
         'userId': _uid,
         'farm_name': name,
         'actual_location': location ?? '',
-        'district': district ?? '',
+        // numeric column on the server: an empty string is rejected
+        'district': district ?? 0,
         'latitude': latitude ?? 0,
         'longitude': longitude ?? 0,
         'image': imageParam(image),
