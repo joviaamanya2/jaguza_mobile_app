@@ -81,6 +81,9 @@ dependencies:
   cupertino_icons: ^1.0.8
   http: ^1.2.0
 
+  # JaguzaPremium farm module (lib/farm_premium)
+  bcrypt: ^1.1.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -132,6 +135,7 @@ flutter:
     - lib/assets/images/image.png
     - lib/assets/images/marketplace/
     - lib/assets/images/home icons/
+    - lib/assets/farm_premium/
     
 
   # An image asset can refer to one or more resolution-specific "variants", see

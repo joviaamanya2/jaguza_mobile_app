@@ -5,6 +5,7 @@ import 'package:jaguza_app/screens/home_details/Decision%20support/decison_suppo
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
 import 'package:jaguza_app/screens/home_details/Equipment/jaguza_equipment.dart';
 import 'package:jaguza_app/screens/home_details/Gestation%20tracker/gestation_tracker.dart';
+import 'package:jaguza_app/farm_premium/farm_premium_app.dart';
 import 'package:jaguza_app/screens/home_details/My%20farm/my_farm.dart';
 import 'package:jaguza_app/screens/home_details/Veterinary%20Doctors/veterinary_doctors.dart';
 import 'package:jaguza_app/screens/home_details/Videos%20screen/videos_screen.dart';
@@ -1032,7 +1033,7 @@ class _HomeTabState extends State<HomeTab> {
         title: context.tr('My farm'),
         icon: FontAwesomeIcons.cow,
         color: brown,
-        screen: const MyFarmScreen(),
+        screen: const FarmPremiumApp(),
       ),
       FeatureItem(
         title: context.tr('Videos'),
