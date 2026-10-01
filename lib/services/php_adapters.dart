@@ -67,7 +67,10 @@ class PhpAdapters {
       'id': _php.userId ?? 0,
       'name': p['name'] ?? '',
       'email': p['email'] ?? '',
-      'role': p['role'] ?? 'farmer',
+      // The PHP server stores role as a numeric enum ('4' = normal user).
+      'role': RegExp(r'^\d+$').hasMatch('${p['role'] ?? ''}')
+          ? 'farmer'
+          : (p['role'] ?? 'farmer'),
       'phone_number': p['phone'] ?? '',
       'is_verified': '${p['email_verified']}' == '1' || p['status'] == 'ok',
       'is_active': true,
