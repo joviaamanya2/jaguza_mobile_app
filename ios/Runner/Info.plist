@@ -49,6 +49,13 @@
 	<dict>
 		<key>NSExceptionDomains</key>
 		<dict>
+			<key>143.198.174.35</key>
+			<dict>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<true/>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+			</dict>
 			<key>188.166.8.72</key>
 			<dict>
 				<key>NSExceptionAllowsInsecureHTTPLoads</key>

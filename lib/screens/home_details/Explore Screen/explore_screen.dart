@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 import 'package:jaguza_app/services/api_service.dart';
+import 'package:jaguza_app/services/php_api_service.dart';
 
 // Shared category filter row (icons for each animal type) used by both the
 // Explore feed and the Videos screen so their designs stay identical.
@@ -226,6 +227,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
       debugPrint('Decision support load error: $e');
     }
     try {
+      final community = await ApiService().getCommunityPosts();
+      posts.addAll(community.whereType<Map>().map(_communityToPost));
+    } catch (e) {
+      debugPrint('Community posts load error: $e');
+    }
+    try {
       final videos = await ApiService().getVideos();
       posts.addAll(videos.whereType<Map>().map(videoJsonToFeedPost));
     } catch (e) {
@@ -240,6 +247,34 @@ class _ExploreScreenState extends State<ExploreScreen> {
         _loadError = 'No published dashboard content is available yet.';
       }
     });
+  }
+
+  FeedPost _communityToPost(Map raw) {
+    final item = Map<String, dynamic>.from(raw);
+    final category = displayCategory('${item['category'] ?? 'General'}');
+    final title = '${item['title'] ?? 'Community post'}'.trim();
+    final content = PhpApiService.cleanHtml('${item['content'] ?? ''}');
+    final photo = '${item['photo'] ?? ''}'.trim();
+    final parsed = DateTime.tryParse('${item['created_at'] ?? ''}');
+    return FeedPost(
+      id: 'community_${item['id'] ?? title.hashCode}',
+      author: '${item['author'] ?? 'Jaguza farmer'}',
+      location: '${item['location'] ?? category}',
+      dateTime: '${item['time'] ?? ''}',
+      timeAgo: parsed == null ? '${item['time'] ?? ''}' : timeAgoFor(parsed.toIso8601String()),
+      title: title,
+      excerpt: content,
+      category: category,
+      likes: int.tryParse('${item['likes_count'] ?? 0}') ?? 0,
+      comments: int.tryParse('${item['comment_count'] ?? 0}') ?? 0,
+      isVerified: false,
+      authorColor: const Color(0xFF2E7D32),
+      categoryColor: categoryColorFor(category),
+      categoryIcon: categoryIconFor(category),
+      imageGradientStart: const Color(0xFF2E7D32),
+      imageGradientEnd: const Color(0xFF66BB6A),
+      imageUrl: photo.isEmpty || photo.endsWith('/user.jpg') ? null : photo,
+    );
   }
 
   FeedPost _resourceToPost(Map raw) {

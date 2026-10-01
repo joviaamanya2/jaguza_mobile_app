@@ -3,8 +3,17 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'php_adapters.dart';
+import 'php_api_service.dart';
 
 class ApiService {
+  /// When true (default) the PHP backend (JaguzaLivestockUg) serves auth,
+  /// farms, animals, doctors, diseases, marketplace, markets and gestation.
+  /// Features it has no endpoints for (workers, videos, ads, AI chat, weather,
+  /// decision support, vaccinations, settings) still use the REST backend.
+  static const bool usePhp = bool.fromEnvironment('USE_PHP_API', defaultValue: true);
+  static final PhpApiService _php = PhpApiService.instance;
+
   // Debug builds use the local server by default. NOTE: production is
   // currently out of sync with several fixes made against the local server
   // (POST /workers route, marketplace schema, video categories, ad
@@ -59,6 +68,7 @@ class ApiService {
 
   // Load tokens from storage
   Future<void> loadTokens() async {
+    await _php.load();
     final prefs = await SharedPreferences.getInstance();
     _productionToken = prefs.getString('production_token');
     _localTokenValue = prefs.getString('local_token');
@@ -103,6 +113,7 @@ class ApiService {
 
   // Clear all tokens
   Future<void> clearTokens() async {
+    await _php.logout();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('production_token');
     await prefs.remove('local_token');
@@ -132,12 +143,20 @@ class ApiService {
   }
 
   // Check if authenticated in current mode
-  bool get isAuthenticated => _currentToken != null;
+  bool get isAuthenticated =>
+      usePhp ? _php.isLoggedIn : _currentToken != null;
 
   // ========== AUTHENTICATION ==========
 
   // Login to production server
   Future<Map<String, dynamic>> login(String email, String password) async {
+    if (usePhp) {
+      try {
+        return await _php.login(email, password);
+      } on PhpApiException catch (e) {
+        return {'success': false, 'error': e.message};
+      }
+    }
     if (_forceLocalApi) {
       return loginLocal(email, password);
     }
@@ -246,6 +265,29 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> register(Map<String, dynamic> userData) async {
+    if (usePhp) {
+      try {
+        final phone = '${userData['phone_number'] ?? ''}'.trim();
+        final res = await _php.register(
+          username: '${userData['name'] ?? userData['username'] ?? ''}'.trim(),
+          phone: phone,
+          email: '${userData['email'] ?? ''}'.trim(),
+          password: '${userData['password'] ?? ''}',
+        );
+        if (res['success'] != true) return res;
+        // The PHP backend sends an SMS PIN; the account must be verified
+        // before it can log in.
+        return {
+          'success': true,
+          'needsVerification': true,
+          'user_id': res['user_id'],
+          'phone': phone,
+          'data': res['data'],
+        };
+      } on PhpApiException catch (e) {
+        return {'success': false, 'error': e.message};
+      }
+    }
     try {
       await loadTokens();
       final registrationBaseUrl = _getBaseUrl();
@@ -313,6 +355,13 @@ class ApiService {
 
   /// Step 1: ask the server to email a 6-digit verification code to [email].
   Future<Map<String, dynamic>> forgotPassword(String email) async {
+    if (usePhp) {
+      try {
+        return await _php.forgotPassword(email);
+      } on PhpApiException catch (e) {
+        return {'success': false, 'error': e.message};
+      }
+    }
     await loadTokens();
     final url = '${_getBaseUrl()}forgot-password';
 
@@ -480,6 +529,14 @@ class ApiService {
   }
 
   Future<dynamic> get(String endpoint) async {
+    if (usePhp && (endpoint == 'user' || endpoint == 'user/profile')) {
+      await _php.load();
+      final user = PhpAdapters.currentUser();
+      try {
+        user['farms'] = await PhpAdapters.farms();
+      } catch (_) {}
+      return user;
+    }
     await loadTokens();
 
     String token = _getToken() ?? '';
@@ -608,6 +665,15 @@ class ApiService {
   }
 
   Future<dynamic> put(String endpoint, Map<String, dynamic> data) async {
+    if (usePhp && endpoint == 'user/profile') {
+      final res = await _php.updateProfile(
+        username: '${data['name'] ?? _php.profile?['name'] ?? ''}',
+        email: _php.profile?['email'] as String?,
+        phone: data['phone_number'] as String?,
+      );
+      if (res['success'] != true) throw Exception(res['error']);
+      return PhpAdapters.currentUser();
+    }
     await loadTokens();
 
     String token = _getToken() ?? '';
@@ -991,10 +1057,12 @@ class ApiService {
   // ========== ANIMALS API ==========
 
   Future<List<dynamic>> getAnimals() async {
+    if (usePhp) return PhpAdapters.animals();
     return _extractList(await get('animals'));
   }
 
   Future<dynamic> createAnimal(Map<String, dynamic> data) async {
+    if (usePhp) return PhpAdapters.createAnimal(data);
     if (data.containsKey('type')) {
       data['type'] = data['type'].toString().toLowerCase();
     }
@@ -1006,10 +1074,14 @@ class ApiService {
     int id,
     Map<String, dynamic> data,
   ) async {
+    if (usePhp) {
+      throw Exception('Editing animals is not supported by the server yet.');
+    }
     return await put('animals/$id', data);
   }
 
   Future<void> deleteAnimal(int id) async {
+    if (usePhp) return PhpAdapters.deleteAnimal(id);
     await delete('animals/$id');
   }
 
@@ -1026,9 +1098,23 @@ class ApiService {
     return response;
   }
 
+  // ========== COMMUNITY POSTS (PHP backend) ==========
+
+  /// Public community feed from the PHP backend, newest first.
+  Future<List<dynamic>> getCommunityPosts({int page = 1}) async {
+    if (!usePhp) return [];
+    await _php.load();
+    final r = await _php.sicknessPosts(0.3476, 32.5825, page: page);
+    return PhpApiService.listOf(r['posts']);
+  }
+
   // ========== REPORTS API ==========
 
   Future<List<dynamic>> getReports() async {
+    if (usePhp) {
+      final r = await _php.sicknessPosts(0, 0, mine: true);
+      return PhpApiService.listOf(r['posts']);
+    }
     final response = await get('reports');
     if (response is List) return response;
     if (response is Map<String, dynamic>) {
@@ -1048,6 +1134,27 @@ class ApiService {
     List<File> videos = const [],
     File? audio,
   }) async {
+    if (usePhp) {
+      final type = '${data['affected_animal_type'] ?? ''}';
+      final symptom = '${data['symptom_primary'] ?? ''}';
+      final other = '${data['symptom_other'] ?? ''}'.trim();
+      final r = await _php.addSicknessPost(
+        title: '$type - $symptom',
+        content: [
+          'Symptom: $symptom',
+          if (other.isNotEmpty) 'Other: $other',
+          'Severity: ${data['severity_level']}',
+          'Animals affected: ${data['affected_animal_count']}',
+        ].join('\n'),
+        animalCategory: type,
+        image: images.isEmpty ? null : images.first,
+        telephone: _php.profile?['phone'] as String?,
+      );
+      if (!PhpApiService.isOk(r)) {
+        throw Exception(PhpApiService.messageOf(r, 'Could not submit report'));
+      }
+      return r;
+    }
     final files = <String, List<File>>{
       'images[]': images,
       'videos[]': videos,
@@ -1090,6 +1197,7 @@ class ApiService {
   // ========== FARMS API ==========
 
   Future<List<dynamic>> getFarms() async {
+    if (usePhp) return PhpAdapters.farms();
     return _extractList(await get('farms'));
   }
 
@@ -1097,6 +1205,7 @@ class ApiService {
     Map<String, dynamic> data, {
     File? imageFile,
   }) async {
+    if (usePhp) return PhpAdapters.createFarm(data, imageFile);
     try {
       if (imageFile != null && imageFile.existsSync()) {
         return await postWithFile('farms', data, 'image', imageFile);
@@ -1114,6 +1223,11 @@ class ApiService {
     Map<String, dynamic> data, {
     File? imageFile,
   }) async {
+    if (usePhp) {
+      // The PHP backend has no farm-update endpoint; keep local edits only.
+      debugPrint('updateFarm($id) skipped: not supported by the PHP backend');
+      return {'id': id, ...data};
+    }
     if (imageFile != null && imageFile.existsSync()) {
       return await postWithFile(
         'farms/$id?_method=PUT',
@@ -1127,6 +1241,9 @@ class ApiService {
   }
 
   Future<void> deleteFarm(int id) async {
+    if (usePhp) {
+      throw Exception('Deleting farms is not supported by the server yet.');
+    }
     await delete('farms/$id');
   }
 
@@ -1155,11 +1272,13 @@ class ApiService {
   // ========== DOCTORS API ==========
 
   Future<List<dynamic>> getDoctors() async {
+    if (usePhp) return PhpAdapters.doctors();
     final response = await get('doctors');
     return _extractList(response);
   }
 
   Future<List<dynamic>> getExtensionWorkers() async {
+    if (usePhp) return PhpAdapters.extensionWorkers();
     final response = await get('extension-workers');
     return _extractList(response);
   }
@@ -1192,6 +1311,7 @@ class ApiService {
   // ========== DISEASES API ==========
 
   Future<List<dynamic>> getDiseases() async {
+    if (usePhp) return PhpAdapters.diseases();
     return _extractList(await get('diseases'));
   }
 
@@ -1199,6 +1319,7 @@ class ApiService {
     required String animalType,
     required List<String> symptoms,
   }) async {
+    if (usePhp) return PhpAdapters.diagnose(symptoms);
     try {
       final response = await post('diagnosis', {
         'animal_type': animalType,
@@ -1439,6 +1560,7 @@ class ApiService {
   // ========== MARKETPLACE API ==========
 
   Future<List<dynamic>> getMarketplaceListings() async {
+    if (usePhp) return PhpAdapters.marketplaceListings();
     return _extractList(await get('marketplace'));
   }
 
@@ -1446,6 +1568,7 @@ class ApiService {
     Map<String, dynamic> data, {
     File? imageFile,
   }) async {
+    if (usePhp) return PhpAdapters.createListing(data, imageFile);
     final response = imageFile != null && imageFile.existsSync()
         ? await postWithFile('marketplace', data, 'image', imageFile)
         : await post('marketplace', data);
@@ -1456,10 +1579,16 @@ class ApiService {
     int id,
     Map<String, dynamic> data,
   ) async {
+    if (usePhp) {
+      throw Exception('Updating listings is not supported by the server yet.');
+    }
     return await put('marketplace/$id', data);
   }
 
   Future<void> deleteMarketplaceListing(int id) async {
+    if (usePhp) {
+      throw Exception('Deleting listings is not supported by the server yet.');
+    }
     await delete('marketplace/$id');
   }
 
@@ -1471,6 +1600,7 @@ class ApiService {
   /// Live livestock/produce price ranges. When [lat]/[lng] are supplied the
   /// backend may return prices from the nearest trading centre.
   Future<List<dynamic>> getMarketPrices({double? lat, double? lng}) async {
+    if (usePhp) return PhpAdapters.marketPrices(lat: lat, lng: lng);
     var endpoint = 'market-prices';
     if (lat != null && lng != null) {
       endpoint += '?lat=$lat&lng=$lng';
@@ -1481,6 +1611,7 @@ class ApiService {
   /// Physical livestock/produce markets. When [lat]/[lng] are supplied the
   /// backend may return each market's distance from that point.
   Future<List<dynamic>> getMarkets({double? lat, double? lng}) async {
+    if (usePhp) return PhpAdapters.markets(lat: lat, lng: lng);
     var endpoint = 'markets';
     if (lat != null && lng != null) {
       endpoint += '?lat=$lat&lng=$lng';
@@ -1491,12 +1622,14 @@ class ApiService {
   // ========== GESTATION AND VACCINATION API ==========
 
   Future<List<dynamic>> getGestationRecords() async {
+    if (usePhp) return PhpAdapters.gestations();
     return _extractList(await get('gestation'));
   }
 
   Future<Map<String, dynamic>> createGestationRecord(
     Map<String, dynamic> data,
   ) async {
+    if (usePhp) return PhpAdapters.createGestation(data);
     final response = await post('gestation', data);
     return response is Map<String, dynamic> ? response : <String, dynamic>{};
   }

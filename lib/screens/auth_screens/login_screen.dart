@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../language_selection.dart';
 import '../auth_screens/forgot_password_screen.dart';
 import '../auth_screens/Signup_screen.dart';
+import '../auth_screens/pin_verification_screen.dart';
 import '../../services/api_service.dart';
 import '../../services/app_localizations.dart';
 
@@ -63,6 +64,16 @@ class _SignInScreenState extends State<SignInScreen>
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const LanguageSelectionScreen()),
+        );
+      } else if (result['needsVerification'] == true && result['user_id'] != null) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PinVerificationScreen(
+              userId: '${result['user_id']}',
+              phone: '${result['phone'] ?? _emailController.text.trim()}',
+            ),
+          ),
         );
       } else {
         _showSnack(result['error'] ?? context.tr('Invalid login credentials'), isError: true);

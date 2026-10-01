@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../terms_and_conditions.dart';
 import '../language_selection.dart';
+import '../auth_screens/pin_verification_screen.dart';
 import '../../services/api_service.dart';
 import '../../services/app_localizations.dart';
 
@@ -137,6 +138,14 @@ class _RegisterScreenState extends State<RegisterScreen>
     super.dispose();
   }
 
+  String _fullPhone() {
+    final code = _selectedCountryCode.replaceAll(RegExp(r'\D'), '');
+    var local = _phoneCtrl.text.replaceAll(RegExp(r'\D'), '');
+    if (local.startsWith(code)) local = local.substring(code.length);
+    if (local.startsWith('0')) local = local.substring(1);
+    return '$code$local';
+  }
+
   Future<void> _handleRegister() async {
     FocusScope.of(context).unfocus();
 
@@ -164,7 +173,9 @@ class _RegisterScreenState extends State<RegisterScreen>
         'email': email,
         'password': _passwordCtrl.text,
         'password_confirmation': _confirmPasswordCtrl.text,
-        'phone_number': _phoneCtrl.text.trim(),
+        // Full international number without '+': the server prepends it when
+        // sending the SMS PIN and matches it again when verifying.
+        'phone_number': _fullPhone(),
         'role': 'farmer',
         'farm_name': '',
         'farm_location': '',
@@ -175,7 +186,17 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      if (result['success'] == true) {
+      if (result['success'] == true && result['needsVerification'] == true) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PinVerificationScreen(
+              userId: '${result['user_id']}',
+              phone: '${result['phone']}',
+            ),
+          ),
+        );
+      } else if (result['success'] == true) {
         _showSnack(context.tr('Account created successfully! Welcome aboard'));
         Navigator.pushReplacement(
           context,

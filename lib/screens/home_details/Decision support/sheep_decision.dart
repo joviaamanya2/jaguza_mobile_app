@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import './decision_topic_card.dart';
+import '../../../services/decision_support_service.dart';
 
 class SheepDecisionScreen extends StatefulWidget {
   const SheepDecisionScreen({super.key});
@@ -11,7 +12,7 @@ class SheepDecisionScreen extends StatefulWidget {
 }
 
 class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
-  final List<DecisionTopic> _decisionTopics = [
+  List<DecisionTopic> _decisionTopics = [
     DecisionTopic(
       title: 'Breed Selection',
       description:
@@ -143,6 +144,30 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
       ],
     ),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFromServer();
+  }
+
+  /// Replaces the built-in topics with the server's when they are available.
+  Future<void> _loadFromServer() async {
+    final remote = await DecisionSupportService.topicsFor('Sheep');
+    if (!mounted || remote.isEmpty) return;
+    setState(() {
+      _decisionTopics = remote
+          .map(
+            (t) => DecisionTopic(
+              title: t['title'] as String,
+              description: t['description'] as String,
+              image: (t['image'] as String?) ?? '',
+              details: List<String>.from(t['details'] as List),
+            ),
+          )
+          .toList();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

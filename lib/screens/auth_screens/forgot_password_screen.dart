@@ -54,7 +54,16 @@ class _PasswordResetScreenState extends State<PasswordResetScreen>
     if (!mounted) return;
     setState(() => _isSending = false);
 
-    if (result['success'] == true) {
+    if (result['success'] == true && ApiService.usePhp) {
+      // The PHP backend emails a reset link instead of a 6-digit code.
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result['message']?.toString() ??
+              'A password reset link was sent to your email.'),
+        ),
+      );
+      Navigator.pop(context);
+    } else if (result['success'] == true) {
       Navigator.push(
         context,
         MaterialPageRoute(
