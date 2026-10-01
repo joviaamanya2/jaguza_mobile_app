@@ -1146,11 +1146,11 @@ class ApiService {
           'Severity: ${data['severity_level']}',
           'Animals affected: ${data['affected_animal_count']}',
         ].join('\n'),
-        animalCategory: type,
+        animalCategoryId: PhpAdapters.categoryIds[type.toLowerCase()],
         image: images.isEmpty ? null : images.first,
         telephone: _php.profile?['phone'] as String?,
       );
-      if (!PhpApiService.isOk(r)) {
+      if (!PhpApiService.isOk(r) || '${r['message']}' == 'Image failed') {
         throw Exception(PhpApiService.messageOf(r, 'Could not submit report'));
       }
       return r;

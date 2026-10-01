@@ -135,6 +135,14 @@ class PhpApiService {
         .toList();
   }
 
+  /// The backend URL-decodes request values a second time, which turns every
+  /// '+' in base64 into a space and corrupts the picture. Escape it, and send
+  /// the literal 'none' when there is no image (what the server checks for).
+  static String imageParam(File? image) {
+    if (image == null) return 'none';
+    return base64Encode(image.readAsBytesSync()).replaceAll('+', '%2B');
+  }
+
   int get _uid {
     final id = _userId;
     if (id == null) {
@@ -263,11 +271,11 @@ class PhpApiService {
       call('AddFarm', {
         'userId': _uid,
         'farm_name': name,
-        'actual_location': location,
-        'district': district,
-        'latitude': latitude,
-        'longitude': longitude,
-        if (image != null) 'image': base64Encode(image.readAsBytesSync()),
+        'actual_location': location ?? '',
+        'district': district ?? '',
+        'latitude': latitude ?? 0,
+        'longitude': longitude ?? 0,
+        'image': imageParam(image),
       });
 
   Future<Map<String, dynamic>> setMainFarm(int farmId) =>
@@ -339,7 +347,7 @@ class PhpApiService {
   Future<Map<String, dynamic>> addSicknessPost({
     required String title,
     required String content,
-    String? animalCategory,
+    int? animalCategoryId,
     String? location,
     double? latitude,
     double? longitude,
@@ -350,13 +358,13 @@ class PhpApiService {
         'userId': _uid,
         'title': title,
         'content': content,
-        'animalCategory': animalCategory,
-        'location': location,
-        'latitude': latitude,
-        'longitude': longitude,
-        'telephone': telephone,
+        'animalCategory': animalCategoryId ?? '',
+        'location': location ?? '',
+        'latitude': latitude ?? 0,
+        'longitude': longitude ?? 0,
+        'telephone': telephone ?? '',
         'post_type': image != null ? 'image' : 'text',
-        if (image != null) 'image': base64Encode(image.readAsBytesSync()),
+        'image': imageParam(image),
       });
 
   // ───────────────────────── marketplace ─────────────────────────
@@ -381,15 +389,15 @@ class PhpApiService {
         'userId': _uid,
         'title': title,
         'content': content,
-        'price': price,
+        'price': price ?? 0,
         'negotiable': negotiable ? 1 : 0,
-        'location': location,
-        'latitude': latitude,
-        'longitude': longitude,
-        'telephone': telephone,
-        'animal_category_id': animalCategoryId,
-        'farm_id': farmId,
-        if (image != null) 'image': base64Encode(image.readAsBytesSync()),
+        'location': location ?? '',
+        'latitude': latitude ?? 0,
+        'longitude': longitude ?? 0,
+        'telephone': telephone ?? '',
+        'animal_category_id': animalCategoryId ?? 0,
+        'farm_id': farmId ?? 0,
+        'image': imageParam(image),
       });
 
   /// Public, unauthenticated market-prices endpoints.
