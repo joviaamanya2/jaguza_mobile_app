@@ -65,8 +65,12 @@ class _VideoScreenState extends State<VideoScreen> {
   List<FeedPost> get _filteredPosts {
     var source = _videoPosts;
     if (_selectedCategory != 0) {
-      final catLabel = _categories[_selectedCategory].label.toLowerCase();
-      source = source.where((p) => p.category.toLowerCase() == catLabel).toList();
+      final catLabel = categoryFilterKey(
+        _categories[_selectedCategory].label,
+      );
+      source = source
+          .where((p) => categoryFilterKey(p.category) == catLabel)
+          .toList();
     }
     final query = _searchQuery.trim().toLowerCase();
     if (query.isEmpty) return source;
