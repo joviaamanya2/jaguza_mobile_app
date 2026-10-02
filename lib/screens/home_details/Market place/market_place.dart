@@ -8,6 +8,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/data/uganda_markets.dart';
 import 'package:jaguza_app/services/api_service.dart';
 import 'package:jaguza_app/models/user.dart';
+import 'package:jaguza_app/farm_premium/FarmRequests/AddFarmRequestsPage.dart';
+import 'package:jaguza_app/farm_premium/FarmRequests/FarmRequestsPage.dart';
+import 'package:jaguza_app/services/jaguza_market_api.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -34,240 +37,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   // Sample cart items
   final List<CartItem> _cartItems = [];
 
-  // Curated catalog: real backend listings replace/augment this once loaded.
-  final List<Product> _products = [
-    Product(
-      id: '1',
-      name: 'Local Chicken (Broiler)',
-      category: 'Poultry',
-      price: 25000,
-      unit: 'per bird',
-      seller: 'Green Valley Farm',
-      location: 'Wakiso',
-      rating: 4.8,
-      imageAsset: 'lib/assets/images/Poultry.png',
-      inStock: 50,
-      description: 'Healthy local chickens raised on organic feed',
-    ),
-    Product(
-      id: '2',
-      name: 'Fresh Cow Milk',
-      category: 'Dairy',
-      price: 3000,
-      unit: 'per litre',
-      seller: 'Milk Masters Ltd',
-      location: 'Mbarara',
-      rating: 4.9,
-      imageAsset: 'lib/assets/images/marketplace/milk.jpg',
-      inStock: 100,
-      description: 'Fresh pasteurized milk from healthy Friesian cows',
-    ),
-    Product(
-      id: '3',
-      name: 'Friesian Heifer',
-      category: 'Cattle',
-      price: 2500000,
-      unit: 'per animal',
-      seller: 'Elite Cattle Farm',
-      location: 'Jinja',
-      rating: 4.7,
-      imageAsset: 'lib/assets/images/marketplace/cattle.jpg',
-      inStock: 5,
-      description: 'High quality Friesian heifer, vaccinated and dewormed',
-    ),
-    Product(
-      id: '4',
-      name: 'Layer Poultry Feed',
-      category: 'Feed',
-      price: 45000,
-      unit: 'per 50kg bag',
-      seller: 'Jaguza Feeds Ltd',
-      location: 'Kampala',
-      rating: 4.6,
-      imageAsset: 'lib/assets/images/marketplace/feed.jpg',
-      inStock: 200,
-      description: 'Balanced layer feed with 18% protein content',
-    ),
-    Product(
-      id: '5',
-      name: 'Boar Goat',
-      category: 'Goats',
-      price: 76000,
-      unit: 'per goat',
-      seller: 'Mukono Goat Farm',
-      location: 'Mukono',
-      rating: 4.5,
-      imageAsset: 'lib/assets/images/Goat.png',
-      inStock: 8,
-      description: 'Healthy Boer goat for breeding or meat',
-    ),
-    Product(
-      id: '6',
-      name: 'Organic Pig Feed',
-      category: 'Feed',
-      price: 15000,
-      unit: 'per 25kg bag',
-      seller: 'Green Harvest Farm',
-      location: 'Entebbe',
-      rating: 4.8,
-      imageAsset: 'lib/assets/images/marketplace/feed.jpg',
-      inStock: 30,
-      description: 'Organic feed for pigs',
-    ),
-    Product(
-      id: '7',
-      name: 'Pig (Weaner)',
-      category: 'Pigs',
-      price: 120000,
-      unit: 'per piglet',
-      seller: 'Pork Masters',
-      location: 'Gulu',
-      rating: 4.4,
-      imageAsset: 'lib/assets/images/Pigs.png',
-      inStock: 20,
-      description: 'Healthy weaner pigs, 8 weeks old, vaccinated',
-    ),
-    Product(
-      id: '8',
-      name: 'Eggs (Tray)',
-      category: 'Poultry',
-      price: 12000,
-      unit: 'per tray (30 eggs)',
-      seller: 'Happy Hens Farm',
-      location: 'Kampala',
-      rating: 4.7,
-      imageAsset: 'lib/assets/images/marketplace/eggs.jpg',
-      inStock: 150,
-      description: 'Fresh free-range eggs from healthy hens',
-    ),
-    Product(
-      id: '9',
-      name: 'Merino Sheep',
-      category: 'Sheep',
-      price: 220000,
-      unit: 'per sheep',
-      seller: 'Highland Sheep Farm',
-      location: 'Kabale',
-      rating: 4.6,
-      imageAsset: 'lib/assets/images/Sheep.png',
-      inStock: 12,
-      description: 'Healthy Merino sheep, good for wool and meat production',
-    ),
-    Product(
-      id: '10',
-      name: 'Rabbits For Sale',
-      category: 'Rabbits',
-      price: 25000,
-      unit: 'per rabbit',
-      seller: 'Bunny Farm Uganda',
-      location: 'Kampala',
-      rating: 4.7,
-      imageAsset: 'lib/assets/images/Rabbit.png',
-      inStock: 10,
-      description: 'Healthy young rabbits, various breeds, great for meat or pets',
-    ),
-    Product(
-      id: '11',
-      name: 'Dwarf Rabbit',
-      category: 'Rabbits',
-      price: 30000,
-      unit: 'per rabbit',
-      seller: 'Bunny Farm Uganda',
-      location: 'Kampala',
-      rating: 4.5,
-      imageAsset: 'lib/assets/images/Rabbit.png',
-      inStock: 25,
-      description: 'Friendly dwarf rabbit, litter-trained, ready to rehome',
-    ),
-    // Equipment and housing sold by Jaguza — shown under the Equipments tab.
-    Product(
-      id: 'eq-drone',
-      name: 'Agricultural Drone',
-      category: 'Equipment',
-      price: 3500000,
-      unit: 'per unit',
-      seller: 'Jaguza Equipment',
-      location: 'Kampala',
-      rating: 4.9,
-      inStock: 5,
-      description: 'Crop-monitoring drone with camera for aerial farm inspection and spraying.',
-    ),
-    Product(
-      id: 'eq-tractor',
-      name: 'Compact Farm Tractor',
-      category: 'Equipment',
-      price: 28000000,
-      unit: 'per unit',
-      seller: 'Jaguza Equipment',
-      location: 'Kampala',
-      rating: 4.8,
-      inStock: 2,
-      description: 'Compact tractor suitable for small to medium farms, diesel engine.',
-    ),
-    Product(
-      id: 'eq-milker',
-      name: 'Milking Machine',
-      category: 'Equipment',
-      price: 1200000,
-      unit: 'per unit',
-      seller: 'Jaguza Equipment',
-      location: 'Kampala',
-      rating: 4.7,
-      inStock: 8,
-      description: 'Portable electric milking machine for dairy cattle.',
-    ),
-    Product(
-      id: 'eq-incubator',
-      name: 'Egg Incubator (56 eggs)',
-      category: 'Equipment',
-      price: 650000,
-      unit: 'per unit',
-      seller: 'Jaguza Equipment',
-      location: 'Kampala',
-      rating: 4.6,
-      inStock: 12,
-      description: 'Automatic egg incubator with temperature and humidity control.',
-    ),
-    Product(
-      id: 'eq-pump',
-      name: 'Solar Water Pump',
-      category: 'Equipment',
-      price: 1800000,
-      unit: 'per unit',
-      seller: 'Jaguza Equipment',
-      location: 'Kampala',
-      rating: 4.5,
-      inStock: 4,
-      description: 'Solar-powered water pump for farm irrigation.',
-    ),
-    Product(
-      id: 'eq-coop',
-      name: 'Chicken Coop',
-      category: 'Housing',
-      price: 900000,
-      unit: 'per unit',
-      seller: 'Jaguza Equipment',
-      location: 'Kampala',
-      rating: 4.8,
-      inStock: 6,
-      description: 'Wooden chicken coop, houses up to 20 birds.',
-    ),
-    Product(
-      id: 'eq-cattlecrush',
-      name: 'Cattle Crush (Handling Pen)',
-      category: 'Housing',
-      price: 2200000,
-      unit: 'per unit',
-      seller: 'Jaguza Equipment',
-      location: 'Kampala',
-      rating: 4.7,
-      inStock: 3,
-      description: 'Steel cattle crush for safe handling, vaccination and treatment.',
-    ),
-  ];
+  // Populated from the JaguzaMarket API.
+  final List<Product> _products = [];
 
   bool _isLoadingMarketplace = false;
+  String? _marketplaceError;
+  String? _userProductsWarning;
   int? _currentUserId;
+  final List<Map<String, dynamic>> _marketCategories = [];
+  JaguzaMarketApi get _marketApi => JaguzaMarketApi.instance;
 
   // ---- Nearby markets (real Uganda markets, sorted by GPS distance) ----
   Position? _position;
@@ -531,6 +309,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         setState(() {
           _currentUserId = User.fromJson(Map<String, dynamic>.from(response)).id;
         });
+        _loadMarketplaceListings();
       }
     } catch (_) {
       // Not logged in / unreachable: owner actions simply won't show.
@@ -538,80 +317,87 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   Future<void> _loadMarketplaceListings() async {
-    setState(() => _isLoadingMarketplace = true);
+    setState(() {
+      _isLoadingMarketplace = true;
+      _marketplaceError = null;
+    });
     try {
-      final listings = await ApiService().getMarketplaceListings();
-      final products = listings.whereType<Map>().map((raw) {
+      final categories = (await _marketApi.getCategories())
+          .whereType<Map>()
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+      final query = _searchQuery.trim();
+      final categoryId = categories
+          .where((category) => '${category['title']}'.toLowerCase() == (_selectedLivestockCategory ?? '').toLowerCase())
+          .map((category) => '${category['id']}')
+          .firstOrNull;
+      var rawProducts = query.isNotEmpty
+          ? await _marketApi.searchProducts(query)
+          : categoryId != null
+              ? await _marketApi.getCategoryProducts(categoryId)
+              : await _marketApi.getProducts();
+      final userId = _currentUserId;
+      String? userProductsWarning;
+      if (userId != null && userId > 0 && query.isEmpty) {
+        try {
+          final ownProducts = await _marketApi.getUserProducts(userId);
+          final byId = <String, dynamic>{
+            for (final item in rawProducts.whereType<Map>()) '${item['id']}': item,
+            for (final item in ownProducts.whereType<Map>()) '${item['id']}': item,
+          };
+          rawProducts = byId.values.toList();
+        } catch (_) {
+          userProductsWarning = 'Your submitted products could not be loaded. Check the signed-in account.';
+        }
+      } else if (rawProducts.isEmpty) {
+        userProductsWarning = 'Sign in with the account used to add the dashboard product to see your pending listings.';
+      }
+      final products = rawProducts.whereType<Map>().map((raw) {
         final listing = Map<String, dynamic>.from(raw);
-        final seller = listing['seller'];
-        final images = listing['images'];
-        final imageUrl = images is List && images.isNotEmpty
-            ? images.first.toString()
-            : null;
-        final status = '${listing['status'] ?? 'active'}';
+        final categoryRaw = listing['category'];
+        final category = categoryRaw is Map
+            ? '${categoryRaw['title'] ?? 'Other'}'
+            : '${listing['category_title'] ?? listing['category'] ?? 'Other'}';
+        final filename = '${listing['picture'] ?? ''}';
+        final status = '${listing['product_status'] ?? 'active'}';
         return Product(
-          id: '${listing['id'] ?? DateTime.now().microsecondsSinceEpoch}',
-          name: '${listing['title'] ?? 'Marketplace listing'}',
-          category: _displayCategory('${listing['category'] ?? 'other'}'),
-          price: double.tryParse('${listing['price'] ?? 0}')?.round() ?? 0,
-          unit: 'per unit',
-          seller: seller is Map ? '${seller['name'] ?? 'Seller'}' : 'Seller',
-          sellerId: int.tryParse('${listing['seller_id'] ?? ''}'),
-          location: '${listing['location'] ?? 'Unknown location'}',
+          id: '${listing['id'] ?? ''}',
+          name: '${listing['name'] ?? 'Marketplace listing'}',
+          category: category,
+          price: double.tryParse('${listing['unit_price_buyer'] ?? listing['unit_price_seller'] ?? 0}')?.round() ?? 0,
+          unit: 'per ${listing['unit_of_measure'] ?? 'unit'}',
+          seller: 'Seller #${listing['user_id'] ?? ''}',
+          sellerId: int.tryParse('${listing['user_id'] ?? ''}'),
+          location: '${listing['seller_location'] ?? 'Unknown location'}',
           rating: 0,
-          imageUrl: imageUrl,
-          inStock: status == 'sold' ? 0 : 1,
+          imageUrl: filename.isEmpty ? null : _marketApi.productImageUrl(filename),
+          inStock: status == 'active' ? int.tryParse('${listing['stock_available'] ?? 0}') ?? 0 : 0,
           description: '${listing['description'] ?? ''}',
           status: status,
+          isServerBacked: true,
         );
       }).toList();
-      if (mounted && products.isNotEmpty) {
-        setState(() => _products
-          ..addAll(products));
+      if (mounted) {
+        setState(() {
+          _marketCategories
+            ..clear()
+            ..addAll(categories);
+          _userProductsWarning = userProductsWarning;
+          _products
+            ..clear()
+            ..addAll(products);
+        });
       }
-    } catch (_) {
-      // Keep the curated catalog visible when the backend is unavailable.
+    } catch (error) {
+      debugPrint('Jaguza Market API unavailable: $error');
+      if (mounted) {
+        setState(() {
+          _products.clear();
+          _marketplaceError = 'Could not connect to the Jaguza Market server. Pull down to try again.';
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoadingMarketplace = false);
-    }
-  }
-
-  Future<void> _markProductSold(Product product) async {
-    final id = int.tryParse(product.id);
-    if (id == null) return;
-    try {
-      await ApiService().updateMarketplaceListing(id, {'status': 'sold'});
-      if (!mounted) return;
-      setState(() {
-        final index = _products.indexWhere((p) => p.id == product.id);
-        if (index != -1) {
-          _products[index] = Product(
-            id: product.id,
-            name: product.name,
-            category: product.category,
-            price: product.price,
-            unit: product.unit,
-            seller: product.seller,
-            sellerId: product.sellerId,
-            location: product.location,
-            rating: product.rating,
-            imageAsset: product.imageAsset,
-            imageUrl: product.imageUrl,
-            imageFile: product.imageFile,
-            inStock: 0,
-            description: product.description,
-            status: 'sold',
-          );
-        }
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Marked as sold.')),
-      );
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not mark as sold: $e')),
-      );
     }
   }
 
@@ -639,7 +425,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     if (confirmed != true) return;
 
     try {
-      await ApiService().deleteMarketplaceListing(id);
+      await _marketApi.deleteProduct(product.id);
       if (!mounted) return;
       setState(() {
         _products.removeWhere((p) => p.id == product.id);
@@ -735,7 +521,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart_outlined, size: 24),
-                onPressed: () => _showCartDialog(context),
+                onPressed: _openCart,
               ),
               if (_cartItems.isNotEmpty)
                 Positioned(
@@ -791,6 +577,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       ),
       body: Column(
         children: [
+          _buildMarketplaceActions(scheme),
           if (_showSearch) _buildSearchBar(),
           Expanded(
             child: IndexedStack(
@@ -819,19 +606,126 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           BottomNavigationBarItem(icon: Icon(Icons.attach_money_rounded), label: 'Market Prices'),
         ],
       ),
-      floatingActionButton: _selectedTab == 0
-          ? FloatingActionButton(
-              onPressed: () => _showSellProductDialog(context, initialCategory: 'Cattle'),
-              backgroundColor: scheme.primary,
-              child: Icon(Icons.add_rounded, color: scheme.onPrimary),
-            )
-          : _selectedTab == 1
-              ? FloatingActionButton(
-                  onPressed: () => _showSellProductDialog(context, initialCategory: 'Equipment'),
-                  backgroundColor: scheme.primary,
-                  child: Icon(Icons.add_rounded, color: scheme.onPrimary),
-                )
-              : null,
+    );
+  }
+
+  Widget _buildMarketplaceActions(ColorScheme scheme) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      child: Row(
+        children: [
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: () => _showSellProductDialog(context),
+              icon: const Icon(Icons.add_business_rounded, size: 18),
+              label: const Text('Sell Point'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: scheme.primary,
+                side: BorderSide(color: scheme.primary.withValues(alpha: .45)),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlinedButton.icon(
+              onPressed: _showMyOrders,
+              icon: const Icon(Icons.receipt_long_rounded, size: 18),
+              label: const Text('My Orders'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: scheme.onSurface,
+                side: BorderSide(color: scheme.outlineVariant),
+                padding: const EdgeInsets.symmetric(vertical: 11),
+                textStyle: const TextStyle(fontWeight: FontWeight.w700),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showMyOrders() {
+    final userId = _currentUserId;
+    if (userId == null || userId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign in to view your orders.')),
+      );
+      return;
+    }
+    var ordersFuture = _marketApi.getOrders(userId);
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(builder: (context, setSheetState) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(context).height * .72,
+          child: Column(children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+              child: Row(children: [
+                Text('My Orders', style: Theme.of(context).textTheme.titleLarge),
+                const Spacer(),
+                IconButton(
+                  onPressed: () => setSheetState(() => ordersFuture = _marketApi.getOrders(userId)),
+                  icon: const Icon(Icons.refresh_rounded),
+                ),
+              ]),
+            ),
+            Expanded(child: FutureBuilder<List<dynamic>>(
+              future: ordersFuture,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text('Could not load orders: ${snapshot.error}', textAlign: TextAlign.center),
+                  ));
+                }
+                final orders = snapshot.data ?? [];
+                if (orders.isEmpty) return const Center(child: Text('You have no orders yet.'));
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: orders.length,
+                  itemBuilder: (context, index) {
+                    final order = Map<String, dynamic>.from(orders[index] as Map);
+                    final id = '${order['id'] ?? ''}';
+                    final status = '${order['order_status'] ?? 'pending'}';
+                    final rows = order['order_products'] is List ? order['order_products'] as List : const [];
+                    return Card(child: Padding(
+                      padding: const EdgeInsets.all(14),
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Row(children: [
+                          Expanded(child: Text('Order #$id', style: const TextStyle(fontWeight: FontWeight.w700))),
+                          Text(status.toUpperCase(), style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w700, fontSize: 11)),
+                        ]),
+                        const SizedBox(height: 6),
+                        Text('${rows.length} item(s) · UGX ${_formatPrice(double.tryParse('${order['total_order_cost'] ?? 0}')?.round() ?? 0)}'),
+                        if (status == 'pending' || status == 'processing')
+                          Align(alignment: Alignment.centerRight, child: TextButton(
+                            onPressed: () async {
+                              try {
+                                await _marketApi.cancelOrder(id);
+                                setSheetState(() => ordersFuture = _marketApi.getOrders(userId));
+                              } catch (error) {
+                                if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not cancel order: $error')));
+                              }
+                            },
+                            child: const Text('Cancel order'),
+                          )),
+                      ]),
+                    ));
+                  },
+                );
+              },
+            )),
+          ]),
+        ),
+      )),
     );
   }
 
@@ -850,6 +744,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           controller: _searchController,
           autofocus: true,
           onChanged: (val) => setState(() => _searchQuery = val),
+          onSubmitted: (_) => _loadMarketplaceListings(),
           decoration: InputDecoration(
             hintText: 'Search products, sellers, or locations...',
             hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
@@ -859,6 +754,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     onTap: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
+                      _loadMarketplaceListings();
                     },
                     child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
                   )
@@ -979,31 +875,221 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         physics: const AlwaysScrollableScrollPhysics(parent: BouncingScrollPhysics()),
         padding: const EdgeInsets.only(bottom: 88),
         children: [
-          const SizedBox(height: 12),
-          _sectionHeader('Top Categories'),
-          _buildTopCategories(
-            items: _livestockTopCategories,
-            selected: _selectedLivestockCategory,
-            onSelect: (value) => setState(() => _selectedLivestockCategory = value),
+          const SizedBox(height: 8),
+          _buildTopCategoriesBanner(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text('Search Requests',
+                      style: TextStyle(fontSize: 19, fontWeight: FontWeight.w700)),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _openPostRequest,
+                  icon: const Icon(Icons.chevron_right_rounded, size: 22),
+                  label: const Text('Post Request'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF08783E),
+                    side: BorderSide(color: Colors.grey.shade300),
+                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: 20),
-          _sectionHeader(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _openMoreRequests,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF08783E),
+                  foregroundColor: Colors.white,
+                  elevation: 2,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  textStyle: const TextStyle(fontSize: 16, letterSpacing: 1.2, fontWeight: FontWeight.w700),
+                ),
+                child: const Text('View More Requests'),
+              ),
+            ),
+          ),
+          const SizedBox(height: 22),
+          _marketGradientHeader(
             'Featured Products',
             onViewMore: all.length > 4
                 ? () => setState(() => _showAllLivestock = !_showAllLivestock)
                 : null,
           ),
-          if (shown.isEmpty)
+          if (_isLoadingMarketplace)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_marketplaceError != null)
+            _buildEmptyState(
+              icon: Icons.cloud_off_rounded,
+              title: 'Market unavailable',
+              subtitle: _marketplaceError!,
+            )
+          else if (shown.isEmpty)
             _buildEmptyState(
               icon: Icons.storefront_rounded,
               title: 'No Products Found',
-              subtitle: 'Try adjusting your search or category',
+              subtitle: _userProductsWarning ?? 'Products published in the Jaguza Market dashboard will appear here.',
             )
           else
             _buildProductsGrid(shown),
         ],
       ),
     );
+  }
+
+  Widget _buildTopCategoriesBanner() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF005B37), Color(0xFF08783E), Color(0xFFD47A23)],
+            ),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: const Text('Top Categories',
+              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+        ),
+        const SizedBox(height: 16),
+        if (_marketCategories.isEmpty && _isLoadingMarketplace)
+          const SizedBox(
+            height: 108,
+            child: Center(child: CircularProgressIndicator()),
+          )
+        else if (_marketCategories.isNotEmpty)
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final cardWidth = (constraints.maxWidth - 16) / 2;
+              return SizedBox(
+                height: 108,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _marketCategories.length,
+                  separatorBuilder: (_, __) => const SizedBox(width: 16),
+                  itemBuilder: (context, index) => _marketCategoryCard(
+                    category: _marketCategories[index],
+                    width: cardWidth,
+                    color: index.isEven ? const Color(0xFF08783E) : const Color(0xFFD97A1E),
+                    onTap: () => _selectMarketplaceCategory(_marketCategories[index]),
+                  ),
+                ),
+              );
+            },
+          ),
+      ]),
+    );
+  }
+
+  Widget _marketGradientHeader(String title, {VoidCallback? onViewMore}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Color(0xFF005B37), Color(0xFF08783E), Color(0xFFD47A23)],
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(children: [
+          Expanded(
+            child: Text(title,
+                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+          ),
+          if (onViewMore != null)
+            TextButton(onPressed: onViewMore, child: const Text('View more')),
+        ]),
+      ),
+    );
+  }
+
+  Widget _marketCategoryCard({
+    required Map<String, dynamic> category,
+    required double width,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    final title = '${category['title'] ?? 'Category'}';
+    final iconName = '${category['icon'] ?? ''}';
+    final icon = _iconForMarketCategory(title);
+    return Material(
+      color: color,
+      borderRadius: BorderRadius.circular(14),
+      elevation: 2,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: SizedBox(
+          width: width,
+          height: 108,
+          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            if (iconName.isNotEmpty)
+              Expanded(
+                child: CachedNetworkImage(
+                  imageUrl: _marketApi.categoryIconUrl(iconName),
+                  fit: BoxFit.contain,
+                  errorWidget: (_, __, ___) => Icon(icon, color: Colors.white, size: 42),
+                ),
+              )
+            else
+              Icon(icon, color: Colors.white, size: 42),
+            const SizedBox(height: 5),
+            Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+          ]),
+        ),
+      ),
+    );
+  }
+
+  IconData _iconForMarketCategory(String title) {
+    switch (title.toLowerCase()) {
+      case 'all':
+        return Icons.storefront_rounded;
+      case 'meat':
+        return Icons.set_meal_rounded;
+      case 'goats':
+        return Icons.pets_rounded;
+      case 'wine':
+        return Icons.local_bar_rounded;
+      default:
+        return Icons.category_rounded;
+    }
+  }
+
+  void _selectMarketplaceCategory(Map<String, dynamic> category) {
+    final title = '${category['title'] ?? ''}';
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selectedLivestockCategory = title.toLowerCase() == 'all' ? null : title;
+    });
+    _loadMarketplaceListings();
+  }
+
+  void _openPostRequest() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => AddFarmRequestsPage()));
+  }
+
+  void _openMoreRequests() {
+    Navigator.push(context, MaterialPageRoute(builder: (_) => FarmRequestsPage()));
   }
 
   // ============= EQUIPMENTS TAB =============
@@ -1017,24 +1103,29 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         padding: const EdgeInsets.only(bottom: 88),
         children: [
           const SizedBox(height: 12),
-          _sectionHeader('Top Categories'),
-          _buildTopCategories(
-            items: _equipmentTopCategories,
-            selected: _selectedEquipmentCategory,
-            onSelect: (value) => setState(() => _selectedEquipmentCategory = value),
-          ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
           _sectionHeader(
             'Featured Products',
             onViewMore: all.length > 4
                 ? () => setState(() => _showAllEquipment = !_showAllEquipment)
                 : null,
           ),
-          if (shown.isEmpty)
+          if (_isLoadingMarketplace)
+            const Padding(
+              padding: EdgeInsets.all(32),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (_marketplaceError != null)
+            _buildEmptyState(
+              icon: Icons.cloud_off_rounded,
+              title: 'Market unavailable',
+              subtitle: _marketplaceError!,
+            )
+          else if (shown.isEmpty)
             _buildEmptyState(
               icon: Icons.handyman_rounded,
               title: 'No Equipment Found',
-              subtitle: 'Try adjusting your search or category',
+              subtitle: 'Products published in the Jaguza Market dashboard will appear here.',
             )
           else
             _buildProductsGrid(shown),
@@ -1116,8 +1207,20 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     final scheme = Theme.of(context).colorScheme;
     final isAvailable = product.inStock > 0 && product.status != 'sold';
     final isOwner = product.sellerId != null && product.sellerId == _currentUserId;
+    final stockLabel = product.status == 'active'
+        ? isAvailable
+            ? '${product.inStock} Available'
+            : 'Out of Stock'
+        : product.status == 'outofstock'
+            ? 'Out of Stock'
+            : product.status[0].toUpperCase() + product.status.substring(1);
+    final stockColor = isAvailable
+        ? const Color(0xFFFF9800)
+        : product.status == 'pending'
+            ? const Color(0xFFD97A1E)
+            : scheme.error;
     return GestureDetector(
-      onTap: isAvailable ? () => _addToCart(product) : null,
+      onTap: isAvailable && product.isServerBacked ? () => _addToCart(product) : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1148,21 +1251,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
                       onSelected: (value) {
-                        if (value == 'sold') _markProductSold(product);
                         if (value == 'delete') _deleteProduct(product);
                       },
                       itemBuilder: (context) => [
-                        if (product.status != 'sold')
-                          const PopupMenuItem(
-                            value: 'sold',
-                            child: Row(
-                              children: [
-                                Icon(Icons.check_circle_outline_rounded, size: 16),
-                                SizedBox(width: 8),
-                                Text('Mark as Sold'),
-                              ],
-                            ),
-                          ),
                         const PopupMenuItem(
                           value: 'delete',
                           child: Row(
@@ -1183,7 +1274,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: isAvailable ? const Color(0xFFFF9800) : scheme.error,
+                    color: stockColor,
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
@@ -1194,7 +1285,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ],
                   ),
                   child: Text(
-                    isAvailable ? '${product.inStock} Available' : 'Sold Out',
+                    stockLabel,
                     style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white),
                   ),
                 ),
@@ -1647,18 +1738,52 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   // ============= SELL PRODUCT DIALOG =============
-  void _showSellProductDialog(BuildContext context, {String initialCategory = 'Cattle'}) {
+  Future<void> _showSellProductDialog(BuildContext context, {String initialCategory = 'Cattle'}) async {
+    if (_marketCategories.isEmpty) {
+      try {
+        final categories = (await _marketApi.getCategories())
+            .whereType<Map>()
+            .map((entry) => Map<String, dynamic>.from(entry))
+            .toList();
+        if (mounted) {
+          setState(() {
+            _marketCategories
+              ..clear()
+              ..addAll(categories);
+          });
+        }
+      } catch (error) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Could not load marketplace categories: $error')),
+          );
+        }
+        return;
+      }
+    }
+    if (_marketCategories.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No product categories are available yet.')),
+      );
+      return;
+    }
     final nameController = TextEditingController();
     final priceController = TextEditingController();
     final quantityController = TextEditingController();
+    final unitController = TextEditingController(text: 'unit');
     final descriptionController = TextEditingController();
     final locationController = TextEditingController();
-    String selectedCategory = initialCategory;
+    String selectedCategoryId = '';
     File? selectedImage;
     bool isUploading = false;
-    final categories = [
-      'Cattle', 'Poultry', 'Goats', 'Pigs', 'Sheep', 'Rabbits', 'Dairy', 'Feed', 'Crops', 'Equipment', 'Housing',
-    ];
+    final categories = _marketCategories
+        .where((category) => '${category['title']}'.toLowerCase() != 'all')
+        .toList();
+    final initialCategoryEntry = categories.cast<Map<String, dynamic>?>().firstWhere(
+      (category) => '${category?['title']}'.toLowerCase() == initialCategory.toLowerCase(),
+      orElse: () => categories.isEmpty ? null : categories.first,
+    );
+    selectedCategoryId = '${initialCategoryEntry?['id'] ?? ''}';
 
     showDialog(
       context: context,
@@ -1668,7 +1793,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           final scheme = Theme.of(context).colorScheme;
           return AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: Text(_isEquipmentCategory(selectedCategory) ? 'List Equipment' : 'Sell Your Product'),
+            title: const Text('Sell Your Product'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -1733,15 +1858,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   const SizedBox(height: 12),
 
                   DropdownButtonFormField<String>(
-                    initialValue: selectedCategory,
+                    initialValue: selectedCategoryId.isEmpty ? null : selectedCategoryId,
                     decoration: const InputDecoration(
                       labelText: 'Category *',
                       border: OutlineInputBorder(),
                     ),
                     items: categories
-                        .map((cat) => DropdownMenuItem(value: cat, child: Text(cat)))
+                        .map((cat) => DropdownMenuItem(value: '${cat['id']}', child: Text('${cat['title'] ?? 'Category'}')))
                         .toList(),
-                    onChanged: (value) => setState(() => selectedCategory = value ?? initialCategory),
+                    onChanged: (value) => setState(() => selectedCategoryId = value ?? ''),
                   ),
                   const SizedBox(height: 12),
 
@@ -1778,6 +1903,16 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   const SizedBox(height: 12),
 
                   TextField(
+                    controller: unitController,
+                    decoration: const InputDecoration(
+                      labelText: 'Unit of measure *',
+                      hintText: 'e.g., kg, bunch, bag',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  TextField(
                     controller: locationController,
                     decoration: const InputDecoration(
                       labelText: 'Location *',
@@ -1809,17 +1944,31 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   if (nameController.text.isNotEmpty &&
                       priceController.text.isNotEmpty &&
                       quantityController.text.isNotEmpty &&
+                      unitController.text.isNotEmpty &&
+                      selectedCategoryId.isNotEmpty &&
+                      selectedImage != null &&
                       locationController.text.isNotEmpty) {
 
                     setState(() => isUploading = true);
                     try {
-                      await ApiService().createMarketplaceListing({
-                        'title': nameController.text.trim(),
-                        'category': _apiCategory(selectedCategory),
-                        'price': priceController.text.trim(),
-                        'location': locationController.text.trim(),
-                        'description': descriptionController.text.trim(),
-                      }, imageFile: selectedImage);
+                      final userId = _currentUserId;
+                      if (userId == null || userId <= 0) {
+                        throw Exception('Sign in to sell products.');
+                      }
+                      await _marketApi.createProduct(
+                        fields: {
+                          'name': nameController.text.trim(),
+                          'description': descriptionController.text.trim(),
+                          'unit_of_measure': unitController.text.trim(),
+                          'stock_available': quantityController.text.trim(),
+                          'unit_price_seller': priceController.text.trim(),
+                          'unit_price_buyer': priceController.text.trim(),
+                          'seller_location': locationController.text.trim(),
+                          'user_id': '$userId',
+                          'category_id': selectedCategoryId,
+                        },
+                        picture: selectedImage!,
+                      );
                       await _loadMarketplaceListings();
                     } catch (error) {
                       if (context.mounted) {
@@ -1845,7 +1994,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('Please fill in all required fields'),
+                        content: const Text('Complete all required fields and upload a product photo'),
                         backgroundColor: scheme.error,
                       ),
                     );
@@ -1865,6 +2014,49 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   // ============= CART DIALOG =============
+  Future<void> _openCart() async {
+    await _loadCart();
+    if (mounted) _showCartDialog(context);
+  }
+
+  Future<void> _loadCart() async {
+    final userId = _currentUserId;
+    if (userId == null || userId <= 0) return;
+    try {
+      final rows = await _marketApi.getCart(userId);
+      final items = rows.whereType<Map>().map((raw) {
+        final row = Map<String, dynamic>.from(raw);
+        final product = row['product'] is Map ? Map<String, dynamic>.from(row['product'] as Map) : <String, dynamic>{};
+        return CartItem(
+          cartId: '${row['id'] ?? ''}',
+          productId: '${product['id'] ?? ''}',
+          name: '${product['name'] ?? 'Product'}',
+          price: double.tryParse('${product['unit_price_buyer'] ?? 0}')?.round() ?? 0,
+          sellerPrice: double.tryParse('${product['unit_price_seller'] ?? 0}')?.round() ?? 0,
+          category: '${(product['category'] is Map ? product['category']['title'] : null) ?? 'Other'}',
+          quantity: int.tryParse('${row['quantity'] ?? 1}') ?? 1,
+        );
+      }).toList();
+      if (mounted) setState(() => _cartItems..clear()..addAll(items));
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not load your cart: $error')));
+    }
+  }
+
+  Future<void> _updateCartItem(CartItem item, int quantity) async {
+    try {
+      if (quantity <= 0) {
+        await _marketApi.deleteCart(item.cartId);
+        if (mounted) setState(() => _cartItems.remove(item));
+      } else {
+        await _marketApi.updateCart(item.cartId, quantity);
+        if (mounted) setState(() => item.quantity = quantity);
+      }
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not update cart: $error')));
+    }
+  }
+
   void _showCartDialog(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
@@ -1971,13 +2163,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                             children: [
                               IconButton(
                                 onPressed: () {
-                                  setState(() {
-                                    if (item.quantity > 1) {
-                                      item.quantity--;
-                                    } else {
-                                      _cartItems.remove(item);
-                                    }
-                                  });
+                                  _updateCartItem(item, item.quantity - 1);
                                 },
                                 icon: const Icon(Icons.remove_rounded, size: 18),
                                 color: scheme.onSurfaceVariant,
@@ -1991,9 +2177,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                               ),
                               IconButton(
                                 onPressed: () {
-                                  setState(() {
-                                    item.quantity++;
-                                  });
+                                  _updateCartItem(item, item.quantity + 1);
                                 },
                                 icon: const Icon(Icons.add_rounded, size: 18),
                                 color: scheme.primary,
@@ -2033,7 +2217,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                     ),
                   ),
                   ElevatedButton(
-                    onPressed: _cartItems.isEmpty ? null : () {},
+                    onPressed: _cartItems.isEmpty ? null : _startCheckout,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: scheme.primary,
                       foregroundColor: scheme.onPrimary,
@@ -2057,32 +2241,110 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   // ============= HELPERS =============
-  void _addToCart(Product product) {
-    setState(() {
-      final existing = _cartItems.where((item) => item.name == product.name).firstOrNull;
-      if (existing != null) {
-        existing.quantity++;
-      } else {
-        _cartItems.add(CartItem(
-          name: product.name,
-          price: product.price,
-          category: product.category,
-          quantity: 1,
-        ));
-      }
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${product.name} added to cart'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        duration: const Duration(seconds: 2),
-      ),
+  Future<void> _addToCart(Product product) async {
+    final userId = _currentUserId;
+    if (userId == null || userId <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Sign in to add products to your cart.')));
+      return;
+    }
+    try {
+      await _marketApi.addToCart(userId: userId, productId: product.id, quantity: 1);
+      await _loadCart();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${product.name} added to cart'), backgroundColor: Theme.of(context).colorScheme.primary, duration: const Duration(seconds: 2)),
+      );
+    } catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Could not add to cart: $error')));
+    }
+  }
+
+  Future<void> _startCheckout() async {
+    final userId = _currentUserId;
+    if (userId == null || userId <= 0 || _cartItems.isEmpty) return;
+    final locationController = TextEditingController();
+    var deliveryMode = 'pickup';
+    var submitting = false;
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(builder: (dialogContext, setDialogState) => AlertDialog(
+        title: const Text('Checkout'),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          RadioListTile<String>(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Pick up'),
+            value: 'pickup',
+            groupValue: deliveryMode,
+            onChanged: submitting ? null : (value) => setDialogState(() => deliveryMode = value!),
+          ),
+          RadioListTile<String>(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Delivery'),
+            value: 'delivery',
+            groupValue: deliveryMode,
+            onChanged: submitting ? null : (value) => setDialogState(() => deliveryMode = value!),
+          ),
+          if (deliveryMode == 'delivery') ...[
+            const SizedBox(height: 8),
+            TextField(
+              controller: locationController,
+              decoration: const InputDecoration(labelText: 'Delivery location', border: OutlineInputBorder()),
+              onChanged: (_) => setDialogState(() {}),
+            ),
+          ],
+          const SizedBox(height: 8),
+          Text('Total: UGX ${_formatPrice(_calculateTotal())}', style: const TextStyle(fontWeight: FontWeight.w700)),
+        ]),
+        actions: [
+          TextButton(onPressed: submitting ? null : () => Navigator.pop(dialogContext), child: const Text('Back')),
+          ElevatedButton(
+            onPressed: submitting || (deliveryMode == 'delivery' && locationController.text.trim().isEmpty)
+                ? null
+                : () async {
+                    if (deliveryMode == 'delivery' && locationController.text.trim().isEmpty) {
+                      ScaffoldMessenger.of(dialogContext).showSnackBar(const SnackBar(content: Text('Enter a delivery location.')));
+                      return;
+                    }
+                    setDialogState(() => submitting = true);
+                    try {
+                      final response = await _marketApi.checkout(
+                        userId: userId,
+                        deliveryMode: deliveryMode,
+                        deliveryLocation: locationController.text.trim(),
+                        totalCost: _calculateTotal(),
+                        totalProfits: _calculateProfit(),
+                      );
+                      if (!dialogContext.mounted) return;
+                      Navigator.pop(dialogContext);
+                      Navigator.pop(context); // close cart
+                      setState(_cartItems.clear);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('${response['message'] ?? 'Order submitted successfully.'}')),
+                      );
+                      _loadCart();
+                    } catch (error) {
+                      if (dialogContext.mounted) {
+                        setDialogState(() => submitting = false);
+                        ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('Checkout failed: $error')));
+                      }
+                    }
+                  },
+            child: submitting ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)) : const Text('Place order'),
+          ),
+        ],
+      )),
     );
+    locationController.dispose();
   }
 
   int _calculateTotal() {
     return _cartItems.fold(0, (sum, item) => sum + (item.price * item.quantity));
   }
+
+  int _calculateProfit() => _cartItems.fold(
+        0,
+        (sum, item) => sum + ((item.price - item.sellerPrice) * item.quantity),
+      );
 
   String _formatPrice(int price) {
     return price.toString().replaceAllMapped(
@@ -2296,6 +2558,7 @@ class Product {
   final int inStock;
   final String description;
   final String status;
+  final bool isServerBacked;
 
   Product({
     required this.id,
@@ -2313,18 +2576,25 @@ class Product {
     required this.inStock,
     required this.description,
     this.status = 'active',
+    this.isServerBacked = false,
   });
 }
 
 class CartItem {
+  final String cartId;
+  final String productId;
   final String name;
   final int price;
+  final int sellerPrice;
   final String category;
   int quantity;
 
   CartItem({
+    required this.cartId,
+    required this.productId,
     required this.name,
     required this.price,
+    required this.sellerPrice,
     required this.category,
     required this.quantity,
   });

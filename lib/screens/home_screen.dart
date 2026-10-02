@@ -18,6 +18,7 @@ import '../screens/home_details/Disease Information/disease_diagnosis.dart';
 import '../screens/home_details/Market place/market_place.dart';
 import '../screens/home_details/Settings/settings_screen.dart';
 import './home_details/advertisement.dart';
+import './home_details/jaguza_updates_screen.dart';
 import '../services/app_localizations.dart';
 
 // NAVIGATION SHELL
@@ -754,7 +755,10 @@ class _HomeTabState extends State<HomeTab> {
 
   Widget _bell() {
     return GestureDetector(
-      onTap: () {},
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const JaguzaUpdatesScreen()),
+      ),
       child: SizedBox(
         width: 56,
         height: 56,
