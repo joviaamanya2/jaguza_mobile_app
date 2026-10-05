@@ -7,6 +7,8 @@ import '../utils/Helper.dart';
 import 'AddPaddockPage.dart';
 
 class PaddocksListPage extends StatefulWidget{
+  const PaddocksListPage({super.key});
+
   @override
   State<PaddocksListPage> createState() {
     return _PaddocksListPage();
@@ -25,7 +27,7 @@ class _PaddocksListPage extends State<PaddocksListPage>{
     getPaddocks();
   }
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   String? searchText = "";
 
@@ -75,8 +77,8 @@ class _PaddocksListPage extends State<PaddocksListPage>{
             itemCount: filteredPaddocks.length,
             itemBuilder: (context, index) {
               var paddock = filteredPaddocks[index];
-              var color_hex = paddock["color"]; //#3f51b5
-              var color = Color(int.parse(color_hex.substring(1), radix: 16) + 0xFF000000);
+              var colorHex = paddock["color"]; //#3f51b5
+              var color = Color(int.parse(colorHex.substring(1), radix: 16) + 0xFF000000);
               return InkWell(
                 onTap: (){
                    Navigator.push(context, MaterialPageRoute(builder: (context) => AnimalsListPage(paddock: paddock,) ) );
@@ -111,26 +113,26 @@ class _PaddocksListPage extends State<PaddocksListPage>{
   bool showProgress = false;
   void getPaddocks() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     var path = "get_paddocks";
     var data = {
-      "farm_id": farm_id
+      "farm_id": farmId
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showProgress = progress;
       });
-    };
-    var onSuccess = (response){
+    }
+    void onSuccess(response){
       setState(() {
         paddocks = response;
         filteredPaddocks = paddocks;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error: ");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
 
   }

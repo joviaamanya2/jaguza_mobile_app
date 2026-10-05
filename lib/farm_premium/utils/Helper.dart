@@ -60,7 +60,7 @@ Widget jaguzaTextField(String text,  Function(String) onSaved,{ IconData? prefix
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 3),
-          child: Text("$text", style: TextStyle(color: primaryColor, fontSize: 15, fontWeight: FontWeight.bold),),
+          child: Text(text, style: TextStyle(color: primaryColor, fontSize: 15, fontWeight: FontWeight.bold),),
         ),
         Container(
           decoration: boxDecoration,
@@ -103,8 +103,8 @@ void savePersonInPreference(person) async {
   preferences.setString("person_created_at", person["created_at"] as String? ?? "");
 }
 
-String formatLaravelTime(String created_at){
-  var date = DateTime.parse(created_at);
+String formatLaravelTime(String createdAt){
+  var date = DateTime.parse(createdAt);
   return "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}";
 }
 
@@ -174,10 +174,10 @@ void requestGetAPI(String path, Map<String, dynamic> params, Function(bool) onPr
 }
 
 
-Future<void> _launchUrlLink(String url_link) async {
-  final Uri _url = Uri.parse(url_link);
-  if (!await launchUrl(_url)) {
-    throw Exception('Could not launch $_url');
+Future<void> _launchUrlLink(String urlLink) async {
+  final Uri url = Uri.parse(urlLink);
+  if (!await launchUrl(url)) {
+    throw Exception('Could not launch $url');
   }
 }
 
@@ -225,13 +225,13 @@ Future<String> getSharedPreference(String key) async {
 
 
 
-void saveToken(token,token_type) async {
+void saveToken(token,tokenType) async {
   print("Saving person in preference");
   var preferences = await SharedPreferences.getInstance();
   preferences.setBool("is_user_logged_in", true);
 
   preferences.setString("token", token);
-  preferences.setString("token_type", token_type);
+  preferences.setString("token_type", tokenType);
 }
 
 
@@ -332,7 +332,7 @@ artyTechPickPicture( BuildContext context, Function(String) onSuccess) async {
     onSuccess(path);
   }
 
-  final ImagePicker _picker = ImagePicker();
+  final ImagePicker picker = ImagePicker();
 
   showModalBottomSheet(
     context: context,
@@ -346,7 +346,7 @@ artyTechPickPicture( BuildContext context, Function(String) onSuccess) async {
               onTap: () async {
                 Navigator.pop(context);
                 final XFile? image =
-                await _picker.pickImage(source: ImageSource.camera);
+                await picker.pickImage(source: ImageSource.camera);
                 if (image != null) {
                   finishPicking(image.path);
                 } else {
@@ -360,7 +360,7 @@ artyTechPickPicture( BuildContext context, Function(String) onSuccess) async {
               onTap: () async {
                 Navigator.pop(context);
                 final XFile? image =
-                await _picker.pickImage(source: ImageSource.gallery);
+                await picker.pickImage(source: ImageSource.gallery);
                 if (image != null) {
                   finishPicking(image.path);
                 } else {
@@ -389,7 +389,7 @@ Widget artyTechTextInput(String text,  Function(String) onSaved,{ IconData? pref
           padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 3),
           child: Wrap(
             children: [
-              Text("$text", style: TextStyle(color: mainColor, fontSize: 15, fontWeight: FontWeight.bold),),
+              Text(text, style: TextStyle(color: mainColor, fontSize: 15, fontWeight: FontWeight.bold),),
               SizedBox(width: 5,),
               if( currentValue != null )
                 Text("Current: $currentValue", style: TextStyle(fontSize: 12, color : Colors.green ),),
@@ -427,7 +427,7 @@ Widget artyTechDropDown(String text, String current,  dynamic items , Function(S
           padding: const EdgeInsets.symmetric(horizontal: 5.0, vertical: 3),
           child: Wrap(
             children: [
-              Text("$text", style: TextStyle(color: mainColor, fontSize: 15, fontWeight: FontWeight.bold),),
+              Text(text, style: TextStyle(color: mainColor, fontSize: 15, fontWeight: FontWeight.bold),),
               SizedBox(width: 5,),
               if( currentValue != null )
                 Text("Current: $currentValue", style: TextStyle(fontSize: 12, color : Colors.green ),),
@@ -443,7 +443,7 @@ Widget artyTechDropDown(String text, String current,  dynamic items , Function(S
                     return GestureDetector(
                       onTap: (){
                         current = children[index];
-                        onSaved(current!);
+                        onSaved(current);
                       },
                       child: Container(
                           decoration: boxDecoration,
@@ -503,8 +503,8 @@ Widget artyTechButtonOvalStroke(String text, Function() onPressed){
         borderRadius: BorderRadius.circular(30),
         border: Border.all(color: mainColor, width: 2),
       ),
-      padding: EdgeInsets.all(10),
-      child: Text(text, style: TextStyle(color: mainColor, fontWeight: FontWeight.bold, fontSize: 16),), alignment: Alignment.center,),
+      padding: EdgeInsets.all(10), alignment: Alignment.center,
+      child: Text(text, style: TextStyle(color: mainColor, fontWeight: FontWeight.bold, fontSize: 16),),),
   );
 }
 
@@ -517,14 +517,13 @@ String requestFile(String path){
 }
 
 Future<void> artyRequestAPI( String path, data, Function(bool) onProgress, Function(dynamic) onSuccess, Function(dynamic) onError, {String method = "POST"}) async {
-  var dio;
-  var full_path = "";
+  var fullPath = "";
 
   //if path starts with http
   if (path.startsWith("http")) {
-    full_path = path;
+    fullPath = path;
   } else {
-    full_path = APP_URL_BASE + path;
+    fullPath = APP_URL_BASE + path;
   }
 
   /*var pref = await SharedPreferences.getInstance();
@@ -537,21 +536,29 @@ Future<void> artyRequestAPI( String path, data, Function(bool) onProgress, Funct
     },);
 */
   try {
-    print(full_path);
+    print(fullPath);
 
     onProgress(true);
-    if (method == "POST") {
-      dio = Dio().post(
-        full_path, data: FormData.fromMap(data),);
-    } else if (method == "GET") {
-      dio = Dio().get(full_path, queryParameters: data);
-    } else if (method == "PUT") {
-      dio = Dio().put(full_path, data: data);
-    } else if (method == "DELETE") {
-      dio = Dio().delete(full_path, data: data);
+    final client = Dio();
+    late final Response<dynamic> response;
+    switch (method.toUpperCase()) {
+      case "POST":
+        response = await client.post(fullPath, data: FormData.fromMap(data));
+        break;
+      case "GET":
+        response = await client.get(fullPath, queryParameters: data);
+        break;
+      case "PUT":
+        response = await client.put(fullPath, data: data);
+        break;
+      case "DELETE":
+        response = await client.delete(fullPath, data: data);
+        break;
+      default:
+        onProgress(false);
+        onError("Unsupported request method: $method");
+        return;
     }
-
-    var response = await dio;
 
     //print(response.data);
     onProgress(false);
@@ -564,14 +571,16 @@ Future<void> artyRequestAPI( String path, data, Function(bool) onProgress, Funct
     print(error.type);
     print(error.response?.data);
     onError(error.response?.data);
-
+  } catch (error) {
+    onProgress(false);
+    onError(error);
   }
 }
 
 Color hexToColor(String color) {
   String hexColor = color.toUpperCase().replaceAll("#", "");
   if (hexColor.length == 6) {
-    hexColor = "FF" + hexColor; // Add default alpha value
+    hexColor = "FF$hexColor"; // Add default alpha value
   }
   return Color(int.parse(hexColor, radix: 16));
 }
@@ -592,8 +601,8 @@ helperSelectDate(BuildContext context, Function(String) onDate ) async {
   );
 
   if (pickedDate != null) {
-    String _date = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
-    onDate(_date);
+    String date = "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
+    onDate(date);
   }
 }
 

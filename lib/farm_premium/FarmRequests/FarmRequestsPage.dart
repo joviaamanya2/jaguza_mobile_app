@@ -5,6 +5,8 @@ import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FarmRequestsPage extends StatefulWidget{
+  const FarmRequestsPage({super.key});
+
   @override
   State<FarmRequestsPage> createState() {
     return _FarmRequestsPage();
@@ -27,28 +29,28 @@ class _FarmRequestsPage extends State<FarmRequestsPage>{
 
   initRequests() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
-    print(farm_id);
+    var farmId = prefs.getInt("farm_id");
+    print(farmId);
 
     var path = "get_farm_request";
     var data = {
-      "farm_id": farm_id,
+      "farm_id": farmId,
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showRequestsProgress = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       print("treatment");
       print(data);
       setState(() {
         requests = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 
@@ -65,7 +67,7 @@ class _FarmRequestsPage extends State<FarmRequestsPage>{
               child: CircularProgressIndicator(),
             )),
 
-          if (requests.length == 0 && !showRequestsProgress)
+          if (requests.isEmpty && !showRequestsProgress)
             Center(child: Text("No requests yet")),
 
           Expanded(
@@ -93,7 +95,7 @@ class _FarmRequestsPage extends State<FarmRequestsPage>{
                                 children: [
                                   Text(request["comment"] ?? "", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),),
                                   Text("Status: ${request["status"] ?? ""}", style: TextStyle(fontSize: 12),),
-                                  Text("Created On: "+makeDateShorter(request["created_at"] ?? ""), style: TextStyle(fontSize: 11, color: secondaryColor), textAlign: TextAlign.end,),
+                                  Text("Created On: ${makeDateShorter(request["created_at"] ?? "")}", style: TextStyle(fontSize: 11, color: secondaryColor), textAlign: TextAlign.end,),
                                 ],
                               ),
                             ),
@@ -161,10 +163,10 @@ Navigator.pop(context);
 
   Future<void> update_farm_request(request) async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI("update_farm_request", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "request_id": request["id"],
       "status" : "completed"
     }, (progress){
@@ -174,8 +176,8 @@ Navigator.pop(context);
     }, (response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           initRequests();
         } else {
 
@@ -187,10 +189,10 @@ Navigator.pop(context);
   }
   Future<void> delete_farm_request(request) async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI("delete_farm_request", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "request_id": request["id"],
     }, (progress){
       setState(() {
@@ -199,8 +201,8 @@ Navigator.pop(context);
     }, (response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           initRequests();
         } else {
 

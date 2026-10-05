@@ -3,6 +3,8 @@ import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AddGroupPage extends StatefulWidget {
+  const AddGroupPage({super.key});
+
   @override
   State<AddGroupPage> createState() {
     return _AddGroupPage();
@@ -10,7 +12,7 @@ class AddGroupPage extends StatefulWidget {
 }
 
 class _AddGroupPage extends State<AddGroupPage> {
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   var _name = "";
   var _comment = "";
   String? _selectedContactId;
@@ -94,11 +96,11 @@ class _AddGroupPage extends State<AddGroupPage> {
 
   void getContacts() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI(
       "get_contacts",
-      {"farm_id": farm_id},
+      {"farm_id": farmId},
       (progress) {
         setState(() {
           _loadingContacts = progress;
@@ -117,12 +119,12 @@ class _AddGroupPage extends State<AddGroupPage> {
 
   Future<void> action() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI(
       "create_group",
       {
-        "farm_id": farm_id,
+        "farm_id": farmId,
         "name": _name,
         "comment": _comment,
         "user_id": _selectedContactId ?? "",

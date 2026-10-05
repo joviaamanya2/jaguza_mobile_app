@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ChatsPage extends StatefulWidget {
 
   String? tag;
-  ChatsPage({this.tag});
+  ChatsPage({super.key, this.tag});
 
   @override
   _ChatsPageState createState() => _ChatsPageState(  tag: tag);
@@ -21,8 +21,8 @@ class _ChatsPageState extends State<ChatsPage> {
   var _loading_comment = false;
   Future<void> _addComment() async {
     var prefs = await SharedPreferences.getInstance();
-    var person_name = prefs.getString("person_name");
-    var farm_id = prefs.getInt("farm_id");
+    var personName = prefs.getString("person_name");
+    var farmId = prefs.getInt("farm_id");
 
 
     if (_controller.text.isNotEmpty) {
@@ -30,10 +30,10 @@ class _ChatsPageState extends State<ChatsPage> {
       //farm_id, tag, user_id, user_name, message,
 
         requestAPI("create_chat", {
-          "farm_id": farm_id,
+          "farm_id": farmId,
           "tag": tag,
           "user_id": person_id,
-          "user_name": person_name,
+          "user_name": personName,
           "message": _controller.text,
         }, (loading){
           setState(() {
@@ -61,27 +61,27 @@ class _ChatsPageState extends State<ChatsPage> {
   var _loading = false;
   getChats() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
     person_id = prefs.getInt("person_id") ?? 0;
 
     var path = "get_chats";
     var data = {
       "tag": tag,
-      "farm_id": farm_id,
+      "farm_id": farmId,
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         _loading = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       setState(() {
         chats = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 
@@ -143,6 +143,7 @@ class _ChatsPageState extends State<ChatsPage> {
                 _loading_comment ?
                 CircularProgressIndicator() :
                 GestureDetector(
+                  onTap: _addComment,
                   child: Container(
                     decoration: BoxDecoration(
                       color: primaryColor,
@@ -150,7 +151,6 @@ class _ChatsPageState extends State<ChatsPage> {
                     ),
                       padding: EdgeInsets.all(10),
                       child: Icon(Icons.send,size: 20, color: Colors.white, )),
-                  onTap: _addComment,
                 ),
               ],
             ),

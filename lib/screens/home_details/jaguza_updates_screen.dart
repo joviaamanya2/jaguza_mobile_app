@@ -47,10 +47,14 @@ class _JaguzaUpdatesScreenState extends State<JaguzaUpdatesScreen> {
         ),
         title: Row(
           children: [
-            Image.asset('lib/assets/images/logo.png', width: 36, height: 36),
+            Image.asset(
+              'lib/assets/images/jaguza_j_mark.png',
+              width: 34,
+              height: 34,
+            ),
             const SizedBox(width: 10),
             const Text('Notifications',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700)),
+                style: TextStyle(fontSize: 18)),
           ],
         ),
       ),
@@ -59,16 +63,22 @@ class _JaguzaUpdatesScreenState extends State<JaguzaUpdatesScreen> {
           Material(
             color: Theme.of(context).cardColor,
             child: Row(children: [
-              _tab(scheme, 0, Icons.notifications_active_rounded, 'JAGUZA UPDATE'),
-              _tab(scheme, 1, Icons.chat_bubble_outline_rounded, 'ALERTS'),
+              _tab(scheme, 0, 'Updates'),
+              _tab(scheme, 1, 'Alerts'),
             ]),
           ),
           Expanded(
             child: _selectedTab == 0
-                ? ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(12, 14, 12, 24),
+                ? ListView.separated(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
                     itemCount: _updates.length,
-                    itemBuilder: (context, index) => _UpdateCard(update: _updates[index]),
+                    separatorBuilder: (_, __) => Divider(
+                      height: 1,
+                      indent: 96,
+                      color: scheme.outlineVariant,
+                    ),
+                    itemBuilder: (context, index) =>
+                        _UpdateCard(update: _updates[index]),
                   )
                 : _alerts(context),
           ),
@@ -77,25 +87,22 @@ class _JaguzaUpdatesScreenState extends State<JaguzaUpdatesScreen> {
     );
   }
 
-  Widget _tab(ColorScheme scheme, int index, IconData icon, String label) {
+  Widget _tab(ColorScheme scheme, int index, String label) {
     final active = _selectedTab == index;
     final color = active ? const Color(0xFF08783E) : scheme.onSurfaceVariant;
     return Expanded(
       child: InkWell(
         onTap: () => setState(() => _selectedTab = index),
         child: Column(children: [
-          const SizedBox(height: 12),
-          Icon(icon, color: color, size: 22),
-          const SizedBox(height: 8),
+          const SizedBox(height: 14),
           Text(label,
               style: TextStyle(
-                color: active ? const Color(0xFFC98235) : color,
-                letterSpacing: 1.4,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
+                color: active ? const Color(0xFF08783E) : color,
+                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
+                fontSize: 14,
               )),
-          const SizedBox(height: 10),
-          Container(height: 3, color: active ? const Color(0xFFC98235) : Colors.transparent),
+          const SizedBox(height: 12),
+          Container(height: 2, color: active ? const Color(0xFF08783E) : Colors.transparent),
         ]),
       ),
     );
@@ -139,30 +146,58 @@ class _UpdateCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      margin: const EdgeInsets.only(bottom: 14),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Image.asset(update.image, height: 205, width: double.infinity, fit: BoxFit.cover),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(update.title,
-                style: TextStyle(fontSize: 18, height: 1.25, fontWeight: FontWeight.w700, color: scheme.onSurface)),
-            const SizedBox(height: 8),
-            Text(update.description,
-                style: TextStyle(fontSize: 15, height: 1.35, color: scheme.onSurfaceVariant)),
-            const SizedBox(height: 12),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Text(update.date,
-                  style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant.withValues(alpha: .75))),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.asset(
+              update.image,
+              width: 68,
+              height: 68,
+              fit: BoxFit.cover,
             ),
-          ]),
-        ),
-      ]),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  update.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: scheme.onSurface,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  update.description,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  update.date,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

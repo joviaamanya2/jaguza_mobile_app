@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/Helper.dart';
 
 class TreatmentPage extends StatefulWidget{
+  const TreatmentPage({super.key});
+
   @override
   State<TreatmentPage> createState() {
     return _TreatmentPage();
@@ -27,28 +29,28 @@ class _TreatmentPage extends State<TreatmentPage>{
 
   initTreatment() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
-    print(farm_id);
+    var farmId = prefs.getInt("farm_id");
+    print(farmId);
 
     var path = "get_treatments";
     var data = {
-      "farm_id": farm_id,
+      "farm_id": farmId,
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showTreatmentProgress = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       print("treatment");
       print(data);
       setState(() {
         treatments = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 
@@ -65,7 +67,7 @@ class _TreatmentPage extends State<TreatmentPage>{
               child: CircularProgressIndicator(),
             )),
 
-          if (treatments.length == 0 && !showTreatmentProgress)
+          if (treatments.isEmpty && !showTreatmentProgress)
             Center(child: Text("No treatments yet")),
 
           Expanded(

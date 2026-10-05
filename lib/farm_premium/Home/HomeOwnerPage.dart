@@ -9,6 +9,8 @@ import '../Paddocks/PaddocksListPage.dart';
 import 'HomeManagerPage.dart';
 
 class HomeOwnerPage extends StatefulWidget {
+  const HomeOwnerPage({super.key});
+
   @override
   State<HomeOwnerPage> createState() {
     return _HomeOwnerPage();
@@ -45,7 +47,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                         borderRadius: BorderRadius.circular(4),
                         child: LinearProgressIndicator(
                           color: primaryColor,
-                          backgroundColor: primaryColor.withOpacity(0.2),
+                          backgroundColor: primaryColor.withValues(alpha: 0.2),
                           minHeight: 3,
                         ),
                       ),
@@ -101,7 +103,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
             Text(
               getDateToday(),
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 11,
                 fontWeight: FontWeight.normal,
               ),
@@ -113,7 +115,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [primaryColor, primaryColor.withOpacity(0.75)],
+              colors: [primaryColor, primaryColor.withValues(alpha: 0.75)],
             ),
           ),
         ),
@@ -129,7 +131,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
           Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
+              color: primaryColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, size: 15, color: primaryColor),
@@ -197,7 +199,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                 child: _buildStatChip(
                   label: "Cows",
                   value: cows.toString(),
-                  bg: primaryColor.withOpacity(0.08),
+                  bg: primaryColor.withValues(alpha: 0.08),
                 ),
               ),
               const SizedBox(width: 8),
@@ -205,7 +207,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                 child: _buildStatChip(
                   label: "Bulls",
                   value: bulls.toString(),
-                  bg: primaryColor.withOpacity(0.08),
+                  bg: primaryColor.withValues(alpha: 0.08),
                 ),
               ),
               const SizedBox(width: 8),
@@ -213,7 +215,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                 child: _buildStatChip(
                   label: "Calves",
                   value: calves.toString(),
-                  bg: primaryColor.withOpacity(0.08),
+                  bg: primaryColor.withValues(alpha: 0.08),
                 ),
               ),
             ],
@@ -226,7 +228,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                 child: _buildStatChip(
                   label: "Tagged",
                   value: animals_tagged.toString(),
-                  bg: primaryColor.withOpacity(0.1),
+                  bg: primaryColor.withValues(alpha: 0.1),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => AnimalsListPage()),
@@ -238,7 +240,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                 child: _buildStatChip(
                   label: "Not Tagged",
                   value: animals_not_tagged.toString(),
-                  bg: Colors.orange.withOpacity(0.1),
+                  bg: Colors.orange.withValues(alpha: 0.1),
                   onTap: () => Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => AnimalsListPage()),
@@ -347,9 +349,9 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -417,9 +419,9 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
       borderRadius: BorderRadius.circular(12),
       child: Container(
         decoration: BoxDecoration(
-          color: color.withOpacity(0.08),
+          color: color.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withOpacity(0.2)),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
         padding: const EdgeInsets.all(14),
         child: Column(
@@ -438,14 +440,14 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
               const SizedBox(height: 2),
               Text(
                 "$rfidDetected / $rfidDetectable detected",
-                style: TextStyle(color: color.withOpacity(0.75), fontSize: 10),
+                style: TextStyle(color: color.withValues(alpha: 0.75), fontSize: 10),
               ),
             ],
             if (updatedTime.isNotEmpty) ...[
               const SizedBox(height: 2),
               Text(
                 "At $updatedTime",
-                style: TextStyle(color: color.withOpacity(0.6), fontSize: 10),
+                style: TextStyle(color: color.withValues(alpha: 0.6), fontSize: 10),
               ),
             ],
             const SizedBox(height: 4),
@@ -484,13 +486,13 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                       Text(
                         "Today's Total",
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                           fontSize: 11,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        "${milk_today} L",
+                        "$milk_today L",
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 22,
@@ -506,7 +508,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                 child: _buildStatChip(
                   label: "Milked",
                   value: milked_animals.toString(),
-                  bg: primaryColor.withOpacity(0.08),
+                  bg: primaryColor.withValues(alpha: 0.08),
                 ),
               ),
               const SizedBox(width: 8),
@@ -514,7 +516,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                 child: _buildStatChip(
                   label: "Not Milked",
                   value: not_milked_animals.toString(),
-                  bg: Colors.orange.withOpacity(0.08),
+                  bg: Colors.orange.withValues(alpha: 0.08),
                 ),
               ),
             ],
@@ -536,9 +538,9 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
             borderRadius: BorderRadius.circular(12),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.08),
+                color: Colors.green.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.green.withOpacity(0.2)),
+                border: Border.all(color: Colors.green.withValues(alpha: 0.2)),
               ),
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -581,9 +583,9 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
             borderRadius: BorderRadius.circular(12),
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.08),
+                color: Colors.red.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red.withOpacity(0.2)),
+                border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
               ),
               padding: const EdgeInsets.all(14),
               child: Column(
@@ -642,7 +644,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: primaryColor.withOpacity(0.1),
+                  color: primaryColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
@@ -680,9 +682,9 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
                         margin: const EdgeInsets.only(right: 10),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: color.withOpacity(0.08),
+                          color: color.withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: color.withOpacity(0.25)),
+                          border: Border.all(color: color.withValues(alpha: 0.25)),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -788,7 +790,7 @@ class _HomeOwnerPage extends State<HomeOwnerPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),

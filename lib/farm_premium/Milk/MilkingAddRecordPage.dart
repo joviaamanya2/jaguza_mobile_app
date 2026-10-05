@@ -6,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../Animals/AnimalsListPage.dart';
 
 class MilkingAddRecordPage extends StatefulWidget{
+  const MilkingAddRecordPage({super.key});
+
   @override
   State<MilkingAddRecordPage> createState() {
     return _MilkingAddRecordPage();
@@ -29,7 +31,7 @@ class _MilkingAddRecordPage extends State<MilkingAddRecordPage> {
     _time = "${now.hour}:${now.minute}:${now.second}";
   }
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
 
   @override
@@ -180,13 +182,13 @@ class _MilkingAddRecordPage extends State<MilkingAddRecordPage> {
     }
 
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
     var path = "create_milking";
     var data = {
       "animal_id": _animal_id,
       "quantity": _quantity,
       "session": _milking_period,
-      "farm_id": farm_id
+      "farm_id": farmId
     };
     onProgress(progress){
       setState(() {
@@ -196,8 +198,8 @@ class _MilkingAddRecordPage extends State<MilkingAddRecordPage> {
     onSuccess(response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           Navigator.pop(context,true);
         } else {
 

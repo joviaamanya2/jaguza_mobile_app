@@ -8,6 +8,8 @@ import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 import '../Farm/FarmsPage.dart';
 
 class SignInPage extends StatefulWidget{
+  const SignInPage({super.key});
+
   @override
   State<SignInPage> createState() {
     return _SignInPage();
@@ -17,7 +19,7 @@ class SignInPage extends StatefulWidget{
 
 class _SignInPage extends State<SignInPage>{
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   String? email;
   String? password;

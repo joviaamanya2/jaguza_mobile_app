@@ -7,6 +7,8 @@ import 'AddGroupPage.dart';
 import 'EditGroupPage.dart';
 
 class GroupsListPage extends StatefulWidget {
+  const GroupsListPage({super.key});
+
   @override
   State<GroupsListPage> createState() {
     return _GroupsListPage();
@@ -17,7 +19,7 @@ class _GroupsListPage extends State<GroupsListPage> {
   var groups = [];
   var filteredGroups = [];
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   String? searchText = "";
   bool showProgress = false;
 
@@ -167,11 +169,11 @@ class _GroupsListPage extends State<GroupsListPage> {
 
   void getGroups() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI(
       "get_group",
-      {"farm_id": farm_id},
+      {"farm_id": farmId},
       (progress) {
         setState(() {
           showProgress = progress;
@@ -247,11 +249,11 @@ class _GroupsListPage extends State<GroupsListPage> {
 
   void deleteGroup(dynamic group) async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI(
       "delete_group",
-      {"farm_id": farm_id, "id": group["id"]},
+      {"farm_id": farmId, "id": group["id"]},
       (progress) {
         setState(() {
           showProgress = progress;

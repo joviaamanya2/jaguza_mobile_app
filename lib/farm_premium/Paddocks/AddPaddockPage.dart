@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AddPaddockPage extends StatefulWidget{
+  const AddPaddockPage({super.key});
+
   @override
   State<AddPaddockPage> createState() {
     return _AddPaddockPage();
@@ -13,10 +15,10 @@ class AddPaddockPage extends StatefulWidget{
 
 class _AddPaddockPage extends State<AddPaddockPage>{
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   var _name = "";
   var _color = "";
-  var _boundary = "";
+  final _boundary = "";
 
   /*PaddockColor("blue","#2196f3"),
             PaddockColor("red","#f44336"),
@@ -88,10 +90,10 @@ class _AddPaddockPage extends State<AddPaddockPage>{
   var _loading = false;
   Future<void> action() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI("create_paddock", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "name": _name,
       "color": paddockColors.firstWhere((element) => element["name"] == _color)["color"],
       "boundary" : ""
@@ -102,8 +104,8 @@ class _AddPaddockPage extends State<AddPaddockPage>{
     }, (response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           Navigator.pop(context,true);
         } else {
 

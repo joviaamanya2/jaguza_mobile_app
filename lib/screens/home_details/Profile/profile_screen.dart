@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:jaguza_app/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../Gestation tracker/gestation_tracker.dart';
 
 // Add to pubspec.yaml: image_picker: ^1.0.7
@@ -15,6 +18,8 @@ class ProfileTab extends StatefulWidget {
 
 class _ProfileTabState extends State<ProfileTab> {
   File? _profileImage;
+  Uint8List? _savedProfileImage;
+  String _profilePhotoKey = 'profile_photo_base64_local';
   final ImagePicker _picker = ImagePicker();
   bool _isUploading = false;
   bool _isLoadingProfile = true;
@@ -42,16 +47,30 @@ class _ProfileTabState extends State<ProfileTab> {
       final api = ApiService();
       final results = await Future.wait<dynamic>([
         api.get('user'),
-        api.getAnimals(),
-        api.getReports(),
+        api.getAnimals().catchError((_) => <dynamic>[]),
+        api.getReports().catchError((_) => <dynamic>[]),
       ]);
       final user = results[0] is Map
           ? Map<String, dynamic>.from(results[0] as Map)
           : <String, dynamic>{};
       final farms = user['farms'] is List ? user['farms'] as List : const [];
+      final profilePhotoKey =
+          'profile_photo_base64_${user['id'] ?? user['user_id'] ?? 'local'}';
+      final preferences = await SharedPreferences.getInstance();
+      final savedPhoto = preferences.getString(profilePhotoKey);
+      Uint8List? savedPhotoBytes;
+      if (savedPhoto != null && savedPhoto.isNotEmpty) {
+        try {
+          savedPhotoBytes = base64Decode(savedPhoto);
+        } catch (_) {
+          await preferences.remove(profilePhotoKey);
+        }
+      }
 
       if (!mounted) return;
       setState(() {
+        _profilePhotoKey = profilePhotoKey;
+        _savedProfileImage = savedPhotoBytes;
         _userName = (user['name'] ?? user['full_name'] ?? '').toString();
         if (_userName.trim().isEmpty) _userName = 'Jaguza Farmer';
         _userEmail = (user['email'] ?? '').toString();
@@ -84,9 +103,26 @@ class _ProfileTabState extends State<ProfileTab> {
     Navigator.pop(context);
     setState(() => _isUploading = true);
     try {
-      final picked = await _picker.pickImage(source: source, imageQuality: 85);
+      final picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 512,
+        maxHeight: 512,
+        imageQuality: 70,
+      );
       if (picked != null) {
-        setState(() => _profileImage = File(picked.path));
+        final imageFile = File(picked.path);
+        final imageBytes = await imageFile.readAsBytes();
+        final preferences = await SharedPreferences.getInstance();
+        await preferences.setString(
+          _profilePhotoKey,
+          base64Encode(imageBytes),
+        );
+        if (mounted) {
+          setState(() {
+            _profileImage = imageFile;
+            _savedProfileImage = imageBytes;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Image pick error: $e');
@@ -123,9 +159,18 @@ class _ProfileTabState extends State<ProfileTab> {
               ],
             ),
             const SizedBox(height: 12),
-            if (_profileImage != null)
+            if (_profileImage != null || _savedProfileImage != null)
               TextButton.icon(
-                onPressed: () => setState(() => _profileImage = null),
+                onPressed: () async {
+                  final preferences = await SharedPreferences.getInstance();
+                  await preferences.remove(_profilePhotoKey);
+                  if (mounted) {
+                    setState(() {
+                      _profileImage = null;
+                      _savedProfileImage = null;
+                    });
+                  }
+                },
                 icon: Icon(Icons.delete_outline_rounded, size: 16, color: scheme.error),
                 label: Text('Remove Photo', style: TextStyle(color: scheme.error, fontSize: 13, fontWeight: FontWeight.w600)),
               ),
@@ -170,37 +215,35 @@ class _ProfileTabState extends State<ProfileTab> {
     Navigator.push(context, MaterialPageRoute(builder: (context) => screen));
   }
 
-  void _updateUserData({
+  Future<void> _updateUserData({
     String? name,
     String? email,
     String? phone,
     String? location,
     String? farmType,
     String? farmSize,
-  }) {
+  }) async {
+    final updatedName = name?.trim() ?? _userName;
+    if (updatedName.isEmpty) throw Exception('Enter your name.');
+
+    await ApiService().put('user/profile', {
+      'name': updatedName,
+      'email': email ?? _userEmail,
+      'phone_number': phone ?? _userPhone,
+      'farm_name': farmType ?? _userFarmType,
+      'farm_location': location ?? _userLocation,
+    });
+    if (!mounted) return;
+
     setState(() {
-      if (name != null) _userName = name;
+      _userName = updatedName;
       if (email != null) _userEmail = email;
       if (phone != null) _userPhone = phone;
       if (location != null) _userLocation = location;
       if (farmType != null) _userFarmType = farmType;
       if (farmSize != null) _userFarmSize = farmSize;
     });
-    _saveProfileToBackend();
-  }
-
-  Future<void> _saveProfileToBackend() async {
-    try {
-      await ApiService().put('user/profile', {
-        'name': _userName,
-        'phone_number': _userPhone,
-        'farm_name': _userFarmType,
-        'farm_location': _userLocation,
-      });
-      if (mounted) _showMessage('Profile updated successfully');
-    } catch (e) {
-      if (mounted) _showMessage('Profile could not be updated: $e', error: true);
-    }
+    _showMessage('Profile updated successfully');
   }
 
   void _showMessage(String message, {bool error = false}) {
@@ -330,6 +373,16 @@ class _ProfileTabState extends State<ProfileTab> {
                               borderRadius: BorderRadius.circular(23),
                               child: Image.file(_profileImage!, width: 90, height: 90, fit: BoxFit.cover),
                             )
+                          : _savedProfileImage != null
+                              ? ClipRRect(
+                                  borderRadius: BorderRadius.circular(23),
+                                  child: Image.memory(
+                                    _savedProfileImage!,
+                                    width: 90,
+                                    height: 90,
+                                    fit: BoxFit.cover,
+                                  ),
+                                )
                           : Center(
                               child: Text(initials, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w700)),
                             ),
@@ -721,7 +774,14 @@ class EditProfileScreen extends StatefulWidget {
   final String currentLocation;
   final String currentFarmType;
   final String currentFarmSize;
-  final Function({String? name, String? email, String? phone, String? location, String? farmType, String? farmSize}) onSave;
+  final Future<void> Function({
+    String? name,
+    String? email,
+    String? phone,
+    String? location,
+    String? farmType,
+    String? farmSize,
+  }) onSave;
 
   const EditProfileScreen({
     super.key,
@@ -745,6 +805,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _locationController;
   late TextEditingController _farmTypeController;
   late TextEditingController _farmSizeController;
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -768,23 +829,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     super.dispose();
   }
 
-  void _saveChanges() {
-    widget.onSave(
-      name: _nameController.text.trim(),
-      email: _emailController.text.trim(),
-      phone: _phoneController.text.trim(),
-      location: _locationController.text.trim(),
-      farmType: _farmTypeController.text.trim(),
-      farmSize: _farmSizeController.text.trim(),
-    );
-    Navigator.pop(context);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: const Text('Profile updated successfully'),
-        backgroundColor: Theme.of(context).colorScheme.primary,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+  Future<void> _saveChanges() async {
+    if (_isSaving) return;
+    if (_nameController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter your name.')),
+      );
+      return;
+    }
+    setState(() => _isSaving = true);
+    try {
+      await widget.onSave(
+        name: _nameController.text.trim(),
+        email: _emailController.text.trim(),
+        phone: _phoneController.text.trim(),
+        location: _locationController.text.trim(),
+        farmType: _farmTypeController.text.trim(),
+        farmSize: _farmSizeController.text.trim(),
+      );
+      if (mounted) Navigator.pop(context);
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Profile could not be updated: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -806,9 +878,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: _saveChanges,
-            child: const Text(
-              'Save',
+            onPressed: _isSaving ? null : _saveChanges,
+            child: Text(
+              _isSaving ? 'Saving…' : 'Save',
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.w600,
@@ -833,7 +905,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               width: double.infinity,
               height: 50,
               child: ElevatedButton.icon(
-                onPressed: _saveChanges,
+                onPressed: _isSaving ? null : _saveChanges,
                 icon: const Icon(Icons.save_rounded),
                 label: const Text('Save Changes'),
                 style: ElevatedButton.styleFrom(

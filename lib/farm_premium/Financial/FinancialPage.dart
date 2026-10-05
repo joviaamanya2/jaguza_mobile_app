@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'IncomesPage.dart';
 
 class FinancialPage extends StatefulWidget{
+  const FinancialPage({super.key});
+
   @override
   State<FinancialPage> createState() {
     return _FinancialPage();
@@ -84,26 +86,26 @@ class _FinancialPage extends State<FinancialPage>{
 
   initIncomes() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     var path = "get_incomes";
     var data = {
-      "farm_id": farm_id
+      "farm_id": farmId
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showIncomesProgress = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       print(data);
       setState(() {
         incomes = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 

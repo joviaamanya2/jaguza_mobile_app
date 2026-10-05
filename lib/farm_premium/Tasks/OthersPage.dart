@@ -3,7 +3,7 @@ import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 
 class OthersPage extends StatefulWidget {
   dynamic task;
-  OthersPage({required this.task});
+  OthersPage({super.key, required this.task});
 
   @override
   State<OthersPage> createState() => _OthersPageState( task: task);
@@ -45,7 +45,7 @@ class _OthersPageState extends State<OthersPage> {
                 color: primaryColor,
               ),
             ),
-            Container(
+            SizedBox(
               width: double.infinity,
               child:
               (task_header == null) ? Padding(

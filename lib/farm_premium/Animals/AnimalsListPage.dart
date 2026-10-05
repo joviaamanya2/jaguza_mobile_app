@@ -12,7 +12,7 @@ class AnimalsListPage extends StatefulWidget{
   dynamic group;
   List<dynamic>? animalIds;
   bool? select_animal = false;
-  AnimalsListPage({this.paddock,this.group,this.animalIds,this.select_animal});
+  AnimalsListPage({super.key, this.paddock,this.group,this.animalIds,this.select_animal});
 
   @override
   State<AnimalsListPage> createState() {
@@ -48,7 +48,7 @@ class _AnimalsListPage extends State<AnimalsListPage>{
     getAnimals();
   }
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   var animals = [];
   var filteredAnimals = [];
@@ -69,7 +69,7 @@ class _AnimalsListPage extends State<AnimalsListPage>{
 
                       Expanded(
                         child: jaguzaTextField("Search Name", (value){
-                          searchText = value!;
+                          searchText = value;
                         }),
                       ),
 
@@ -104,14 +104,14 @@ class _AnimalsListPage extends State<AnimalsListPage>{
 
 
                         var pictures = [];
-                        var picture_url = "";
+                        var pictureUrl = "";
                         var animal = filteredAnimals[index];
 
                         var hasSensorID = ( animal["sensor_id"] != null && animal["sensor_id"] != "sensor_id" && animal["sensor_id"] != "" );
 
                         pictures = animal["pictures"];
-                        if (pictures.length > 0) {
-                          picture_url = "${imageUrl}${pictures[0]["picture"]}";
+                        if (pictures.isNotEmpty) {
+                          pictureUrl = "$imageUrl${pictures[0]["picture"]}";
                         }
 
                         return InkWell(
@@ -154,7 +154,7 @@ class _AnimalsListPage extends State<AnimalsListPage>{
                                           right: Radius.circular(5),
                                         ),
                                         image: DecorationImage(
-                                          image: picture_url == "" ? AssetImage("lib/assets/farm_premium/jaguza_icon_logo.png") : NetworkImage(picture_url),
+                                          image: pictureUrl == "" ? AssetImage("lib/assets/farm_premium/jaguza_icon_logo.png") : NetworkImage(pictureUrl),
                                           fit: BoxFit.cover
                                         )
                                       ),
@@ -218,10 +218,10 @@ class _AnimalsListPage extends State<AnimalsListPage>{
   var showProgress = false;
   void getAnimals() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
     var path = "get_animals";
     var data = {
-      "farm_id": farm_id
+      "farm_id": farmId
     };
     onProgress(progress){
       setState(() {
@@ -258,7 +258,7 @@ class _AnimalsListPage extends State<AnimalsListPage>{
         filteredAnimals = animals;
         return;
       }
-      filteredAnimals = animals.where((element) => element["tag_id"].toString().contains(searchText!) || element["name"].toString().contains(searchText!)).toList();
+      filteredAnimals = animals.where((element) => element["tag_id"].toString().contains(searchText) || element["name"].toString().contains(searchText)).toList();
     });
   }
 }

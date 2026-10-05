@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/Helper.dart';
 
 class Feedspage extends StatefulWidget{
+  const Feedspage({super.key});
+
   @override
   State<Feedspage> createState() {
     return _Feedspage();
@@ -28,28 +30,28 @@ class _Feedspage extends State<Feedspage>{
 
   initTreatment() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
-    print(farm_id);
+    var farmId = prefs.getInt("farm_id");
+    print(farmId);
 
     var path = "get_feeds";
     var data = {
-      "farm_id": farm_id,
+      "farm_id": farmId,
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showFeedsProgress = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       print("treatment");
       print(data);
       setState(() {
         feeds = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 
@@ -66,7 +68,7 @@ class _Feedspage extends State<Feedspage>{
               child: CircularProgressIndicator(),
             )),
 
-          if (feeds.length == 0 && !showFeedsProgress)
+          if (feeds.isEmpty && !showFeedsProgress)
             Center(child: Text("No feeds yet")),
 
           Expanded(
@@ -91,7 +93,7 @@ class _Feedspage extends State<Feedspage>{
                                 Text(treatment["name"] ?? "", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),),
                                 Divider(),
                                 Text("Ingredients", style: TextStyle(color: primaryColor, fontSize: 12),),
-                                Container(
+                                SizedBox(
                                   width: double.infinity,
                                   child: ListView.builder(
                                             primary: false,
@@ -110,7 +112,7 @@ class _Feedspage extends State<Feedspage>{
                                           ),
                                 ),
 
-                                Text("Created On: "+makeDateShorter(treatment["created_at"] ?? ""), style: TextStyle(fontSize: 11, color: secondaryColor), textAlign: TextAlign.end,),
+                                Text("Created On: ${makeDateShorter(treatment["created_at"] ?? "")}", style: TextStyle(fontSize: 11, color: secondaryColor), textAlign: TextAlign.end,),
                               ],
                             ),
                           ),

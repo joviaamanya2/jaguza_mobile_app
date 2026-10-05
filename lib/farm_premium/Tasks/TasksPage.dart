@@ -8,6 +8,8 @@ import '../utils/Helper.dart';
 import 'ChatsPage.dart';
 
 class TasksPage extends StatefulWidget{
+  const TasksPage({super.key});
+
   @override
   State<TasksPage> createState() {
     return _TasksPage();
@@ -31,28 +33,28 @@ class _TasksPage extends State<TasksPage>{
 
   initRequests() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
-    print(farm_id);
+    var farmId = prefs.getInt("farm_id");
+    print(farmId);
 
     var path = "get_tasks";
     var data = {
-      "farm_id": farm_id,
+      "farm_id": farmId,
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showTasksProgress = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       print("treatment");
       print(data);
       setState(() {
         tasks = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 
@@ -72,7 +74,7 @@ class _TasksPage extends State<TasksPage>{
               child: CircularProgressIndicator(),
             )),
 
-          if (tasks.length == 0 && !showTasksProgress)
+          if (tasks.isEmpty && !showTasksProgress)
             Center(child: Text("No tasks yet")),
 
           Expanded(
@@ -81,8 +83,8 @@ class _TasksPage extends State<TasksPage>{
               itemBuilder: (context, index){
                 var task = tasks[index];
 
-                var task_contacts = [];
-                task_contacts = task["task_contacts"];
+                var taskContacts = [];
+                taskContacts = task["task_contacts"];
 
                 print(task["task_contacts"]);
                 print(task["task_contacts"]);
@@ -126,9 +128,9 @@ class _TasksPage extends State<TasksPage>{
                                     if(task["picture"] != null)
                                     GestureDetector(
                                         onTap: (){
-                                            var picture_url = task["picture_url"] ?? "";
+                                            var pictureUrl = task["picture_url"] ?? "";
                                             //open url from browser
-                                            _launchUrlLink(picture_url);
+                                            _launchUrlLink(pictureUrl);
                                         },
                                         child: Text("Open Attachment: ${task["picture"] ?? ""}", style: TextStyle(fontSize: 12, color: primaryColor, fontWeight: FontWeight.bold),)),
 
@@ -184,7 +186,7 @@ class _TasksPage extends State<TasksPage>{
                                         padding: const EdgeInsets.symmetric(vertical: 6.0),
                                         child: Row(
                                           children: [
-                                            Text("Others People (${ task_contacts.length })", style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold),),
+                                            Text("Others People (${ taskContacts.length })", style: TextStyle(fontSize: 12, color: Colors.red, fontWeight: FontWeight.bold),),
                                             Icon(Icons.arrow_forward_ios, size: 12, color: Colors.red,),
                                           ],
                                         ),
@@ -229,10 +231,10 @@ class _TasksPage extends State<TasksPage>{
     );
   }
 
-  Future<void> _launchUrlLink(String url_link) async {
-    final Uri _url = Uri.parse(url_link);
-    if (!await launchUrl(_url)) {
-      throw Exception('Could not launch $_url');
+  Future<void> _launchUrlLink(String urlLink) async {
+    final Uri url = Uri.parse(urlLink);
+    if (!await launchUrl(url)) {
+      throw Exception('Could not launch $url');
     }
   }
 }

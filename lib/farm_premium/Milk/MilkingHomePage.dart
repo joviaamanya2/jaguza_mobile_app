@@ -7,6 +7,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'MilkingAddRecordPage.dart';
 
 class MilkingHomePage extends StatefulWidget{
+  const MilkingHomePage({super.key});
+
   @override
   State<MilkingHomePage> createState() {
     return _MilkingHomePage();
@@ -20,7 +22,7 @@ class _MilkingHomePage extends State<MilkingHomePage>{
   void initState() {
     super.initState();
     var value = DateTime.now();
-    selected_date = "${value?.year}-${value?.month}-${value?.day}";
+    selected_date = "${value.year}-${value.month}-${value.day}";
     getMilk();
   }
 
@@ -160,9 +162,9 @@ class _MilkingHomePage extends State<MilkingHomePage>{
 
   getMilk() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
     requestAPI("get_milking_by_date", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "date": selected_date
     }, (progress){
       setState(() {
@@ -174,7 +176,7 @@ class _MilkingHomePage extends State<MilkingHomePage>{
       records = response;
 
       setState(() {
-        if(records.length > 0){
+        if(records.isNotEmpty){
           print(  records.map( (e) => e["animal_id"] ).toSet() );
           total_cows = records.map( (e) => e["animal_id"] ).toSet().length;
           total_quantity = records.map( (e) => double.tryParse(e["quantity"] ?? '0') ?? 0.0 ).fold(0.0, (value, element) => value + element);

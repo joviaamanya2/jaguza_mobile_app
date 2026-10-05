@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 
 class SignUpPage extends StatefulWidget{
+  const SignUpPage({super.key});
+
   @override
   State<SignUpPage> createState() {
     return _SignUpPage();
@@ -13,7 +15,7 @@ class SignUpPage extends StatefulWidget{
 
 class _SignUpPage extends State<SignUpPage>{
   
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   var username;
   var email;

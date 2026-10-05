@@ -6,6 +6,8 @@ import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SplashPage extends StatefulWidget{
+  const SplashPage({super.key});
+
   @override
   State<SplashPage> createState() {
     return _SplashPage();
@@ -71,9 +73,9 @@ class _SplashPage extends State<SplashPage>{
                 const Text("Powered by", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
                 Container(
                   margin: EdgeInsets.all(4),
-                  child: Image(image: AssetImage("lib/assets/farm_premium/jaguza_icon_logo.png")),
                   width: 35,
                   height: 35,
+                  child: Image(image: AssetImage("lib/assets/farm_premium/jaguza_icon_logo.png")),
                 ),
                 const Text("JAGUZA TECH", style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),),
               ],

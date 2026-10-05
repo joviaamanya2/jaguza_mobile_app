@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AddFarmRequestsPage extends StatefulWidget{
+  const AddFarmRequestsPage({super.key});
+
   @override
   State<AddFarmRequestsPage> createState() {
     return _AddFarmRequestsPage();
@@ -13,7 +15,7 @@ class AddFarmRequestsPage extends StatefulWidget{
 
 class _AddFarmRequestsPage extends State<AddFarmRequestsPage>{
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   var _comment = "";
 
   @override
@@ -57,11 +59,11 @@ class _AddFarmRequestsPage extends State<AddFarmRequestsPage>{
   Future<void> action() async {
 
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
     var path = "create_farm_request";
     var data = {
       "comment": _comment,
-      "farm_id": farm_id
+      "farm_id": farmId
     };
     onProgress(progress){
       setState(() {
@@ -71,8 +73,8 @@ class _AddFarmRequestsPage extends State<AddFarmRequestsPage>{
     onSuccess(response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           Navigator.pop(context,true);
         } else {
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:jaguza_app/screens/qr_scanner_screen.dart';
 import 'package:jaguza_app/screens/home_details/Decision%20support/decison_support.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
 import 'package:jaguza_app/screens/home_details/Equipment/jaguza_equipment.dart';
@@ -580,6 +581,13 @@ class _HomeTabState extends State<HomeTab> {
     );
   }
 
+  void _openQrScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const QrScannerScreen()),
+    );
+  }
+
   void _openDrawer() {
     final shell = context.findAncestorStateOfType<_MainShellState>();
     shell?._scaffoldKey.currentState?.openDrawer();
@@ -661,14 +669,13 @@ class _HomeTabState extends State<HomeTab> {
                     _iconCircle(
                       icon: Icons.menu_rounded,
                       onTap: _openDrawer,
-                      color: Colors.white.withValues(alpha: 0.12),
                     ),
                     const SizedBox(width: 10),
                     Image.asset(
-                      'lib/assets/images/logo.png',
-                      width: 32,
-                      height: 32,
-                      errorBuilder: (_, __, ___) => const SizedBox(width: 32),
+                      'lib/assets/images/jaguza_j_mark.png',
+                      width: 34,
+                      height: 34,
+                      errorBuilder: (_, __, ___) => const SizedBox(width: 34),
                     ),
                     const SizedBox(width: 8),
                     Text(
@@ -682,9 +689,8 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                     const Spacer(),
                     _iconCircle(
-                      icon: Icons.crop_free_rounded,
-                      onTap: () {},
-                      color: Colors.white.withValues(alpha: 0.12),
+                      icon: Icons.qr_code_scanner_rounded,
+                      onTap: _openQrScanner,
                     ),
                   ],
                 ),
@@ -884,17 +890,12 @@ class _HomeTabState extends State<HomeTab> {
   Widget _iconCircle({
     required IconData icon,
     required VoidCallback onTap,
-    Color color = Colors.white24,
   }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: 40,
         height: 40,
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(12),
-        ),
         child: Icon(icon, color: Colors.white, size: 22),
       ),
     );
@@ -953,18 +954,11 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              width: 92,
-              height: 92,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: const Icon(
-                Icons.support_agent_rounded,
-                color: Colors.white,
-                size: 54,
-              ),
+            Image.asset(
+              'lib/assets/images/ai chart.jpeg',
+              width: 112,
+              height: 112,
+              fit: BoxFit.contain,
             ),
           ],
         ),

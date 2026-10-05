@@ -8,7 +8,7 @@ import 'AddContactPage.dart';
 class ContactsPage extends StatefulWidget{
 
   var select_contact = false;
-  ContactsPage({this.select_contact = false});
+  ContactsPage({super.key, this.select_contact = false});
 
   @override
   State<ContactsPage> createState() {
@@ -20,7 +20,7 @@ class ContactsPage extends StatefulWidget{
 class _ContactsPage extends State<ContactsPage>{
 
   var select_contact = false;
-  _ContactsPage({this.select_contact = false});
+  _ContactsPage() : select_contact = false;
 
   @override
   void initState() {
@@ -34,28 +34,28 @@ class _ContactsPage extends State<ContactsPage>{
 
   initRequests() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
-    print(farm_id);
+    var farmId = prefs.getInt("farm_id");
+    print(farmId);
 
     var path = "get_contacts";
     var data = {
-      "farm_id": farm_id,
+      "farm_id": farmId,
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showContactsProgress = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       print("treatment");
       print(data);
       setState(() {
         contacts = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 
@@ -72,7 +72,7 @@ class _ContactsPage extends State<ContactsPage>{
               child: CircularProgressIndicator(),
             )),
 
-          if (contacts.length == 0 && !showContactsProgress)
+          if (contacts.isEmpty && !showContactsProgress)
             Center(child: Text("No contacts yet")),
 
           Expanded(

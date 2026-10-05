@@ -11,6 +11,8 @@ import 'package:jaguza_app/models/user.dart';
 import 'package:jaguza_app/farm_premium/FarmRequests/AddFarmRequestsPage.dart';
 import 'package:jaguza_app/farm_premium/FarmRequests/FarmRequestsPage.dart';
 import 'package:jaguza_app/services/jaguza_market_api.dart';
+import 'package:jaguza_app/screens/home_details/Profile/profile_screen.dart';
+import 'package:jaguza_app/services/php_api_service.dart';
 
 class MarketplaceScreen extends StatefulWidget {
   const MarketplaceScreen({super.key});
@@ -322,67 +324,151 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       _marketplaceError = null;
     });
     try {
-      final categories = (await _marketApi.getCategories())
-          .whereType<Map>()
-          .map((e) => Map<String, dynamic>.from(e))
-          .toList();
-      final query = _searchQuery.trim();
-      final categoryId = categories
-          .where((category) => '${category['title']}'.toLowerCase() == (_selectedLivestockCategory ?? '').toLowerCase())
-          .map((category) => '${category['id']}')
-          .firstOrNull;
-      var rawProducts = query.isNotEmpty
-          ? await _marketApi.searchProducts(query)
-          : categoryId != null
-              ? await _marketApi.getCategoryProducts(categoryId)
-              : await _marketApi.getProducts();
+      final categories = <Map<String, dynamic>>[];
+      var rawProducts = <dynamic>[];
       final userId = _currentUserId;
       String? userProductsWarning;
-      if (userId != null && userId > 0 && query.isEmpty) {
-        try {
+      String? marketApiError;
+      try {
+        categories.addAll((await _marketApi.getCategories())
+            .whereType<Map>()
+            .map((entry) => Map<String, dynamic>.from(entry)));
+        final query = _searchQuery.trim();
+        final categoryId = categories
+            .where((category) =>
+                '${category['title']}'.toLowerCase() ==
+                (_selectedLivestockCategory ?? '').toLowerCase())
+            .map((category) => '${category['id']}')
+            .firstOrNull;
+        rawProducts = query.isNotEmpty
+            ? await _marketApi.searchProducts(query)
+            : categoryId != null
+                ? await _marketApi.getCategoryProducts(categoryId)
+                : await _marketApi.getProducts();
+        if (userId != null && userId > 0 && query.isEmpty) {
           final ownProducts = await _marketApi.getUserProducts(userId);
           final byId = <String, dynamic>{
             for (final item in rawProducts.whereType<Map>()) '${item['id']}': item,
             for (final item in ownProducts.whereType<Map>()) '${item['id']}': item,
           };
           rawProducts = byId.values.toList();
-        } catch (_) {
-          userProductsWarning = 'Your submitted products could not be loaded. Check the signed-in account.';
         }
-      } else if (rawProducts.isEmpty) {
-        userProductsWarning = 'Sign in with the account used to add the dashboard product to see your pending listings.';
+      } catch (error) {
+        marketApiError = 'Could not connect to the Jaguza Market server.';
+        debugPrint('Jaguza Market API unavailable: $error');
       }
       final products = rawProducts.whereType<Map>().map((raw) {
         final listing = Map<String, dynamic>.from(raw);
         final categoryRaw = listing['category'];
-        final category = categoryRaw is Map
+        final rawCategory = categoryRaw is Map
             ? '${categoryRaw['title'] ?? 'Other'}'
             : '${listing['category_title'] ?? listing['category'] ?? 'Other'}';
-        final filename = '${listing['picture'] ?? ''}';
-        final status = '${listing['product_status'] ?? 'active'}';
+        final category = _displayCategory(rawCategory);
+        final filename = '${listing['picture'] ?? listing['image'] ?? ''}';
+        final status = '${listing['product_status'] ?? listing['status'] ?? 'active'}'.toLowerCase();
+        final seller = listing['seller'] is Map
+            ? Map<String, dynamic>.from(listing['seller'] as Map)
+            : listing['user'] is Map
+                ? Map<String, dynamic>.from(listing['user'] as Map)
+                : <String, dynamic>{};
         return Product(
           id: '${listing['id'] ?? ''}',
-          name: '${listing['name'] ?? 'Marketplace listing'}',
+          name: '${listing['name'] ?? listing['title'] ?? 'Marketplace listing'}',
           category: category,
-          price: double.tryParse('${listing['unit_price_buyer'] ?? listing['unit_price_seller'] ?? 0}')?.round() ?? 0,
+          price: double.tryParse('${listing['unit_price_buyer'] ?? listing['unit_price_seller'] ?? listing['price'] ?? 0}')?.round() ?? 0,
           unit: 'per ${listing['unit_of_measure'] ?? 'unit'}',
-          seller: 'Seller #${listing['user_id'] ?? ''}',
-          sellerId: int.tryParse('${listing['user_id'] ?? ''}'),
-          location: '${listing['seller_location'] ?? 'Unknown location'}',
+          seller: '${seller['name'] ?? listing['seller_name'] ?? listing['author'] ?? 'Seller #${listing['user_id'] ?? ''}'}',
+          sellerId: int.tryParse('${listing['user_id'] ?? listing['seller_id'] ?? seller['id'] ?? ''}'),
+          sellerPhone: '${listing['phone_number'] ?? listing['telephone'] ?? seller['phone'] ?? ''}',
+          location: '${listing['seller_location'] ?? listing['location'] ?? 'Unknown location'}',
           rating: 0,
           imageUrl: filename.isEmpty ? null : _marketApi.productImageUrl(filename),
-          inStock: status == 'active' ? int.tryParse('${listing['stock_available'] ?? 0}') ?? 0 : 0,
+          inStock: const {'active', 'available', 'approved', 'published'}.contains(status)
+              ? int.tryParse('${listing['stock_available'] ?? listing['quantity'] ?? 1}') ?? 0
+              : 0,
           description: '${listing['description'] ?? ''}',
           status: status,
           isServerBacked: true,
         );
       }).toList();
+
+      // Also include farmer posts published from the Jaguza dashboard.
+      try {
+        final dashboardRows = await ApiService().getMarketplaceListings();
+        final dashboardProducts = dashboardRows.whereType<Map>().map((raw) {
+          final listing = Map<String, dynamic>.from(raw);
+          final seller = listing['seller'] is Map
+              ? Map<String, dynamic>.from(listing['seller'] as Map)
+              : <String, dynamic>{};
+          final sellerId = int.tryParse(
+            '${listing['seller_id'] ?? listing['user_id'] ?? seller['id'] ?? ''}',
+          );
+          final rawImages = listing['images'];
+          final imageValue = rawImages is List && rawImages.isNotEmpty
+              ? '${rawImages.first ?? ''}'
+              : '${listing['image_url'] ?? listing['photo'] ?? ''}';
+          final imageUri = Uri.tryParse(imageValue);
+          final imageUrl = imageValue.isEmpty
+              ? null
+              : imageUri != null && imageUri.hasScheme
+                  ? imageUri.toString()
+                  : '${PhpApiService.host}${imageValue.startsWith('/') ? imageValue : '/images/$imageValue'}';
+          final rawCategory = listing['category'];
+          final rawCategoryName = rawCategory is Map
+              ? '${rawCategory['title'] ?? 'Other'}'
+              : '${rawCategory ?? 'Other'}';
+          final category = _displayCategory(rawCategoryName);
+          final normalizedStatus =
+              '${listing['status'] ?? 'available'}'.toLowerCase();
+          final available = const {
+            'active',
+            'available',
+            'approved',
+            'published',
+            '1',
+          }.contains(normalizedStatus);
+          return Product(
+            id: 'dashboard_${listing['id'] ?? ''}',
+            name: '${listing['title'] ?? listing['name'] ?? 'Marketplace listing'}',
+            category: category,
+            price: double.tryParse(
+                      '${listing['price'] ?? listing['unit_price_buyer'] ?? 0}',
+                    )
+                    ?.round() ??
+                0,
+            unit: 'per unit',
+            seller: '${seller['name'] ?? listing['seller_name'] ?? listing['author'] ?? 'Farmer'}',
+            sellerId: sellerId,
+            sellerPhone: '${listing['phone_number'] ?? listing['telephone'] ?? ''}',
+            location: '${listing['location'] ?? listing['seller_location'] ?? 'Unknown location'}',
+            rating: 0,
+            imageUrl: imageUrl,
+            inStock: available ? 1 : 0,
+            description: '${listing['description'] ?? ''}',
+            status: normalizedStatus,
+            isDashboardListing: true,
+          );
+        }).toList();
+        final productIds = products
+            .map((product) => product.id.replaceFirst('dashboard_', ''))
+            .toSet();
+        products.addAll(
+          dashboardProducts.where(
+            (product) =>
+                !productIds.contains(product.id.replaceFirst('dashboard_', '')),
+          ),
+        );
+      } catch (error) {
+        debugPrint('Could not load dashboard marketplace posts: $error');
+      }
+
       if (mounted) {
         setState(() {
           _marketCategories
             ..clear()
             ..addAll(categories);
           _userProductsWarning = userProductsWarning;
+          _marketplaceError = products.isEmpty ? marketApiError : null;
           _products
             ..clear()
             ..addAll(products);
@@ -441,14 +527,33 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     }
   }
 
-  String _displayCategory(String category) {
-    switch (category.toLowerCase()) {
+  String _displayCategory(String value) {
+    final category = value.trim().toLowerCase();
+    switch (category) {
+      case 'cow':
+      case 'cattle':
       case 'livestock':
         return 'Cattle';
+      case 'goat':
+      case 'goats':
+        return 'Goats';
+      case 'pig':
+      case 'pigs':
+        return 'Pigs';
+      case 'sheep':
+        return 'Sheep';
+      case 'rabbit':
+      case 'rabbits':
+        return 'Rabbits';
+      case 'chicken':
       case 'poultry':
         return 'Poultry';
       case 'feed':
         return 'Feed';
+      case 'dairy':
+        return 'Dairy';
+      case 'crops':
+        return 'Crops';
       case 'medicine':
         return 'Medicine';
       case 'equipment':
@@ -456,7 +561,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       case 'housing':
         return 'Housing';
       default:
-        return category[0].toUpperCase() + category.substring(1);
+        return category.isEmpty
+            ? 'Other'
+            : '${category[0].toUpperCase()}${category.substring(1)}';
     }
   }
 
@@ -555,6 +662,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 case 'refresh':
                   _loadMarketplaceListings();
                   break;
+                case 'my_listings':
+                  _showMyListings();
+                  break;
+                case 'seller_profile':
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ProfileTab()),
+                  );
+                  break;
                 case 'price_low':
                   setState(() => _sortAscending = true);
                   break;
@@ -567,6 +683,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               }
             },
             itemBuilder: (context) => const [
+              PopupMenuItem(value: 'my_listings', child: Text('My Listings')),
+              PopupMenuItem(value: 'seller_profile', child: Text('Farmer Profile')),
+              PopupMenuDivider(),
               PopupMenuItem(value: 'refresh', child: Text('Refresh listings')),
               PopupMenuItem(value: 'price_low', child: Text('Sort: Price low to high')),
               PopupMenuItem(value: 'price_high', child: Text('Sort: Price high to low')),
@@ -618,7 +737,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             child: OutlinedButton.icon(
               onPressed: () => _showSellProductDialog(context),
               icon: const Icon(Icons.add_business_rounded, size: 18),
-              label: const Text('Sell Point'),
+              label: const Text('Sell Product'),
               style: OutlinedButton.styleFrom(
                 foregroundColor: scheme.primary,
                 side: BorderSide(color: scheme.primary.withValues(alpha: .45)),
@@ -734,34 +853,42 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: scheme.outlineVariant),
-        ),
-        child: TextField(
-          controller: _searchController,
-          autofocus: true,
-          onChanged: (val) => setState(() => _searchQuery = val),
-          onSubmitted: (_) => _loadMarketplaceListings(),
-          decoration: InputDecoration(
-            hintText: 'Search products, sellers, or locations...',
-            hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
-            prefixIcon: Icon(Icons.search_rounded, color: scheme.primary, size: 20),
-            suffixIcon: _searchQuery.isNotEmpty
-                ? GestureDetector(
-                    onTap: () {
-                      _searchController.clear();
-                      setState(() => _searchQuery = '');
-                      _loadMarketplaceListings();
-                    },
-                    child: Icon(Icons.close_rounded, color: scheme.onSurfaceVariant, size: 18),
-                  )
-                : null,
-            border: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      child: TextField(
+        controller: _searchController,
+        autofocus: true,
+        onChanged: (val) => setState(() => _searchQuery = val),
+        onSubmitted: (_) => _loadMarketplaceListings(),
+        decoration: InputDecoration(
+          hintText: 'Search products, sellers, or locations...',
+          hintStyle: TextStyle(color: scheme.onSurfaceVariant, fontSize: 13),
+          prefixIcon: Icon(Icons.search_rounded, color: scheme.primary, size: 20),
+          suffixIcon: _searchQuery.isNotEmpty
+              ? IconButton(
+                  tooltip: 'Clear search',
+                  onPressed: () {
+                    _searchController.clear();
+                    setState(() => _searchQuery = '');
+                    _loadMarketplaceListings();
+                  },
+                  icon: Icon(Icons.close_rounded,
+                      color: scheme.onSurfaceVariant, size: 18),
+                )
+              : null,
+          filled: true,
+          fillColor: Theme.of(context).cardColor,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: scheme.outlineVariant),
           ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: scheme.outlineVariant),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(8),
+            borderSide: BorderSide(color: scheme.primary),
+          ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
         ),
       ),
     );
@@ -917,8 +1044,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 22),
-          _marketGradientHeader(
+          const SizedBox(height: 18),
+          _marketSectionHeader(
             'Featured Products',
             onViewMore: all.length > 4
                 ? () => setState(() => _showAllLivestock = !_showAllLivestock)
@@ -950,21 +1077,15 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   Widget _buildTopCategoriesBanner() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF005B37), Color(0xFF08783E), Color(0xFFD47A23)],
-            ),
-            borderRadius: BorderRadius.circular(12),
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text(
+            'Top Categories',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
           ),
-          child: const Text('Top Categories',
-              style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
         ),
-        const SizedBox(height: 16),
         if (_marketCategories.isEmpty && _isLoadingMarketplace)
           const SizedBox(
             height: 108,
@@ -979,11 +1100,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: ListView.separated(
                   scrollDirection: Axis.horizontal,
                   itemCount: _marketCategories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 16),
+                  separatorBuilder: (_, __) => const SizedBox(width: 10),
                   itemBuilder: (context, index) => _marketCategoryCard(
                     category: _marketCategories[index],
                     width: cardWidth,
-                    color: index.isEven ? const Color(0xFF08783E) : const Color(0xFFD97A1E),
                     onTap: () => _selectMarketplaceCategory(_marketCategories[index]),
                   ),
                 ),
@@ -994,44 +1114,41 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _marketGradientHeader(String title, {VoidCallback? onViewMore}) {
+  Widget _marketSectionHeader(String title, {VoidCallback? onViewMore}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(10, 0, 10, 10),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF005B37), Color(0xFF08783E), Color(0xFFD47A23)],
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Row(children: [
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+      child: Row(children: [
           Expanded(
             child: Text(title,
-                style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700)),
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
           ),
           if (onViewMore != null)
-            TextButton(onPressed: onViewMore, child: const Text('View more')),
+            TextButton(
+              onPressed: onViewMore,
+              child: const Text('View more'),
+            ),
         ]),
-      ),
     );
   }
 
   Widget _marketCategoryCard({
     required Map<String, dynamic> category,
     required double width,
-    required Color color,
     required VoidCallback onTap,
   }) {
     final title = '${category['title'] ?? 'Category'}';
     final iconName = '${category['icon'] ?? ''}';
     final icon = _iconForMarketCategory(title);
+    final scheme = Theme.of(context).colorScheme;
     return Material(
-      color: color,
-      borderRadius: BorderRadius.circular(14),
-      elevation: 2,
+      color: Theme.of(context).cardColor,
+      shape: RoundedRectangleBorder(
+        side: BorderSide(color: scheme.outlineVariant),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      elevation: 0,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(8),
         onTap: onTap,
         child: SizedBox(
           width: width,
@@ -1042,17 +1159,17 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 child: CachedNetworkImage(
                   imageUrl: _marketApi.categoryIconUrl(iconName),
                   fit: BoxFit.contain,
-                  errorWidget: (_, __, ___) => Icon(icon, color: Colors.white, size: 42),
+                  errorWidget: (_, __, ___) => Icon(icon, color: scheme.primary, size: 32),
                 ),
               )
             else
-              Icon(icon, color: Colors.white, size: 42),
+              Icon(icon, color: scheme.primary, size: 32),
             const SizedBox(height: 5),
             Text(title,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w700)),
+                style: TextStyle(color: scheme.onSurface, fontSize: 13, fontWeight: FontWeight.w600)),
           ]),
         ),
       ),
@@ -1090,6 +1207,90 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
   void _openMoreRequests() {
     Navigator.push(context, MaterialPageRoute(builder: (_) => FarmRequestsPage()));
+  }
+
+  Future<void> _showMyListings() async {
+    if (_currentUserId == null) await _loadCurrentUser();
+    final userId = _currentUserId;
+    if (userId == null || userId <= 0) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Sign in to view your listings.')),
+        );
+      }
+      return;
+    }
+
+    if (_searchController.text.isNotEmpty) {
+      _searchController.clear();
+      setState(() => _searchQuery = '');
+    }
+    await _loadMarketplaceListings();
+    if (!mounted) return;
+    final ownProducts = _products.where((product) => product.sellerId == userId).toList();
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: SizedBox(
+          height: MediaQuery.sizeOf(sheetContext).height * 0.75,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 14),
+                child: Text(
+                  'My Listings',
+                  style: Theme.of(sheetContext).textTheme.titleLarge,
+                ),
+              ),
+              if (ownProducts.isEmpty)
+                const Expanded(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'You have not posted any products yet.',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ),
+                )
+              else
+                Expanded(
+                  child: ListView.separated(
+                    itemCount: ownProducts.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1, indent: 76),
+                    itemBuilder: (context, index) {
+                      final product = ownProducts[index];
+                      return ListTile(
+                        leading: SizedBox(
+                          width: 52,
+                          height: 52,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(6),
+                            child: _buildProductImage(
+                              product,
+                              Theme.of(context).colorScheme,
+                            ),
+                          ),
+                        ),
+                        title: Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(
+                          'UGX ${_formatPrice(product.price)} · ${product.status}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   // ============= EQUIPMENTS TAB =============
@@ -1220,7 +1421,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ? const Color(0xFFD97A1E)
             : scheme.error;
     return GestureDetector(
-      onTap: isAvailable && product.isServerBacked ? () => _addToCart(product) : null,
+          onTap: !isAvailable
+              ? null
+              : product.isDashboardListing
+                  ? () => _showDashboardProductDetails(product)
+                  : product.isServerBacked
+                      ? () => _addToCart(product)
+                      : null,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
@@ -1229,7 +1436,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             clipBehavior: Clip.none,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(8),
                 child: Container(
                   height: 108,
                   width: double.infinity,
@@ -1237,7 +1444,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   child: _buildProductImage(product, scheme),
                 ),
               ),
-              if (isOwner)
+              if (isOwner && !product.isDashboardListing)
                 Positioned(
                   top: 4,
                   right: 4,
@@ -1269,20 +1476,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   ),
                 ),
               Positioned(
-                bottom: -12,
+                bottom: 8,
                 left: 8,
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
                     color: stockColor,
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
                     stockLabel,
@@ -1293,7 +1493,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ],
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 18, 8, 0),
+            padding: const EdgeInsets.fromLTRB(2, 8, 2, 0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
@@ -1313,6 +1513,49 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showDashboardProductDetails(Product product) async {
+    final phone = product.sellerPhone.trim();
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(product.name),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('UGX ${_formatPrice(product.price)} · ${product.unit}'),
+              const SizedBox(height: 6),
+              Text('Seller: ${product.seller}'),
+              Text('Location: ${product.location}'),
+              if (product.description.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(product.description),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+          if (phone.isNotEmpty)
+            FilledButton.icon(
+              onPressed: () async {
+                final uri = Uri(scheme: 'tel', path: phone);
+                if (await launchUrl(uri) && dialogContext.mounted) {
+                  Navigator.pop(dialogContext);
+                }
+              },
+              icon: const Icon(Icons.call_outlined),
+              label: const Text('Call seller'),
+            ),
         ],
       ),
     );
@@ -2550,6 +2793,7 @@ class Product {
   final String unit;
   final String seller;
   final int? sellerId;
+  final String sellerPhone;
   final String location;
   final double rating;
   final String? imageAsset;
@@ -2559,6 +2803,7 @@ class Product {
   final String description;
   final String status;
   final bool isServerBacked;
+  final bool isDashboardListing;
 
   Product({
     required this.id,
@@ -2568,6 +2813,7 @@ class Product {
     required this.unit,
     required this.seller,
     this.sellerId,
+    this.sellerPhone = '',
     required this.location,
     required this.rating,
     this.imageAsset,
@@ -2577,6 +2823,7 @@ class Product {
     required this.description,
     this.status = 'active',
     this.isServerBacked = false,
+    this.isDashboardListing = false,
   });
 }
 

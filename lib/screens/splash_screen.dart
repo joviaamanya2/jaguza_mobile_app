@@ -121,20 +121,19 @@ class _SplashScreenState extends State<SplashScreen>
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark, // Changed to dark for white background
-        systemNavigationBarColor: Colors.white, // Changed to white
-        systemNavigationBarIconBrightness: Brightness.dark, // Changed to dark
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
         body: Container(
           width: double.infinity,
           height: double.infinity,
           decoration: const BoxDecoration(
-            color: Colors.white, // Changed to white background
+            color: Colors.white,
           ),
           child: Stack(
             children: [
-              // Subtle decorative circles - adjusted for white background
               Positioned(
                 top: -60,
                 right: -60,
@@ -143,7 +142,7 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 220,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.03), // Changed to subtle black
+                    color: Colors.black.withValues(alpha: 0.03),
                   ),
                 ),
               ),
@@ -155,11 +154,10 @@ class _SplashScreenState extends State<SplashScreen>
                   height: 260,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.02), // Changed to subtle black
+                    color: Colors.black.withValues(alpha: 0.02),
                   ),
                 ),
               ),
-
               // Main content
               Center(
                 child: FadeTransition(
@@ -167,28 +165,20 @@ class _SplashScreenState extends State<SplashScreen>
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Logo with scale animation - kept as is (white bg with black text)
+                      // Clip the source image to its green circular logo.
                       ScaleTransition(
                         scale: _scaleAnim,
                         child: Container(
                           width: 120,
                           height: 120,
                           decoration: BoxDecoration(
-                            color: Colors.white, // Keeping logo background white
-                            borderRadius: BorderRadius.circular(30),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1), // Lighter shadow for white bg
-                                blurRadius: 32,
-                                offset: const Offset(0, 14),
-                              ),
-                            ],
+                            color: const Color(0xFF08783E),
+                            shape: BoxShape.circle,
                           ),
-                          child: ClipRRect(
-                            borderRadius: BorderRadius.circular(30),
+                          child: ClipOval(
                             child: Image.asset(
                               'lib/assets/images/logo.png',
-                              fit: BoxFit.contain,
+                              fit: BoxFit.cover,
                             ),
                           ),
                         ),
@@ -196,13 +186,13 @@ class _SplashScreenState extends State<SplashScreen>
 
                       const SizedBox(height: 32),
 
-                      // App name - changed to black
+                      // App name
                       FadeTransition(
                         opacity: _taglineFade,
                         child: const Text(
                           'JAGUZA',
                           style: TextStyle(
-                            color: Colors.black, // Changed to black
+                            color: Colors.black,
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
                             letterSpacing: 4.0,
@@ -212,13 +202,13 @@ class _SplashScreenState extends State<SplashScreen>
 
                       const SizedBox(height: 10),
 
-                      // Tagline - changed to dark gray
+                      // Tagline
                       FadeTransition(
                         opacity: _taglineFade,
                         child: Text(
                           context.tr('Know your herd, wherever they roam.'),
                           style: TextStyle(
-                            color: Colors.black.withValues(alpha: 0.7), // Changed to dark gray
+                            color: Colors.black.withValues(alpha: 0.7),
                             fontSize: 14,
                             fontWeight: FontWeight.w400,
                             letterSpacing: 0.4,
@@ -230,7 +220,7 @@ class _SplashScreenState extends State<SplashScreen>
                 ),
               ),
 
-              // Version / brand note at bottom - changed to dark gray
+              // Version / brand note at bottom
               Positioned(
                 bottom: 40,
                 left: 0,
@@ -241,7 +231,7 @@ class _SplashScreenState extends State<SplashScreen>
                     child: Text(
                       'Jaguza Farm Tech',
                       style: TextStyle(
-                        color: Colors.black.withValues(alpha: 0.4), // Changed to dark gray
+                        color: Colors.black.withValues(alpha: 0.4),
                         fontSize: 12,
                         letterSpacing: 1.2,
                         fontWeight: FontWeight.w500,

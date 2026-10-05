@@ -5,6 +5,8 @@ import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class FarmsPage extends StatefulWidget{
+  const FarmsPage({super.key});
+
   @override
   State<FarmsPage> createState() {
     return _FarmsPage();
@@ -24,7 +26,7 @@ class _FarmsPage extends State<FarmsPage>{
     initFarms();
   }
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   String? searchText = "";
 
   searchAction(){
@@ -98,9 +100,9 @@ class _FarmsPage extends State<FarmsPage>{
                                 children: [
                                   Container(
                                     margin: EdgeInsets.all(4),
-                                    child: Image(image: AssetImage("lib/assets/farm_premium/jaguza_icon_logo.png")),
                                     width: 35,
                                     height: 35,
+                                    child: Image(image: AssetImage("lib/assets/farm_premium/jaguza_icon_logo.png")),
                                   ),
                                   SizedBox(width: 10,),
                                   Expanded(
@@ -129,8 +131,8 @@ class _FarmsPage extends State<FarmsPage>{
   bool showProgress = false;
   initFarms() async {
     var prefs = await SharedPreferences.getInstance();
-    var person_id = prefs.getInt("person_id");
-    requestAPI("get_farms", {"person_id":"$person_id"}, (progress){
+    var personId = prefs.getInt("person_id");
+    requestAPI("get_farms", {"person_id":"$personId"}, (progress){
       setState(() {
         showProgress = progress;
       });
@@ -146,9 +148,9 @@ class _FarmsPage extends State<FarmsPage>{
 
   openFarm(farm) async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = farm["farm_id"];
+    var farmId = farm["farm_id"];
 
-    prefs.setInt("farm_id", farm_id);
+    prefs.setInt("farm_id", farmId);
     prefs.setString("farm_name", farm["farm"]["name"]);
     prefs.setString("farm_address", farm["farm"]["address"]);
 

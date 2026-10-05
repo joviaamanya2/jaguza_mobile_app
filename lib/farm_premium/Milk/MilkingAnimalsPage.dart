@@ -7,7 +7,7 @@ class MilkingAnimalsPage extends StatefulWidget{
   dynamic date;
   dynamic records;
 
-  MilkingAnimalsPage({this.date, this.records});
+  MilkingAnimalsPage({super.key, this.date, this.records});
 
   @override
   State<MilkingAnimalsPage> createState() {
@@ -35,7 +35,7 @@ class _MilkingAnimalsPage extends State<MilkingAnimalsPage>{
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Records (${date})")),
+      appBar: AppBar(title: Text("Records ($date)")),
       body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: Column(
@@ -44,7 +44,7 @@ class _MilkingAnimalsPage extends State<MilkingAnimalsPage>{
               children: [
                 Expanded(child: Container( padding: EdgeInsets.all(7), color: primaryColor, child: Text("COW NAME", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),))),
                 Expanded(child: Container( padding: EdgeInsets.all(7),color: CupertinoColors.lightBackgroundGray, child: Text("TAG ID", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),))),
-                Container(
+                SizedBox(
                     width: 60,
                     child: Container( padding: EdgeInsets.all(7),color: secondaryColor, child: Text("QTY", style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),textAlign: TextAlign.center,))),
               ],
@@ -55,7 +55,7 @@ class _MilkingAnimalsPage extends State<MilkingAnimalsPage>{
                         itemCount: animals.length,
                         itemBuilder: (context, index) {
                           var animal = animals[index];
-                          var total_quantity = milks.where((element) => element["animal_id"] == animal["id"]).map( (e) => double.tryParse(e["quantity"] ?? '0') ?? 0.0 ).fold(0.0, (value, element) => value + element);
+                          var totalQuantity = milks.where((element) => element["animal_id"] == animal["id"]).map( (e) => double.tryParse(e["quantity"] ?? '0') ?? 0.0 ).fold(0.0, (value, element) => value + element);
                           return Container(
                             child: Column(
                               children: [
@@ -65,9 +65,9 @@ class _MilkingAnimalsPage extends State<MilkingAnimalsPage>{
                                     children: [
                                       Expanded(child: Container( child: Text( animal["name"] ?? ".." ))),
                                       Expanded(child: Container( child: Text(animal["tag_id"] ?? ".."))),
-                                      Container(
+                                      SizedBox(
                                           width: 60,
-                                          child: Container( child: Text( total_quantity.toString() ,textAlign: TextAlign.center,))),
+                                          child: Container( child: Text( totalQuantity.toString() ,textAlign: TextAlign.center,))),
                                     ],
                                   ),
                                 ),
@@ -124,9 +124,9 @@ class _MilkingAnimalsPage extends State<MilkingAnimalsPage>{
       total_quantity = records.map( (e) => double.tryParse(e["quantity"] ?? '0') ?? 0.0 ).fold(0.0, (value, element) => value + element);
 
       //get out all animal objects
-      var animals_with_dups = records.map( (e) => e["animal"] );
+      var animalsWithDups = records.map( (e) => e["animal"] );
       //loop through the ids
-      animals_with_dups.forEach((element) {
+      animalsWithDups.forEach((element) {
         if(animals_ids.contains(element["id"])){
           //do nothing
         } else {

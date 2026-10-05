@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 
 class ForgotPasswordPage extends StatefulWidget{
+  const ForgotPasswordPage({super.key});
+
   @override
   State<ForgotPasswordPage> createState() {
     return _ForgotPasswordPage();

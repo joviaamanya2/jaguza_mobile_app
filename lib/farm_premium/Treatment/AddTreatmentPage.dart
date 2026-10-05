@@ -7,6 +7,8 @@ import '../Animals/AnimalsListPage.dart';
 import '../utils/Helper.dart';
 
 class AddTreatmentPage extends StatefulWidget{
+  const AddTreatmentPage({super.key});
+
   @override
   State<AddTreatmentPage> createState() {
     return _AddTreatmentPage();
@@ -16,7 +18,7 @@ class AddTreatmentPage extends StatefulWidget{
 
 class _AddTreatmentPage extends State<AddTreatmentPage>{
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   var _loading = false;
 
@@ -202,10 +204,10 @@ class _AddTreatmentPage extends State<AddTreatmentPage>{
   Future<void> action() async {
 
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI("create_treatment", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "animal_id": _animal_id,
       "time": _time,
       "date": _date,
@@ -221,8 +223,8 @@ class _AddTreatmentPage extends State<AddTreatmentPage>{
     }, (response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           Navigator.pop(context,true);
         } else {
 

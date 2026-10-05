@@ -8,7 +8,7 @@ import '../utils/Helper.dart';
 class AnimalsPreviewPage extends StatefulWidget{
 
   dynamic animal;
-  AnimalsPreviewPage({this.animal});
+  AnimalsPreviewPage({super.key, this.animal});
 
   @override
   State<AnimalsPreviewPage> createState() {
@@ -82,10 +82,10 @@ class _AnimalsPreviewPage extends State<AnimalsPreviewPage>{
   getMilk() async {
     var prefs = await SharedPreferences.getInstance();
 
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
     requestAPI("get_animal_milk_by_date", {
       "animal_id": animal["id"],
-      "farm_id": farm_id,
+      "farm_id": farmId,
     }, (progress){
       setState(() {
         showProgress = progress;
@@ -188,7 +188,7 @@ class _AnimalsPreviewPage extends State<AnimalsPreviewPage>{
                 Container(
                     width: double.infinity,
                     padding: EdgeInsets.all(10),
-                    color: secondaryColor.withOpacity(0.5),
+                    color: secondaryColor.withValues(alpha: 0.5),
                     child: Text("Milking", style: TextStyle(color: Colors.white, fontSize: 13 ),)),
                 Padding(
                   padding: const EdgeInsets.all(8.0),
@@ -378,7 +378,7 @@ class _AnimalsPreviewPage extends State<AnimalsPreviewPage>{
               "${rec["humidity"] ?? "—"} %",
               session,
             ]);
-          }).toList(),
+          }),
         ],
       );
     }
@@ -473,8 +473,8 @@ class _AnimalsPreviewPage extends State<AnimalsPreviewPage>{
     pictures = animal["pictures"];
     father = animal["father"];
     mother = animal["mother"];
-    if (pictures.length > 0) {
-      picture_url = "${imageUrl}${pictures[0]["picture"]}";
+    if (pictures.isNotEmpty) {
+      picture_url = "$imageUrl${pictures[0]["picture"]}";
     }
 
   }

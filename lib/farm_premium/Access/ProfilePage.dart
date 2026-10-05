@@ -4,6 +4,8 @@ import 'package:jaguza_app/farm_premium/utils/Helper.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatefulWidget{
+  const ProfilePage({super.key});
+
   @override
   State<ProfilePage> createState() {
     return _ProfilePage();
@@ -43,7 +45,7 @@ class _ProfilePage extends State<ProfilePage>{
                       Text( person_email_address ?? "" , style: TextStyle(),),
                       Row(
                         children: [
-                          Expanded(child: Text("No:${person_id}")),
+                          Expanded(child: Text("No:$person_id")),
                           GestureDetector(
                             onTap: (){
                               logoutAccount();

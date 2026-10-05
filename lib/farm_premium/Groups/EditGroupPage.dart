@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class EditGroupPage extends StatefulWidget {
   final dynamic group;
-  const EditGroupPage({required this.group});
+  const EditGroupPage({super.key, required this.group});
 
   @override
   State<EditGroupPage> createState() {
@@ -13,7 +13,7 @@ class EditGroupPage extends StatefulWidget {
 }
 
 class _EditGroupPage extends State<EditGroupPage> {
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   late var _name;
   late var _comment;
   String? _selectedContactId;
@@ -115,11 +115,11 @@ class _EditGroupPage extends State<EditGroupPage> {
 
   void getContacts() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI(
       "get_contacts",
-      {"farm_id": farm_id},
+      {"farm_id": farmId},
       (progress) {
         setState(() {
           _loadingContacts = progress;
@@ -138,12 +138,12 @@ class _EditGroupPage extends State<EditGroupPage> {
 
   Future<void> action() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI(
       "update_group",
       {
-        "farm_id": farm_id,
+        "farm_id": farmId,
         "id": widget.group["id"],
         "name": _name,
         "comment": _comment,

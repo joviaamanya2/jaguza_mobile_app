@@ -5,6 +5,8 @@ import '../Tasks/ChatsPage.dart';
 import '../utils/Helper.dart';
 
 class HomeManagerPage extends StatefulWidget{
+  const HomeManagerPage({super.key});
+
   @override
   State<HomeManagerPage> createState() {
     return _HomeManagerPage();

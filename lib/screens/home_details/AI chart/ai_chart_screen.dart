@@ -640,41 +640,55 @@ class _AIChatTabState extends State<AIChatTab> {
               ),
               const SizedBox(width: 8),
               Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: scheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: scheme.outlineVariant),
-                  ),
-                  child: TextField(
-                    controller: _messageController,
-                    minLines: 1,
-                    maxLines: 4,
-                    textInputAction: TextInputAction.newline,
-                    style: TextStyle(color: scheme.onSurface, fontSize: 14),
-                    decoration: InputDecoration(
-                      hintText: _isRecording ? 'Listening...' : 'Type your question...',
-                      hintStyle: TextStyle(
-                        fontSize: 14,
-                        color: scheme.onSurfaceVariant,
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 10),
-                      border: InputBorder.none,
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                          color: _isRecording ? scheme.error : scheme.onSurfaceVariant,
-                          size: 20,
-                        ),
-                        onPressed: _isRecording ? _stopListening : _startListening,
-                      ),
+                child: TextField(
+                  controller: _messageController,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.newline,
+                  style: TextStyle(color: scheme.onSurface, fontSize: 14),
+                  decoration: InputDecoration(
+                    hintText: _isRecording ? 'Listening...' : 'Type your question...',
+                    hintStyle: TextStyle(
+                      fontSize: 14,
+                      color: scheme.onSurfaceVariant,
                     ),
-                    onSubmitted: (_) => _sendMessage(),
+                    filled: true,
+                    fillColor: scheme.surfaceContainerHighest,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
+                    ),
                   ),
+                  onSubmitted: (_) => _sendMessage(),
                 ),
               ),
               const SizedBox(width: 8),
+              SizedBox(
+                width: 40,
+                height: 40,
+                child: IconButton(
+                  tooltip: _isRecording ? 'Stop voice input' : 'Voice input',
+                  padding: EdgeInsets.zero,
+                  icon: Icon(
+                    _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                    color: _isRecording ? scheme.error : scheme.onSurfaceVariant,
+                    size: 21,
+                  ),
+                  onPressed: _isRecording ? _stopListening : _startListening,
+                ),
+              ),
+              const SizedBox(width: 4),
               Container(
                 width: 44,
                 height: 44,

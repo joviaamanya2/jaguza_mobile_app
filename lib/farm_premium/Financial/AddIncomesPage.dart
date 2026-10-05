@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/Helper.dart';
 
 class AddIncomesPage extends StatefulWidget{
+  const AddIncomesPage({super.key});
+
   @override
   State<AddIncomesPage> createState() {
     return _AddIncomesPage();
@@ -14,7 +16,7 @@ class AddIncomesPage extends StatefulWidget{
 
 class _AddIncomesPage extends State<AddIncomesPage>{
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   var _item = "";
   var _amount = "";
@@ -23,17 +25,17 @@ class _AddIncomesPage extends State<AddIncomesPage>{
   var _category = "";
   var _payment_method = "";
   var _quantity = "";
-  var _user_id = "";
+  final _user_id = "";
   var _time = "";
 
   var _loading = false;
   Future<void> action() async {
 
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI("create_financial", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "item": _item,
       "type": "Income",
       "amount": _amount,
@@ -53,8 +55,8 @@ class _AddIncomesPage extends State<AddIncomesPage>{
     }, (response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           Navigator.pop(context,true);
         } else {
 

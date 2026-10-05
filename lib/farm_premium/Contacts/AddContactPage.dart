@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../utils/Helper.dart';
 
 class AddContactPage extends StatefulWidget{
+  const AddContactPage({super.key});
+
   @override
   State<AddContactPage> createState() {
     return _AddContactPage();
@@ -14,7 +16,7 @@ class AddContactPage extends StatefulWidget{
 
 class _AddContactPage extends State<AddContactPage>{
 
-  var _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
 
   var _loading = false;
 
@@ -29,7 +31,7 @@ class _AddContactPage extends State<AddContactPage>{
   var _type = "";
   var _address = "";
   var _phone_number = "";
-  var _status = "active";
+  final _status = "active";
 
 
   @override
@@ -104,10 +106,10 @@ class _AddContactPage extends State<AddContactPage>{
   Future<void> action() async {
 
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
 
     requestAPI("create_contact", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "display_as": _display_as,
       "first_name": _first_name,
       "last_name": _last_name,
@@ -125,8 +127,8 @@ class _AddContactPage extends State<AddContactPage>{
     }, (response){
       setState(() {
         if( response["status_code"] == 200 ){
-          var status_message = response["status_message"];
-          showSnackBar(context, status_message);
+          var statusMessage = response["status_message"];
+          showSnackBar(context, statusMessage);
           Navigator.pop(context,true);
         } else {
 

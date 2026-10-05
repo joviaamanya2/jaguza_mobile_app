@@ -6,6 +6,8 @@ import '../utils/Helper.dart';
 import 'AddExpensesPage.dart';
 
 class ExpensesPage extends StatefulWidget{
+  const ExpensesPage({super.key});
+
   @override
   State<ExpensesPage> createState() {
     return _ExpensesPage();
@@ -26,7 +28,7 @@ class _ExpensesPage extends State<ExpensesPage>{
             )),
 
 
-          if (expenses.length == 0 && !showExpensesProgress)
+          if (expenses.isEmpty && !showExpensesProgress)
             Center(child: Text("No expenses yet")),
 
 
@@ -52,12 +54,12 @@ class _ExpensesPage extends State<ExpensesPage>{
                               Text(expense["comment"] ?? "", style: TextStyle(fontSize: 12,),),
                             ],
                           ))),
-                      Container(
+                      SizedBox(
                           width: 40,
                           child: Text(expense["quantity"])),
-                      Container(
+                      SizedBox(
                           width: 70,
-                          child: Text("${formatNumberWithCommas(expense["amount"] ?? "")}", style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold),)),
+                          child: Text(formatNumberWithCommas(expense["amount"] ?? ""), style: TextStyle(fontSize: 12,fontWeight: FontWeight.bold),)),
                       Container(
                         padding: EdgeInsets.symmetric(vertical: 1,horizontal: 5),
                         decoration: BoxDecoration(
@@ -95,29 +97,29 @@ class _ExpensesPage extends State<ExpensesPage>{
 
   initExpenses() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
-    print(farm_id);
+    var farmId = prefs.getInt("farm_id");
+    print(farmId);
 
     var path = "get_financials";
     var data = {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "type": "expense"
     };
-    var onProgress = (progress){
+    void onProgress(progress){
       setState(() {
         showExpensesProgress = progress;
       });
-    };
-    var onSuccess = (data){
+    }
+    void onSuccess(data){
       print("expenses");
       print(data);
       setState(() {
         expenses = data;
       });
-    };
-    var onError = (){
+    }
+    void onError(){
       print("Error:");
-    };
+    }
     requestAPI(path, data, onProgress, onSuccess, onError);
   }
 

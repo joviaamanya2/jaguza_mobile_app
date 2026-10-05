@@ -7,7 +7,7 @@ import '../utils/Helper.dart';
 class AnimalMilkPage extends StatefulWidget{
 
   dynamic animal;
-  AnimalMilkPage( this.animal );
+  AnimalMilkPage( this.animal, {super.key} );
 
   @override
   State<AnimalMilkPage> createState() {
@@ -47,7 +47,7 @@ class _AnimalMilkPage extends State<AnimalMilkPage>{
         child: ListView.builder(
                   itemCount: records.length,
                   itemBuilder: (context, index) {
-                    var milk_record = records[index];
+                    var milkRecord = records[index];
 
                     return GestureDetector(
                       onTap: (){
@@ -65,8 +65,8 @@ class _AnimalMilkPage extends State<AnimalMilkPage>{
                                 Row(
                                   children: [
                                     Text("${index+1}"),
-                                    Expanded(child: Center(child: Text( milk_record["milk_date"] , style: TextStyle(fontWeight: FontWeight.bold),))),
-                                    Text("${milk_record["milk_today"]}"),
+                                    Expanded(child: Center(child: Text( milkRecord["milk_date"] , style: TextStyle(fontWeight: FontWeight.bold),))),
+                                    Text("${milkRecord["milk_today"]}"),
                                     if(selectedDay > 0  )
                                       if( records[selectedDay]["milk_today"] >= records[selectedDay-1]["milk_today"] )
                                         Icon(Icons.arrow_drop_up, color: primaryColor,)
@@ -77,14 +77,14 @@ class _AnimalMilkPage extends State<AnimalMilkPage>{
                                   ],
                                 ),
                                 if(selectedDay == index)
-                                Container(
+                                SizedBox(
                                   width: double.infinity,
                                   height: 50,
                                   child: ListView.builder(
                                     scrollDirection: Axis.horizontal,
-                                            itemCount: milk_record["milk_records"].length,
+                                            itemCount: milkRecord["milk_records"].length,
                                             itemBuilder: (context, index) {
-                                              var x = milk_record["milk_records"][index];
+                                              var x = milkRecord["milk_records"][index];
                                               return Container(
                                                 padding: EdgeInsets.symmetric(vertical: 5),
                                                 margin: EdgeInsets.only(right: 10),
@@ -117,9 +117,9 @@ class _AnimalMilkPage extends State<AnimalMilkPage>{
 
   getMilk() async {
     var prefs = await SharedPreferences.getInstance();
-    var farm_id = prefs.getInt("farm_id");
+    var farmId = prefs.getInt("farm_id");
     requestAPI("get_animal_milk", {
-      "farm_id": farm_id,
+      "farm_id": farmId,
       "animal_id":animal["id"]
     }, (progress){
       setState(() {
