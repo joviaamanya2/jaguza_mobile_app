@@ -316,8 +316,14 @@ class PhpApiService {
         'longitude': lng,
       });
 
-  Future<Map<String, dynamic>> diseases() =>
-      call('getDiseasesList', {'userId': _uid});
+  Future<Map<String, dynamic>> diseases() => call('getDiseasesList', {
+    'userId': _uid,
+    // The legacy CMD contract lists these parameters for catalog requests.
+    // Disease records are global, so use the neutral coordinates when the
+    // app has no location context for this request.
+    'latitude': 0,
+    'longitude': 0,
+  });
 
   Future<Map<String, dynamic>> signs() =>
       call('getAllSignsList', {'userId': _uid});
@@ -396,7 +402,7 @@ class PhpApiService {
         'latitude': latitude ?? 0,
         'longitude': longitude ?? 0,
         'telephone': telephone ?? '',
-        'animal_category_id': animalCategoryId ?? 0,
+        if (animalCategoryId != null) 'animal_category_id': animalCategoryId,
         'farm_id': farmId ?? 0,
         'image': imageParam(image),
       });

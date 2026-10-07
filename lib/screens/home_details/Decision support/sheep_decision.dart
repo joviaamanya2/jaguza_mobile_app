@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import './decision_topic_card.dart';
+import './decision_topic_actions.dart';
 import '../../../services/decision_support_service.dart';
 
 class SheepDecisionScreen extends StatefulWidget {
@@ -214,7 +215,7 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => TopicDetailScreen(topic: topic),
+            builder: (context) => TopicDetailScreen(topic: topic, categoryName: 'Sheep'),
           ),
         );
       },
@@ -225,8 +226,9 @@ class _SheepDecisionScreenState extends State<SheepDecisionScreen> {
 // ─── TopicDetailScreen — Using AssetImage ───────────────────────────────
 class TopicDetailScreen extends StatelessWidget {
   final DecisionTopic topic;
+  final String categoryName;
 
-  const TopicDetailScreen({super.key, required this.topic});
+  const TopicDetailScreen({super.key, required this.topic, required this.categoryName});
 
   @override
   Widget build(BuildContext context) {
@@ -542,62 +544,7 @@ class TopicDetailScreen extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 24),
-                  // Action buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Share feature coming soon'),
-                                backgroundColor: scheme.primary,
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: scheme.primary,
-                            foregroundColor: scheme.onPrimary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.share, size: 20),
-                          label: const Text(
-                            'Share',
-                            style: TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: const Text('Bookmark feature coming soon'),
-                                backgroundColor: scheme.primary,
-                              ),
-                            );
-                          },
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: scheme.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            side: BorderSide(color: scheme.primary),
-                          ),
-                          icon: const Icon(Icons.bookmark_border, size: 20),
-                          label: const Text(
-                            'Save',
-                            style: TextStyle(fontSize: 14),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  DecisionTopicActions(category: categoryName, title: topic.title, description: topic.description, details: topic.details),
                   const SizedBox(height: 20),
                 ],
               ),

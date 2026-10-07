@@ -378,13 +378,20 @@ class _JaguzaEquipmentScreenState extends State<JaguzaEquipmentScreen> {
                 onPressed: isSaving
                     ? null
                     : () async {
-                        if (titleController.text.trim().isEmpty ||
-                            priceController.text.trim().isEmpty ||
-                            locationController.text.trim().isEmpty) {
+                        final missingFields = <String>[
+                          if (titleController.text.trim().isEmpty) 'name',
+                          if (priceController.text.trim().isEmpty) 'price',
+                          if (locationController.text.trim().isEmpty) 'location',
+                        ];
+                        if (missingFields.isNotEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: const Text('Please fill in all required fields'),
+                              content: Text(
+                                'Please enter the required ${missingFields.join(', ')}.',
+                                style: TextStyle(color: scheme.onError),
+                              ),
                               backgroundColor: scheme.error,
+                              behavior: SnackBarBehavior.floating,
                             ),
                           );
                           return;
@@ -402,9 +409,14 @@ class _JaguzaEquipmentScreenState extends State<JaguzaEquipmentScreen> {
                           await _loadListings();
                         } catch (error) {
                           if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('Could not list item: $error')),
-                            );
+                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text(
+                                'Unable to list equipment. $error',
+                                style: TextStyle(color: scheme.onError),
+                              ),
+                              backgroundColor: scheme.error,
+                              behavior: SnackBarBehavior.floating,
+                            ));
                           }
                           return;
                         } finally {

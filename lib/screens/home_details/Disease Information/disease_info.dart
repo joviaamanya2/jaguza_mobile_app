@@ -1,15 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/Nagana.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/Peste%20des%20Petits%20Ruminants.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/brucellosis.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/coccidiosis.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/displaced_abomusam.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/foot_and_mouth.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/mastitis.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/new_castle.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/swine_fever.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/vibrosis.dart';
-import 'package:jaguza_app/screens/home_details/Disease%20Information/disease%20details/white_muscle_disease.dart';
 import 'package:jaguza_app/services/api_service.dart';
 class AnimalDiseasesScreen extends StatefulWidget {
   const AnimalDiseasesScreen({super.key});
@@ -27,168 +16,10 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
     'All', 'Cattle', 'Poultry', 'Small Ruminants', 'Swine',
   ];
 
-  final List<DiseaseItem> _allDiseases = [
-    DiseaseItem(
-      title: 'Foot-and-Mouth Disease',
-      animal: 'Cattle, Sheep, Pigs',
-      severity: 'High',
-      severityColor: const Color(0xFFE53935),
-      icon: Icons.pets_rounded,
-      category: 'Cattle',
-      description: 'Highly contagious viral disease affecting cloven-hoofed animals.',
-      screen: const FootAndMouthDetail(),
-    ),
-    DiseaseItem(
-      title: 'Displaced Abomasum in Cattle',
-      animal: 'Cattle',
-      severity: 'Medium',
-      severityColor: const Color(0xFFFFA000),
-      icon: Icons.tab_unselected_sharp,
-      category: 'Cattle',
-      description: 'Abomasum displaces from its normal position, common post-calving.',
-      screen: const DisplacedAbomasumDetail(),
-    ),
-    DiseaseItem(
-      title: 'White Muscle Disease',
-      animal: 'Cattle, Sheep',
-      severity: 'Medium',
-      severityColor: const Color(0xFFFFA000),
-      icon: Icons.fitness_center_rounded,
-      category: 'Small Ruminants',
-      description: 'Nutritional muscular dystrophy caused by selenium/vitamin E deficiency.',
-      screen: const WhiteMuscleDiseaseDetail(),
-    ),
-    DiseaseItem(
-      title: 'Newcastle Disease',
-      animal: 'Poultry',
-      severity: 'High',
-      severityColor: const Color(0xFFE53935),
-      icon: Icons.coronavirus_rounded,
-      category: 'Poultry',
-      description: 'Contagious viral disease causing respiratory and nervous symptoms in birds.',
-      screen: const NewcastleDiseaseDetail(),
-    ),
-    DiseaseItem(
-      title: 'Mastitis',
-      animal: 'Cattle, Goats',
-      severity: 'High',
-      severityColor: const Color(0xFFE53935),
-      icon: Icons.water_drop_rounded,
-      category: 'Cattle',
-      description: 'Inflammation of the mammary gland, impacting milk production.',
-      screen: const MastitisDetail(),
-    ),
-    DiseaseItem(
-      title: 'African Swine Fever',
-      animal: 'Swine',
-      severity: 'High',
-      severityColor: const Color(0xFFE53935),
-      icon: Icons.warning_rounded,
-      category: 'Swine',
-      description: 'Highly contagious viral hemorrhagic fever with high mortality rates.',
-      screen: const AfricanSwineFeverDetail(),
-    ),
-    DiseaseItem(
-      title: 'Coccidiosis',
-      animal: 'Poultry, Cattle',
-      severity: 'Medium',
-      severityColor: const Color(0xFFFFA000),
-      icon: Icons.bug_report_rounded,
-      category: 'Poultry',
-      description: 'Parasitic disease affecting the intestinal tract of animals.',
-      screen: const CoccidiosisDetail(),
-    ),
-    DiseaseItem(
-      title: 'Brucellosis',
-      animal: 'Cattle, Goats, Pigs',
-      severity: 'High',
-      severityColor: const Color(0xFFE53935),
-      icon: Icons.coronavirus_rounded,
-      category: 'Cattle',
-      description: 'Zoonotic bacterial disease causing reproductive failure in livestock.',
-      screen: const BrucellosisDetail(),
-    ),
-    DiseaseItem(
-      title: 'Peste des Petits Ruminants',
-      animal: 'Sheep, Goats,Rabbits',
-      severity: 'High',
-      severityColor: const Color(0xFFE53935),
-      icon: Icons.coronavirus_rounded,
-      category: 'Small Ruminants',
-      description: 'Viral disease causing fever, sores, and high mortality in small ruminants.',
-      screen: const PPRDetail(),
-    ),
-      DiseaseItem(
-    title: 'Vibriosis (Campylobacter)',
-    animal: 'Cattle',
-    severity: 'High',
-    severityColor: const Color(0xFFE53935),
-    icon: Icons.bug_report_rounded,
-    category: 'Reproductive',
-    description: 'A bacterial venereal disease causing infertility, early embryonic death, and prolonged calving intervals in cows.',
-    screen: const VibriosisDetail(),
-  ),
-  DiseaseItem(
-    title: 'Acetonaemia (Ketosis)',
-    animal: 'Cattle',
-    severity: 'Medium',
-    severityColor: const Color(0xFFFFA000),
-    icon: Icons.bloodtype_rounded,
-    category: 'Metabolic',
-    description: 'A metabolic disorder in high-producing dairy cows occurring after calving due to a negative energy balance and high ketone levels.',
-    screen: const _PlaceholderDetailScreen(title: 'Acetonaemia'),
-  ),
-  DiseaseItem(
-    title: 'Acon Poisoning',
-    animal: 'Cattle',
-    severity: 'High',
-    severityColor: const Color(0xFFE53935),
-    icon: Icons.local_florist_rounded,
-    category: 'Toxicology',
-    description: 'Toxicosis caused by ingesting poisonous plants containing alkaloids, leading to severe gastrointestinal and neurological distress.',
-    screen: const _PlaceholderDetailScreen(title: 'Acon Poisoning'),
-  ),
-  DiseaseItem(
-    title: 'Anaplasmosis',
-    animal: 'Cattle',
-    severity: 'High',
-    severityColor: const Color(0xFFE53935),
-    icon: Icons.bug_report_rounded,
-    category: 'Blood',
-    description: 'An infectious blood disease transmitted by ticks that destroys red blood cells, causing severe anemia, fever, and jaundice.',
-    screen: const _PlaceholderDetailScreen(title: 'Anaplasmosis'),
-  ),
-  DiseaseItem(
-    title: 'Anthrax',
-    animal: 'Cattle',
-    severity: 'High',
-    severityColor: const Color(0xFFE53935),
-    icon: Icons.warning_amber_rounded,
-    category: 'Bacterial',
-    description: 'A highly fatal zoonotic bacterial disease that often causes sudden death without prior symptoms, characterized by bleeding from body orifices.',
-    screen: const _PlaceholderDetailScreen(title: 'Anthrax'),
-  ),
-  DiseaseItem(
-    title: 'Bloat in Cattle',
-    animal: 'Cattle',
-    severity: 'High',
-    severityColor: const Color(0xFFE53935),
-    icon: Icons.circle_outlined,
-    category: 'Digestive',
-    description: 'A deadly digestive disorder where excess gas builds up in the rumen, causing severe left-sided abdominal distension and breathing difficulty.',
-    screen: const _PlaceholderDetailScreen(title: 'Bloat in Cattle'),
-  ),
-      DiseaseItem(
-      title: 'Nagana (Sleeping Sickness)',
-      animal: 'Cattle',
-      severity: 'High',
-      severityColor: const Color(0xFFE53935),
-      icon: Icons.pest_control_rounded,
-      category: 'Parasitic',
-      description: 'A parasitic disease transmitted by tsetse flies causing severe anemia, fever, weight loss, and extreme lethargy in livestock.',
-      screen: const NaganaDetail(),
-    ),
-  ];
+  List<DiseaseItem> _allDiseases = [];
+  bool _isLoading = true;
+  String? _loadError;
+
 
   @override
   void initState() {
@@ -211,24 +42,29 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
           severityColor: _severityColor(severity),
           icon: Icons.medical_information_rounded,
           category: category,
-          description: '${disease['symptoms'] ?? disease['description'] ?? ''}',
+          description: '${disease['description'] ?? disease['symptoms'] ?? ''}',
             imageUrl: '${disease['thumbnail'] ?? ''}'.trim().isEmpty
               ? null
               : '${disease['thumbnail']}',
-          screen: _PlaceholderDetailScreen(
-            title: '${disease['name'] ?? 'Disease'}',
-          ),
+          screen: _ApiDiseaseDetailScreen(disease: disease),
         );
       }).toList();
-      if (mounted && diseases.isNotEmpty) {
+      if (mounted) {
         setState(() {
           _allDiseases
             ..clear()
             ..addAll(diseases);
+          _isLoading = false;
+          _loadError = null;
         });
       }
     } catch (_) {
-      // Keep the built-in catalog available if the server is temporarily unavailable.
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _loadError = 'Could not load diseases from the dashboard. Please try again.';
+        });
+      }
     }
   }
 
@@ -373,6 +209,24 @@ class _AnimalDiseasesScreenState extends State<AnimalDiseasesScreen> {
   }
 
   Widget _buildDiseaseList() {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+    if (_loadError != null) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Text(_loadError!, textAlign: TextAlign.center),
+          const SizedBox(height: 12),
+          FilledButton(onPressed: () {
+            setState(() {
+              _isLoading = true;
+              _loadError = null;
+            });
+            _loadBackendDiseases();
+          }, child: const Text('Retry')),
+        ]),
+      );
+    }
     final diseases = _filteredDiseases;
     if (diseases.isEmpty) {
       final scheme = Theme.of(context).colorScheme;
@@ -567,42 +421,63 @@ class DiseaseItem {
 // ═══════════════════════════════════════
 //  PLACEHOLDER SCREEN
 // ═══════════════════════════════════════
-class _PlaceholderDetailScreen extends StatelessWidget {
-  final String title;
-  const _PlaceholderDetailScreen({required this.title});
+/// Detail view for catalog entries returned by the API. The fields mirror the
+/// disease information shown in the admin dashboard.
+class _ApiDiseaseDetailScreen extends StatelessWidget {
+  final Map<String, dynamic> disease;
+  const _ApiDiseaseDetailScreen({required this.disease});
 
   @override
   Widget build(BuildContext context) {
+    final name = '${disease['name'] ?? 'Disease'}';
+    final fields = <(String, String)>[
+      ('Description', '${disease['description'] ?? ''}'),
+      ('Species affected', '${disease['species_affected'] ?? ''}'),
+      ('Symptoms', '${disease['symptoms'] ?? ''}'),
+      ('Treatment', '${disease['treatment'] ?? ''}'),
+      ('Prevention', '${disease['prevention'] ?? ''}'),
+      ('Severity', '${disease['severity'] ?? ''}'),
+      ('Outbreak risk', '${disease['outbreak_risk'] ?? ''}'),
+    ].where((field) => field.$2.trim().isNotEmpty && field.$2 != 'null').toList();
+    final image = '${disease['thumbnail'] ?? ''}'.trim();
     final scheme = Theme.of(context).colorScheme;
+
     return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(title),
-      ),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.medical_information_rounded, size: 64, color: scheme.onSurfaceVariant),
+      appBar: AppBar(title: Text(name)),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          if (image.isNotEmpty) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(14),
+              child: Image.network(image, height: 210, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink()),
+            ),
             const SizedBox(height: 16),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: scheme.onSurface,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Disease details coming soon',
-              style: TextStyle(
-                fontSize: 14,
-                color: scheme.onSurfaceVariant,
-              ),
-            ),
           ],
-        ),
+          for (final field in fields)
+            Card(
+              margin: const EdgeInsets.only(bottom: 10),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(field.$1, style: TextStyle(
+                      color: scheme.primary,
+                      fontWeight: FontWeight.w700,
+                      fontSize: 14,
+                    )),
+                    const SizedBox(height: 7),
+                    Text(field.$2, style: TextStyle(
+                      color: scheme.onSurface,
+                      height: 1.45,
+                    )),
+                  ],
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

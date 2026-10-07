@@ -74,7 +74,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     _TopCategory(label: 'Housing', icon: Icons.warehouse_rounded, filterValue: 'Housing'),
   ];
 
-  bool _isEquipmentCategory(String category) => category == 'Equipment' || category == 'Housing';
+  bool _isEquipmentCategory(String category) {
+    final value = category.toLowerCase();
+    return value.contains('equipment') ||
+        value.contains('housing') ||
+        value.contains('machinery') ||
+        value.contains('tools');
+  }
 
   List<Product> _applySort(List<Product> list) {
     if (_sortAscending == null) return list;
@@ -112,6 +118,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
       return matchesSearch && matchesCategory;
     }).toList();
     return _applySort(list);
+  }
+
+  List<Product> _recentProducts({required bool equipment}) {
+    final products = _products
+        .where((product) =>
+            product.inStock > 0 &&
+            _isEquipmentCategory(product.category) == equipment)
+        .toList();
+    products.sort((a, b) {
+      final byDate = (b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0))
+          .compareTo(a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0));
+      if (byDate != 0) return byDate;
+      final aId = int.tryParse(a.id.replaceFirst('dashboard_', '')) ?? 0;
+      final bId = int.tryParse(b.id.replaceFirst('dashboard_', '')) ?? 0;
+      return bId.compareTo(aId);
+    });
+    return products;
   }
 
   // Sample sold products
@@ -366,6 +389,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         final category = _displayCategory(rawCategory);
         final filename = '${listing['picture'] ?? listing['image'] ?? ''}';
         final status = '${listing['product_status'] ?? listing['status'] ?? 'active'}'.toLowerCase();
+        final createdAt = DateTime.tryParse(
+          '${listing['created_at'] ?? listing['createdAt'] ?? listing['date_created'] ?? ''}',
+        );
         final seller = listing['seller'] is Map
             ? Map<String, dynamic>.from(listing['seller'] as Map)
             : listing['user'] is Map
@@ -375,6 +401,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           id: '${listing['id'] ?? ''}',
           name: '${listing['name'] ?? listing['title'] ?? 'Marketplace listing'}',
           category: category,
+          categoryId: '${categoryRaw is Map ? categoryRaw['id'] ?? listing['category_id'] ?? '' : listing['category_id'] ?? ''}',
           price: double.tryParse('${listing['unit_price_buyer'] ?? listing['unit_price_seller'] ?? listing['price'] ?? 0}')?.round() ?? 0,
           unit: 'per ${listing['unit_of_measure'] ?? 'unit'}',
           seller: '${seller['name'] ?? listing['seller_name'] ?? listing['author'] ?? 'Seller #${listing['user_id'] ?? ''}'}',
@@ -388,6 +415,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
               : 0,
           description: '${listing['description'] ?? ''}',
           status: status,
+          createdAt: createdAt,
           isServerBacked: true,
         );
       }).toList();
@@ -420,6 +448,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           final category = _displayCategory(rawCategoryName);
           final normalizedStatus =
               '${listing['status'] ?? 'available'}'.toLowerCase();
+          final createdAt = DateTime.tryParse(
+            '${listing['created_at'] ?? listing['createdAt'] ?? listing['date_created'] ?? ''}',
+          );
           final available = const {
             'active',
             'available',
@@ -446,6 +477,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             inStock: available ? 1 : 0,
             description: '${listing['description'] ?? ''}',
             status: normalizedStatus,
+            createdAt: createdAt,
             isDashboardListing: true,
           );
         }).toList();
@@ -1003,7 +1035,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         padding: const EdgeInsets.only(bottom: 88),
         children: [
           const SizedBox(height: 8),
-          _buildTopCategoriesBanner(),
+          _buildTopCategoriesBanner(_recentProducts(equipment: false).take(2).toList()),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 20, 16, 10),
             child: Row(
@@ -1075,43 +1107,22 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     );
   }
 
-  Widget _buildTopCategoriesBanner() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Padding(
-          padding: EdgeInsets.only(bottom: 12),
+  Widget _buildTopCategoriesBanner(List<Product> products) {
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      _marketSectionHeader('Top Categories'),
+      if (_isLoadingMarketplace && products.isEmpty)
+        const SizedBox(height: 180, child: Center(child: CircularProgressIndicator()))
+      else if (products.isNotEmpty)
+        _buildProductsGrid(products)
+      else
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
           child: Text(
-            'Top Categories',
-            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+            'Recently added products will appear here.',
+            style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
           ),
         ),
-        if (_marketCategories.isEmpty && _isLoadingMarketplace)
-          const SizedBox(
-            height: 108,
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else if (_marketCategories.isNotEmpty)
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final cardWidth = (constraints.maxWidth - 16) / 2;
-              return SizedBox(
-                height: 108,
-                child: ListView.separated(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: _marketCategories.length,
-                  separatorBuilder: (_, __) => const SizedBox(width: 10),
-                  itemBuilder: (context, index) => _marketCategoryCard(
-                    category: _marketCategories[index],
-                    width: cardWidth,
-                    onTap: () => _selectMarketplaceCategory(_marketCategories[index]),
-                  ),
-                ),
-              );
-            },
-          ),
-      ]),
-    );
+    ]);
   }
 
   Widget _marketSectionHeader(String title, {VoidCallback? onViewMore}) {
@@ -1129,6 +1140,95 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
             ),
         ]),
     );
+  }
+
+  Future<void> _editProduct(Product product) async {
+    final nameController = TextEditingController(text: product.name);
+    final priceController = TextEditingController(text: '${product.price}');
+    final quantityController = TextEditingController(text: '${product.inStock}');
+    final unitController = TextEditingController(text: product.unit.replaceFirst('per ', ''));
+    final locationController = TextEditingController(text: product.location);
+    final descriptionController = TextEditingController(text: product.description);
+    final formKey = GlobalKey<FormState>();
+
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        fullscreenDialog: true,
+        builder: (pageContext) => Scaffold(
+          appBar: AppBar(title: const Text('Edit Listing')),
+          body: Form(
+            key: formKey,
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                TextFormField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Product name', border: OutlineInputBorder()),
+                  validator: (value) => value == null || value.trim().isEmpty ? 'Enter a product name' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Price (UGX)', border: OutlineInputBorder()),
+                  validator: (value) => (double.tryParse(value ?? '') ?? 0) <= 0 ? 'Enter a valid price' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: quantityController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Quantity available', border: OutlineInputBorder()),
+                  validator: (value) => (int.tryParse(value ?? '') ?? -1) < 0 ? 'Enter a valid quantity' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(controller: unitController, decoration: const InputDecoration(labelText: 'Unit of measure', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextFormField(controller: locationController, decoration: const InputDecoration(labelText: 'Location', border: OutlineInputBorder())),
+                const SizedBox(height: 12),
+                TextFormField(controller: descriptionController, maxLines: 4, decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder())),
+                const SizedBox(height: 24),
+                FilledButton(
+                  onPressed: () async {
+                    if (!formKey.currentState!.validate()) return;
+                    try {
+                      await _marketApi.updateProduct(product.id, {
+                        'name': nameController.text.trim(),
+                        'description': descriptionController.text.trim(),
+                        'unit_of_measure': unitController.text.trim(),
+                        'stock_available': quantityController.text.trim(),
+                        'unit_price_seller': priceController.text.trim(),
+                        'unit_price_buyer': priceController.text.trim(),
+                        'seller_location': locationController.text.trim(),
+                        if (product.sellerId != null) 'user_id': '${product.sellerId}',
+                        if (product.categoryId.isNotEmpty) 'category_id': product.categoryId,
+                      });
+                      if (pageContext.mounted) Navigator.pop(pageContext, true);
+                    } catch (error) {
+                      if (pageContext.mounted) {
+                        ScaffoldMessenger.of(pageContext).showSnackBar(
+                          SnackBar(content: Text('Could not update listing: $error')),
+                        );
+                      }
+                    }
+                  },
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    nameController.dispose();
+    priceController.dispose();
+    quantityController.dispose();
+    unitController.dispose();
+    locationController.dispose();
+    descriptionController.dispose();
+    if (saved == true) {
+      await _loadMarketplaceListings();
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Listing updated.')));
+    }
   }
 
   Widget _marketCategoryCard({
@@ -1277,6 +1377,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                           ),
                         ),
                         title: Text(product.name, maxLines: 1, overflow: TextOverflow.ellipsis),
+                        trailing: product.isDashboardListing || int.tryParse(product.id) == null
+                            ? const Tooltip(
+                                message: 'Management for this listing type is not available yet.',
+                                child: Icon(Icons.info_outline_rounded),
+                              )
+                            : PopupMenuButton<String>(
+                                onSelected: (action) {
+                                  if (action == 'edit') _editProduct(product);
+                                  if (action == 'delete') _deleteProduct(product);
+                                },
+                                itemBuilder: (_) => const [
+                                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                                ],
+                              ),
                         subtitle: Text(
                           'UGX ${_formatPrice(product.price)} · ${product.status}',
                           maxLines: 1,
@@ -1305,6 +1420,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
         children: [
           const SizedBox(height: 12),
           const SizedBox(height: 8),
+          _marketSectionHeader('Top Categories'),
+          if (_recentProducts(equipment: true).isNotEmpty)
+            _buildProductsGrid(_recentProducts(equipment: true).take(2).toList())
+          else
+            const Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Text('Recently added products will appear here.'),
+            ),
           _sectionHeader(
             'Featured Products',
             onViewMore: all.length > 4
@@ -1981,7 +2104,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
   }
 
   // ============= SELL PRODUCT DIALOG =============
-  Future<void> _showSellProductDialog(BuildContext context, {String initialCategory = 'Cattle'}) async {
+  Future<void> _showSellProductDialog(BuildContext context, {String? initialCategory}) async {
+    final isEquipmentTab = _selectedTab == 1;
     if (_marketCategories.isEmpty) {
       try {
         final categories = (await _marketApi.getCategories())
@@ -1996,17 +2120,31 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
           });
         }
       } catch (error) {
-        if (mounted) {
+        if (mounted && !isEquipmentTab) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Could not load marketplace categories: $error')),
+            SnackBar(
+              content: Text(
+                'Could not load product categories: $error',
+                style: TextStyle(color: Theme.of(context).colorScheme.onError),
+              ),
+              backgroundColor: Theme.of(context).colorScheme.error,
+              behavior: SnackBarBehavior.floating,
+            ),
           );
+          return;
         }
-        return;
       }
     }
-    if (_marketCategories.isEmpty) {
+    if (_marketCategories.isEmpty && !isEquipmentTab) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No product categories are available yet.')),
+        SnackBar(
+          content: Text(
+            'Add a product category before listing farm products.',
+            style: TextStyle(color: Theme.of(context).colorScheme.onError),
+          ),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          behavior: SnackBarBehavior.floating,
+        ),
       );
       return;
     }
@@ -2016,31 +2154,70 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
     final unitController = TextEditingController(text: 'unit');
     final descriptionController = TextEditingController();
     final locationController = TextEditingController();
+    final initialType = _selectedTab == 1 ? 'Equipment' : 'Farm product';
+    String selectedType = initialType;
     String selectedCategoryId = '';
     File? selectedImage;
     bool isUploading = false;
     final categories = _marketCategories
         .where((category) => '${category['title']}'.toLowerCase() != 'all')
         .toList();
-    final initialCategoryEntry = categories.cast<Map<String, dynamic>?>().firstWhere(
-      (category) => '${category?['title']}'.toLowerCase() == initialCategory.toLowerCase(),
-      orElse: () => categories.isEmpty ? null : categories.first,
+    List<Map<String, dynamic>> categoriesForType(String type) => categories.where((category) {
+      final title = _displayCategory('${category['title'] ?? ''}');
+      return type == 'Equipment'
+          ? _isEquipmentCategory(title)
+          : !_isEquipmentCategory(title);
+    }).toList();
+    final initialChoices = categoriesForType(selectedType);
+    final requestedCategory = initialCategory ??
+        (selectedType == 'Equipment' ? 'Equipment' : 'Cattle');
+    final initialCategoryEntry = initialChoices.cast<Map<String, dynamic>?>().firstWhere(
+      (category) => '${category?['title']}'.toLowerCase() == requestedCategory.toLowerCase(),
+      orElse: () => initialChoices.isEmpty ? null : initialChoices.first,
     );
     selectedCategoryId = '${initialCategoryEntry?['id'] ?? ''}';
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => StatefulBuilder(
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        fullscreenDialog: true,
+        builder: (context) => StatefulBuilder(
         builder: (context, setState) {
           final scheme = Theme.of(context).colorScheme;
-          return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            title: const Text('Sell Your Product'),
-            content: SingleChildScrollView(
+          return Scaffold(
+            appBar: AppBar(title: const Text('Sell Your Product')),
+            body: SafeArea(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedType,
+                    decoration: const InputDecoration(
+                      labelText: 'Listing type *',
+                      border: OutlineInputBorder(),
+                    ),
+                    items: const [
+                      DropdownMenuItem(
+                        value: 'Farm product',
+                        child: Text('Farm product', overflow: TextOverflow.ellipsis),
+                      ),
+                      DropdownMenuItem(
+                        value: 'Equipment',
+                        child: Text('Equipment', overflow: TextOverflow.ellipsis),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      if (value == null) return;
+                      setState(() {
+                        selectedType = value;
+                        final choices = categoriesForType(value);
+                        selectedCategoryId = choices.isEmpty ? '' : '${choices.first['id']}';
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
                   // Image Upload Section
                   GestureDetector(
                     onTap: () async {
@@ -2102,13 +2279,22 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
 
                   DropdownButtonFormField<String>(
                     initialValue: selectedCategoryId.isEmpty ? null : selectedCategoryId,
-                    decoration: const InputDecoration(
-                      labelText: 'Category *',
+                    decoration: InputDecoration(
+                      labelText: selectedType == 'Equipment' ? 'Category (optional)' : 'Category *',
                       border: OutlineInputBorder(),
                     ),
-                    items: categories
-                        .map((cat) => DropdownMenuItem(value: '${cat['id']}', child: Text('${cat['title'] ?? 'Category'}')))
+                    items: categoriesForType(selectedType)
+                        .map((cat) => DropdownMenuItem(
+                              value: '${cat['id']}',
+                              child: Text(
+                                '${cat['title'] ?? 'Category'}',
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ))
                         .toList(),
+                    hint: Text(categoriesForType(selectedType).isEmpty
+                        ? 'No ${selectedType.toLowerCase()} categories available'
+                        : 'Choose a category'),
                     onChanged: (value) => setState(() => selectedCategoryId = value ?? ''),
                   ),
                   const SizedBox(height: 12),
@@ -2177,20 +2363,32 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('Cancel', style: TextStyle(color: scheme.onSurfaceVariant)),
-              ),
-              ElevatedButton(
+            ),
+            bottomNavigationBar: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: isUploading ? null : () => Navigator.pop(context),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
                 onPressed: () async {
-                  if (nameController.text.isNotEmpty &&
-                      priceController.text.isNotEmpty &&
-                      quantityController.text.isNotEmpty &&
-                      unitController.text.isNotEmpty &&
-                      selectedCategoryId.isNotEmpty &&
-                      selectedImage != null &&
-                      locationController.text.isNotEmpty) {
+                  if (isUploading) return;
+                  final missingFields = <String>[
+                    if (nameController.text.trim().isEmpty) 'product name',
+                    if (priceController.text.trim().isEmpty) 'price',
+                    if (quantityController.text.trim().isEmpty) 'quantity',
+                    if (unitController.text.trim().isEmpty) 'unit of measure',
+                    if (selectedType != 'Equipment' && selectedCategoryId.isEmpty) 'category',
+                    if (selectedImage == null) 'product photo',
+                    if (locationController.text.trim().isEmpty) 'location',
+                  ];
+                  if (missingFields.isEmpty) {
 
                     setState(() => isUploading = true);
                     try {
@@ -2208,16 +2406,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                           'unit_price_buyer': priceController.text.trim(),
                           'seller_location': locationController.text.trim(),
                           'user_id': '$userId',
-                          'category_id': selectedCategoryId,
+                          if (selectedCategoryId.isNotEmpty) 'category_id': selectedCategoryId,
                         },
                         picture: selectedImage!,
                       );
                       await _loadMarketplaceListings();
                     } catch (error) {
                       if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Could not list product: $error')),
-                        );
+                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                          content: Text(
+                            'Unable to save listing. $error',
+                            style: TextStyle(color: scheme.onError),
+                          ),
+                          backgroundColor: scheme.error,
+                          behavior: SnackBarBehavior.floating,
+                        ));
                       }
                       return;
                     } finally {
@@ -2237,8 +2440,12 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   } else {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: const Text('Complete all required fields and upload a product photo'),
+                        content: Text(
+                          'Complete these required fields: ${missingFields.join(', ')}.',
+                          style: TextStyle(color: scheme.onError),
+                        ),
                         backgroundColor: scheme.error,
+                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   }
@@ -2247,11 +2454,21 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> {
                   backgroundColor: scheme.primary,
                   foregroundColor: scheme.onPrimary,
                 ),
-                child: const Text('List Product'),
+                child: isUploading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('List Product', maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
-            ],
+                  ),
+                ]),
+              ),
+            ),
           );
         },
+        ),
       ),
     );
   }
@@ -2789,6 +3006,7 @@ class Product {
   final String id;
   final String name;
   final String category;
+  final String categoryId;
   final int price;
   final String unit;
   final String seller;
@@ -2802,6 +3020,7 @@ class Product {
   final int inStock;
   final String description;
   final String status;
+  final DateTime? createdAt;
   final bool isServerBacked;
   final bool isDashboardListing;
 
@@ -2809,6 +3028,7 @@ class Product {
     required this.id,
     required this.name,
     required this.category,
+    this.categoryId = '',
     required this.price,
     required this.unit,
     required this.seller,
@@ -2822,6 +3042,7 @@ class Product {
     required this.inStock,
     required this.description,
     this.status = 'active',
+    this.createdAt,
     this.isServerBacked = false,
     this.isDashboardListing = false,
   });

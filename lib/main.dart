@@ -88,7 +88,7 @@ class _MyAppState extends State<MyApp> {
       // Add these to provide MaterialLocalizations
       localizationsDelegates: const [
         AppLocalizations.delegate,
-        GlobalMaterialLocalizations.delegate,
+        _JaguzaMaterialLocalizationsDelegate(),
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
@@ -179,4 +179,27 @@ class _MyAppState extends State<MyApp> {
       focusedErrorBorder: border(colorScheme.error, width: 1.5),
     );
   }
+}
+
+/// Flutter does not ship Material strings for every language Jaguza supports.
+/// Keep the selected locale for app translations while using English Material
+/// strings as a safe fallback so widgets such as drawers remain localized.
+class _JaguzaMaterialLocalizationsDelegate
+    extends LocalizationsDelegate<MaterialLocalizations> {
+  const _JaguzaMaterialLocalizationsDelegate();
+
+  @override
+  bool isSupported(Locale locale) => true;
+
+  @override
+  Future<MaterialLocalizations> load(Locale locale) {
+    final materialLocale =
+        GlobalMaterialLocalizations.delegate.isSupported(locale)
+            ? locale
+            : const Locale('en');
+    return GlobalMaterialLocalizations.delegate.load(materialLocale);
+  }
+
+  @override
+  bool shouldReload(_JaguzaMaterialLocalizationsDelegate old) => false;
 }

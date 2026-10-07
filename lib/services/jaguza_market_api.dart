@@ -70,6 +70,14 @@ class JaguzaMarketApi {
     await _decode(await http.delete(Uri.parse('$baseUrl/products/${Uri.encodeComponent(id)}'), headers: _jsonHeaders).timeout(_timeout));
   }
 
+  Future<void> updateProduct(String id, Map<String, String> fields) async {
+    await _decode(await http.put(
+      Uri.parse('$baseUrl/products/${Uri.encodeComponent(id)}'),
+      headers: _jsonHeaders,
+      body: jsonEncode(fields),
+    ).timeout(_timeout));
+  }
+
   Future<List<dynamic>> getProductComments(String productId) async =>
       _data(await _decode(await http.get(Uri.parse('$baseUrl/product/comments/${Uri.encodeComponent(productId)}'), headers: _jsonHeaders).timeout(_timeout)));
 

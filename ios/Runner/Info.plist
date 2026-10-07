@@ -4,6 +4,10 @@
 <dict>
 	<key>NSCameraUsageDescription</key>
 	<string>Jaguza uses the camera to scan QR codes.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Jaguza uses the microphone for voice input in the AI assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Jaguza uses speech recognition to turn your voice into text for the AI assistant.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>

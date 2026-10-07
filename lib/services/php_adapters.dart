@@ -304,15 +304,25 @@ class PhpAdapters {
       'symptoms': symptoms.isEmpty ? _stripHtml('${d['description'] ?? ''}') : symptoms,
       'prevention': _stripHtml('${d['prevention'] ?? ''}'),
       'treatment': _stripHtml('${d['treatment'] ?? ''}'),
-      'severity': 'medium',
+      // Keep the values supplied by the admin/API so the app can render the
+      // same severity and outbreak information as the dashboard.
+      'severity': d['severity'] ?? d['severity_level'] ?? 'medium',
+      'outbreak_risk': d['outbreak_risk'] ?? d['risk'],
       'thumbnail': d['photo'],
       'doctors': doctors,
+      'signs': signs,
     };
   }
 
   static Future<List<Map<String, dynamic>>> diseases() async {
     final r = await _php.diseases();
-    return PhpApiService.listOf(r['listing']).map(_disease).toList();
+    // CMD responses are inconsistent: some commands return `listing`, while
+    // a bare JSON array is wrapped as `results` by PhpApiService.call().
+    dynamic rows = r['listing'] ?? r['diseases'] ?? r['results'] ?? r['data'];
+    if (rows is Map) {
+      rows = rows['listing'] ?? rows['diseases'] ?? rows['results'] ?? rows['data'];
+    }
+    return PhpApiService.listOf(rows).map(_disease).toList();
   }
 
   /// Keywords that identify each in-app symptom label inside the server's sign names.
