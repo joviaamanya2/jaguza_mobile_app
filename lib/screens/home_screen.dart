@@ -4,20 +4,16 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:jaguza_app/screens/qr_scanner_screen.dart';
 import 'package:jaguza_app/screens/home_details/Decision%20support/decison_support.dart';
 import 'package:jaguza_app/screens/home_details/Disease%20Information/disease_info.dart';
-import 'package:jaguza_app/screens/home_details/Equipment/jaguza_equipment.dart';
 import 'package:jaguza_app/screens/home_details/Gestation%20tracker/gestation_tracker.dart';
 import 'package:jaguza_app/farm_premium/farm_premium_app.dart';
-import 'package:jaguza_app/screens/home_details/My%20farm/my_farm.dart';
 import 'package:jaguza_app/screens/home_details/Veterinary%20Doctors/veterinary_doctors.dart';
 import 'package:jaguza_app/screens/home_details/Videos%20screen/videos_screen.dart';
 import 'package:jaguza_app/screens/home_details/weather%20updates/weather_updates.dart';
 import '../screens/home_details/Explore Screen/explore_screen.dart';
 import '../screens/home_details/AI chart/ai_chart_screen.dart';
-import '../screens/home_details/Profile/profile_screen.dart';
 import '../screens/home_details/Report Sickness/report_sickness.dart';
 import '../screens/home_details/Disease Information/disease_diagnosis.dart';
 import '../screens/home_details/Market place/market_place.dart';
-import '../screens/home_details/Settings/settings_screen.dart';
 import './home_details/advertisement.dart';
 import './home_details/jaguza_updates_screen.dart';
 import '../services/app_localizations.dart';
@@ -32,496 +28,10 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
-
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      body: const HomeTab(),
-      drawer: _buildDrawer(),
-    );
-  }
-
-  void _launchWebsite(String url) async {
-    final errorColor = Theme.of(context).colorScheme.error;
-    try {
-      String fullUrl = url;
-      if (!fullUrl.startsWith('http://') && !fullUrl.startsWith('https://')) {
-        fullUrl = 'https://$fullUrl';
-      }
-
-      final Uri uri = Uri.parse(fullUrl);
-      final bool canLaunch = await canLaunchUrl(uri);
-
-      if (canLaunch) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.tr('Could not open website. Please try again.')),
-              backgroundColor: errorColor,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${context.tr('Error')}: ${e.toString()}'),
-            backgroundColor: errorColor,
-          ),
-        );
-      }
-    }
-  }
-
-  Widget _buildDrawer() {
-    final theme = Theme.of(context);
-    final scheme = theme.colorScheme;
-    return Drawer(
-      backgroundColor: theme.cardColor,
-      child: Column(
-        children: [
-          // Drawer Header - Solid Green
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 48, 24, 20),
-            width: double.infinity,
-            color: scheme.primary, // Solid color, no gradient
-            child: Row(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.3),
-                    ),
-                  ),
-                  child: const Icon(
-                    Icons.agriculture_rounded,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Jaguza',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      context.tr('Livestock Management'),
-                      style: const TextStyle(
-                        color: Color(0xFF81C784),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Scrollable content
-          Expanded(
-            child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildDrawerSection(
-                    title: context.tr('Farm Expenses'),
-                    icon: Icons.payments_outlined,
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MyFarmScreen()),
-                      );
-                    },
-                  ),
-                  Divider(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    height: 1,
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.dynamic_feed_rounded,
-                    title: context.tr('Feed'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => _FullScreenPage(
-                            title: context.tr('Feed'),
-                            child: const ExploreScreen(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.help_outline_rounded,
-                    title: context.tr('Veterinary Help'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => _FullScreenPage(
-                            title: context.tr('Veterinary Doctors'),
-                            child: const VeterinaryDoctorsScreen(),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.groups_outlined,
-                    title: context.tr('Labour'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const MyFarmScreen()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.warehouse_rounded,
-                    title: context.tr('Equipment and Housing'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const JaguzaEquipmentScreen()),
-                      );
-                    },
-                  ),
-                  Divider(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    height: 16,
-                  ),
-                  _buildDrawerSection(
-                    title: context.tr('Account'),
-                    icon: Icons.account_circle_outlined,
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => ProfileTab()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.settings_outlined,
-                    title: context.tr('Settings'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SettingsScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.chat_bubble_outline_rounded,
-                    title: context.tr('Ask Jaguza AI'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const AIChatTab()),
-                      );
-                    },
-                  ),
-                  Divider(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    height: 16,
-                  ),
-                  _buildDrawerSection(
-                    title: context.tr('Communicate'),
-                    icon: Icons.chat_outlined,
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.lightbulb_outline_rounded,
-                    title: context.tr('Tips and Suggestions'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DecisionSupportScreen()),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.share_outlined,
-                    title: context.tr('Share JAGUZA'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showShareDialog(context);
-                    },
-                  ),
-                  Divider(
-                    color: Theme.of(context).colorScheme.outlineVariant,
-                    height: 16,
-                  ),
-                  _buildDrawerSection(
-                    title: context.tr('Others'),
-                    icon: Icons.more_horiz_rounded,
-                    onTap: () {},
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.handshake_outlined,
-                    title: context.tr('Our Partners/About'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showInfoDialog(
-                        context,
-                        title: context.tr('Our Partners'),
-                        body: context.tr(
-                            'Jaguza Livestock partners with agribusinesses, veterinary '
-                            'suppliers and cooperatives across Uganda. For the current '
-                            'list of partners, visit jaguzalivestock.com.'),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.public_outlined,
-                    title: context.tr('Visit our Website'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _launchWebsite('https://jaguzalivestock.com');
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.privacy_tip_outlined,
-                    title: context.tr('Privacy Policy'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showInfoDialog(
-                        context,
-                        title: context.tr('Privacy Policy'),
-                        body: context.tr(
-                            'Jaguza Livestock takes your privacy seriously. We collect only '
-                            'the data necessary to deliver our services. Your livestock '
-                            'data, farm records and location information are stored '
-                            'securely and never shared with third parties without your '
-                            'consent.\n\nYou may request deletion of your data at any time '
-                            'by contacting support@jaguzalivestock.com.'),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.info_outline_rounded,
-                    title: context.tr('About App'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showInfoDialog(
-                        context,
-                        title: context.tr('About Jaguza'),
-                        body: context.tr(
-                            'Jaguza Livestock v1.0.0\n\nA livestock management app for '
-                            'farmers: diagnose diseases, track animals and gestation, '
-                            'reach veterinary doctors, buy and sell in the marketplace, '
-                            'and get AI-powered farming advice — all in one place.'),
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.logout_outlined,
-                    title: context.tr('Logout'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      _showLogoutDialog(context);
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  Center(
-                    child: Text(
-                      '${context.tr('Version')} 2.0.0',
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 11,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerSection({
-    required String title,
-    required IconData icon,
-    required VoidCallback onTap,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
-      color: scheme.surfaceContainerHighest,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      child: Row(
-        children: [
-          Icon(icon, color: scheme.primary, size: 18),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
-              color: scheme.onSurface,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    final scheme = Theme.of(context).colorScheme;
-    return ListTile(
-      leading: Icon(icon, color: scheme.onSurfaceVariant, size: 20),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: scheme.onSurface,
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        color: scheme.primary,
-        size: 18,
-      ),
-      onTap: onTap,
-      dense: true,
-      hoverColor: scheme.primary.withValues(alpha: 0.05),
-      splashColor: scheme.primary.withValues(alpha: 0.1),
-    );
-  }
-
-  void _showLogoutDialog(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardColor,
-        title: Text(
-          context.tr('Logout'),
-          style: TextStyle(
-            color: scheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          context.tr('Are you sure you want to logout?'),
-          style: TextStyle(color: scheme.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              context.tr('Cancel'),
-              style: TextStyle(color: scheme.onSurfaceVariant),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: scheme.error),
-            child: Text(context.tr('Logout')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showInfoDialog(BuildContext context, {required String title, required String body}) {
-    final scheme = Theme.of(context).colorScheme;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardColor,
-        title: Text(
-          title,
-          style: TextStyle(color: scheme.onSurface, fontWeight: FontWeight.bold),
-        ),
-        content: SingleChildScrollView(
-          child: Text(body, style: TextStyle(color: scheme.onSurfaceVariant, height: 1.5)),
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context),
-            style: ElevatedButton.styleFrom(backgroundColor: scheme.primary),
-            child: Text(context.tr('Got it')),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showShareDialog(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Theme.of(context).cardColor,
-        title: Text(
-          context.tr('Share JAGUZA'),
-          style: TextStyle(
-            color: scheme.onSurface,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        content: Text(
-          context.tr('Share the Jaguza app with your fellow farmers!'),
-          style: TextStyle(color: scheme.onSurfaceVariant),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              context.tr('Cancel'),
-              style: TextStyle(color: scheme.onSurfaceVariant),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: scheme.primary),
-            child: Text(context.tr('Share')),
-          ),
-        ],
-      ),
+    return const Scaffold(
+      body: HomeTab(),
     );
   }
 }
@@ -570,7 +80,7 @@ class _HomeTabState extends State<HomeTab> {
       case 3:
         return context.tr('Diseases');
       default:
-        return 'Jaguza';
+        return 'Jaguza Livestock';
     }
   }
 
@@ -586,11 +96,6 @@ class _HomeTabState extends State<HomeTab> {
       context,
       MaterialPageRoute(builder: (_) => const QrScannerScreen()),
     );
-  }
-
-  void _openDrawer() {
-    final shell = context.findAncestorStateOfType<_MainShellState>();
-    shell?._scaffoldKey.currentState?.openDrawer();
   }
 
   @override
@@ -666,36 +171,42 @@ class _HomeTabState extends State<HomeTab> {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 child: Row(
                   children: [
-                    _iconCircle(
-                      icon: Icons.menu_rounded,
-                      onTap: _openDrawer,
-                    ),
-                    const SizedBox(width: 10),
+
+                    SizedBox(width: 10,),
+
                     Image.asset(
-                      'lib/assets/images/jaguza_j_mark.png',
-                      width: 34,
-                      height: 34,
-                      errorBuilder: (_, __, ___) => const SizedBox(width: 34),
+                      'assets/icon/jaguza-app-icon-low.png',
+                      width: 42,
+                      height: 42,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      _headerTitle,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 0.3,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _headerTitle,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                        Text("Uganda",style: TextStyle(fontSize: 11,color: Colors.white),)
+                      ],
                     ),
                     const Spacer(),
+
                     _iconCircle(
                       icon: Icons.qr_code_scanner_rounded,
                       onTap: _openQrScanner,
                     ),
+                    SizedBox(width: 5,),
+                    _bell(),
                   ],
                 ),
               ),
-              const SizedBox(height: 28),
+              const SizedBox(height: 10),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: _infoCard(),
@@ -711,12 +222,7 @@ class _HomeTabState extends State<HomeTab> {
           ),
         ),
         // Notification bell straddling the seam between the header and the card.
-        Positioned(
-          top: topInset + 38,
-          left: 0,
-          right: 0,
-          child: Center(child: _bell()),
-        ),
+
       ],
     );
   }
@@ -731,30 +237,32 @@ class _HomeTabState extends State<HomeTab> {
       context.tr('Contact Veterinary Doctors'),
       context.tr('Track Animal Gestation and so much more…'),
     ];
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 24, 14, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (final line in lines)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 1.5),
-              child: Text(
-                '*  $line',
-                style: TextStyle(
-                  color: scheme.primary,
-                  fontSize: 11.5,
-                  height: 1.15,
-                  fontWeight: FontWeight.w500,
+    return Card(
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(6),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 14, 14, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            for (final line in lines)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 1.5),
+                child: Text(
+                  '*  $line',
+                  style: TextStyle(
+                    color: scheme.primary,
+                    fontSize: 11.5,
+                    height: 1.15,
+                    fontWeight: FontWeight.w500,
+                  ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -765,50 +273,20 @@ class _HomeTabState extends State<HomeTab> {
         context,
         MaterialPageRoute(builder: (_) => const JaguzaUpdatesScreen()),
       ),
-      child: SizedBox(
-        width: 56,
-        height: 56,
-        child: Stack(
-          clipBehavior: Clip.none,
-          alignment: Alignment.center,
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF57C00),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.notifications,
-                color: Colors.black87,
-                size: 22,
-              ),
+      child: Stack(
+        clipBehavior: Clip.none,
+        alignment: Alignment.center,
+        children: [
+          Container(
+            width: 32,
+            height: 32,
+            child: const Icon(
+              Icons.notifications,
+              color: Colors.white,
+              size: 22,
             ),
-            Positioned(
-              top: 2,
-              right: 4,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
-                decoration: const BoxDecoration(
-                  color: Colors.red,
-                  shape: BoxShape.circle,
-                ),
-                child: const Text(
-                  '0',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.bold,
-                    height: 1.2,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -905,6 +383,7 @@ class _HomeTabState extends State<HomeTab> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
+        width: double.infinity,
         // Deliberate orange accent for the AI box, distinct from the green
         // design system — kept as a literal color.
         decoration: BoxDecoration(
@@ -922,7 +401,7 @@ class _HomeTabState extends State<HomeTab> {
                     context.tr('Is there anything that you would like to know in the field of Agriculture?'),
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 15,
+                      fontSize: 13,
                       height: 1.35,
                       fontWeight: FontWeight.w500,
                     ),
@@ -935,7 +414,7 @@ class _HomeTabState extends State<HomeTab> {
                       foregroundColor: const Color(0xFF1B5E20),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 22,
-                        vertical: 14,
+                        vertical: 11,
                       ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
@@ -954,11 +433,14 @@ class _HomeTabState extends State<HomeTab> {
               ),
             ),
             const SizedBox(width: 8),
-            Image.asset(
-              'lib/assets/images/ai chart.jpeg',
-              width: 112,
-              height: 112,
-              fit: BoxFit.contain,
+            Container(
+              width: 90, height: 90,
+              child: Image.asset(
+                'assets/icon/SmilingWomanWithGreenLaptop-Low.png',
+                width: 112,
+                height: 112,
+                fit: BoxFit.contain,
+              ),
             ),
           ],
         ),
@@ -1050,6 +532,7 @@ class _HomeTabState extends State<HomeTab> {
         children: [
           GridView.builder(
             shrinkWrap: true,
+            padding: EdgeInsets.zero,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
@@ -1062,6 +545,7 @@ class _HomeTabState extends State<HomeTab> {
           ),
           const SizedBox(height: 12),
           GridView.builder(
+            padding: EdgeInsets.zero,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -1287,31 +771,6 @@ class _FeatureCardState extends State<_FeatureCard> {
         );
       }
     }
-  }
-}
-
-/// Wraps a screen that's normally embedded as a tab body inside [HomeTab]
-/// (so it has no app bar of its own) with a proper full-screen app bar —
-/// title, green header, white back button — for when it's opened directly
-/// from the drawer instead of via the bottom icon tabs.
-class _FullScreenPage extends StatelessWidget {
-  final String title;
-  final Widget child;
-  const _FullScreenPage({required this.title, required this.child});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        elevation: 0,
-        title: Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, size: 20),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: child,
-    );
   }
 }
 

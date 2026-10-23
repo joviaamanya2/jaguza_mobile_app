@@ -42,6 +42,8 @@ class _AIChatTabState extends State<AIChatTab> {
     'Vaccination schedule',
   ];
 
+
+
   @override
   void initState() {
     super.initState();
@@ -76,19 +78,28 @@ class _AIChatTabState extends State<AIChatTab> {
   Future<void> _loadChatHistory() async {
     try {
       final history = await ApiService().getChatHistory();
-      final messages = history.whereType<Map>().map((raw) {
-        final message = Map<String, dynamic>.from(raw);
-        final timestamp = DateTime.tryParse(
-              '${message['created_at'] ?? message['timestamp'] ?? ''}',
-            ) ??
+      final messages = <ChatMessage>[];
+      for (final raw in history.whereType<Map>()) {
+        final entry = Map<String, dynamic>.from(raw);
+        final timestamp = DateTime.tryParse('${entry['timestamp'] ?? ''}') ??
             DateTime.now();
-        final sender = '${message['sender'] ?? ''}'.toLowerCase();
-        return ChatMessage(
-          text: '${message['message'] ?? message['text'] ?? ''}',
-          isUser: message['isUser'] == true || sender == 'user',
-          timestamp: timestamp,
-        );
-      }).where((message) => message.text.trim().isNotEmpty).toList();
+        final userInput = '${entry['user_input'] ?? ''}'.trim();
+        final botResponse = '${entry['bot_response'] ?? ''}'.trim();
+        if (userInput.isNotEmpty) {
+          messages.add(ChatMessage(
+            text: userInput,
+            isUser: true,
+            timestamp: timestamp,
+          ));
+        }
+        if (botResponse.isNotEmpty) {
+          messages.add(ChatMessage(
+            text: _stripHtml(botResponse),
+            isUser: false,
+            timestamp: timestamp,
+          ));
+        }
+      }
 
       if (!mounted) return;
       setState(() {
@@ -96,10 +107,14 @@ class _AIChatTabState extends State<AIChatTab> {
           ..clear()
           ..addAll(messages);
       });
+      _scrollToLatest();
     } catch (e) {
       debugPrint('Error loading chat history: $e');
     }
   }
+
+  String _stripHtml(String text) =>
+      text.replaceAll(RegExp(r'<[^>]*>'), '').trim();
 
   Future<void> _initSpeech() async {
     try {
@@ -294,7 +309,6 @@ class _AIChatTabState extends State<AIChatTab> {
                     },
                   ),
           ),
-          if (_messages.isNotEmpty) _buildQuickQuestions(),
           _buildInputArea(),
         ],
       ),
@@ -392,18 +406,7 @@ class _AIChatTabState extends State<AIChatTab> {
           child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-          Container(
-            padding: const EdgeInsets.all(28),
-            decoration: const BoxDecoration(
-              color: Color(0xFFFFF3E0),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: Color(0xFFF57C00),
-              size: 60,
-            ),
-          ),
+          _aiIcon(120),
           const SizedBox(height: 32),
           Text(
             'Welcome to Jaguza AI',
@@ -441,44 +444,78 @@ class _AIChatTabState extends State<AIChatTab> {
               ),
             ),
           ),
-          const SizedBox(height: 48),
-          Row(
-            children: [
-              Expanded(
-                child: Divider(
-                  color: scheme.outlineVariant,
-                  thickness: 1,
-                  indent: 40,
-                  endIndent: 16,
-                ),
-              ),
-              Icon(
-                Icons.keyboard_arrow_down_rounded,
+          const SizedBox(height: 36),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'TRY ASKING',
+              style: TextStyle(
+                fontSize: 11,
+                letterSpacing: 1.2,
                 color: scheme.onSurfaceVariant,
-                size: 20,
+                fontWeight: FontWeight.w700,
               ),
-              Expanded(
-                child: Divider(
-                  color: scheme.outlineVariant,
-                  thickness: 1,
-                  indent: 16,
-                  endIndent: 40,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ..._quickQuestions.map(
+            (question) => Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Material(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                borderRadius: BorderRadius.circular(14),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(14),
+                  onTap: () {
+                    _messageController.text = question;
+                    _sendMessage();
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: scheme.outlineVariant),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.chat_bubble_outline_rounded,
+                            size: 18, color: Color(0xFFF57C00)),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            question,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: scheme.onSurface,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        Icon(Icons.arrow_forward_ios_rounded,
+                            size: 14, color: scheme.onSurfaceVariant),
+                      ],
+                    ),
+                  ),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            'Ask a question below to get started',
-            style: TextStyle(
-              fontSize: 13,
-              color: scheme.onSurfaceVariant,
-              fontWeight: FontWeight.w400,
             ),
           ),
           ],
         ),
       ),
+      ),
+    );
+  }
+
+  Widget _aiIcon(double size) {
+    return ClipOval(
+      child: Image.asset(
+        'assets/icon/SmilingWomanWithGreenLaptop-Low.png',
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
       ),
     );
   }
@@ -490,18 +527,7 @@ class _AIChatTabState extends State<AIChatTab> {
       title: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xFFF57C00),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              Icons.auto_awesome_rounded,
-              color: Colors.white,
-              size: 20,
-            ),
-          ),
+          _aiIcon(38),
           const SizedBox(width: 12),
           Flexible(
             child: Column(
@@ -517,13 +543,27 @@ class _AIChatTabState extends State<AIChatTab> {
                   color: scheme.onPrimary,
                 ),
               ),
-              Text(
-                'Powered by AI',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: scheme.onPrimary.withValues(alpha: 0.7),
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF4CAF50),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 5),
+                  Text(
+                    'Online · $_selectedLanguage',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: scheme.onPrimary.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -544,59 +584,12 @@ class _AIChatTabState extends State<AIChatTab> {
           tooltip: 'Clear chat',
           onPressed: _messages.isEmpty ? null : _clearChat,
           icon: Icon(Icons.delete_outline_rounded,
-              color: _messages.isEmpty ? scheme.onPrimary.withValues(alpha: 0.4) : scheme.error,
-              size: 16),
+              color: _messages.isEmpty
+                  ? scheme.onPrimary.withValues(alpha: 0.4)
+                  : scheme.onPrimary,
+              size: 22),
         ),
       ],
-    );
-  }
-
-  Widget _buildQuickQuestions() {
-    if (_messages.isEmpty) return const SizedBox.shrink();
-    final scheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-      decoration: BoxDecoration(
-        color: scheme.surfaceContainerHighest.withValues(alpha: 0.4),
-        border: Border(
-          top: BorderSide(color: scheme.outlineVariant),
-        ),
-      ),
-      child: SizedBox(
-        height: 36,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          itemCount: _quickQuestions.length,
-          separatorBuilder: (_, __) => const SizedBox(width: 8),
-          itemBuilder: (context, index) {
-            return GestureDetector(
-              onTap: () {
-                _messageController.text = _quickQuestions[index];
-                _sendMessage();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF3E0),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFFF57C00).withValues(alpha: 0.15),
-                  ),
-                ),
-                child: Text(
-                  _quickQuestions[index],
-                  style: const TextStyle(
-                    color: Color(0xFFF57C00),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
     );
   }
 
@@ -604,156 +597,219 @@ class _AIChatTabState extends State<AIChatTab> {
     final scheme = Theme.of(context).colorScheme;
     final canSend = _messageController.text.trim().isNotEmpty ||
         _attachments.isNotEmpty;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardColor,
-        border: Border(
-          top: BorderSide(color: scheme.outlineVariant),
-        ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Attachment button
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: _attachments.isNotEmpty ? const Color(0xFFFFF3E0) : scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(12),
-                  border: _attachments.isNotEmpty
-                      ? Border.all(color: const Color(0xFFF57C00).withValues(alpha: 0.3))
-                      : null,
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    Icons.attach_file_rounded,
-                    color: _attachments.isNotEmpty ? const Color(0xFFF57C00) : scheme.onSurfaceVariant,
-                    size: 20,
-                  ),
-                  onPressed: _pickFile,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  minLines: 1,
-                  maxLines: 4,
-                  textInputAction: TextInputAction.newline,
-                  style: TextStyle(color: scheme.onSurface, fontSize: 14),
-                  decoration: InputDecoration(
-                    hintText: _isRecording ? 'Listening...' : 'Type your question...',
-                    hintStyle: TextStyle(
-                      fontSize: 14,
-                      color: scheme.onSurfaceVariant,
-                    ),
-                    filled: true,
-                    fillColor: scheme.surfaceContainerHighest,
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: scheme.outlineVariant),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: scheme.outlineVariant),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: scheme.outlineVariant),
-                    ),
-                  ),
-                  onSubmitted: (_) => _sendMessage(),
-                ),
-              ),
-              const SizedBox(width: 8),
-              SizedBox(
-                width: 40,
-                height: 40,
-                child: IconButton(
-                  tooltip: _isRecording ? 'Stop voice input' : 'Voice input',
-                  padding: EdgeInsets.zero,
-                  icon: Icon(
-                    _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
-                    color: _isRecording ? scheme.error : scheme.onSurfaceVariant,
-                    size: 21,
-                  ),
-                  onPressed: _isRecording ? _stopListening : _startListening,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: canSend && !_isLoading
-                      ? const Color(0xFFF57C00)
-                      : scheme.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Icon(Icons.send_rounded,
-                          color: Colors.white, size: 22),
-                  // Keep the hit target active; _sendMessage validates empty
-                  // input itself. This avoids the button becoming stuck when
-                  // the controller changes while the keyboard is open.
-                  onPressed: _isLoading ? null : _sendMessage,
-                ),
-              ),
-            ],
-          ),
-          if (_isRecording)
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
             Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.fromLTRB(6, 6, 6, 6),
               decoration: BoxDecoration(
-                color: scheme.error.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: scheme.error.withValues(alpha: 0.3)),
+                color: scheme.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(32),
+                border: Border.all(color: scheme.outlineVariant),
               ),
               child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: scheme.error,
+                  IconButton(
+                    tooltip: 'Attach file',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    icon: Icon(
+                      Icons.attach_file_rounded,
+                      color: _attachments.isNotEmpty
+                          ? const Color(0xFFF57C00)
+                          : scheme.onSurfaceVariant,
+                      size: 21,
+                    ),
+                    onPressed: _pickFile,
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      minLines: 1,
+                      maxLines: 4,
+                      textInputAction: TextInputAction.newline,
+                      style: TextStyle(color: scheme.onSurface, fontSize: 15),
+                      decoration: InputDecoration(
+                        hintText: _isRecording ? 'Listening...' : 'Write a message...',
+                        hintStyle: TextStyle(
+                          fontSize: 15,
+                          color: scheme.onSurfaceVariant,
+                        ),
+                        isDense: true,
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 10),
+                      ),
+                      onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Recording... Tap the mic button again to stop',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: scheme.error,
-                        fontWeight: FontWeight.w500,
-                      ),
+                  IconButton(
+                    tooltip: _isRecording ? 'Stop voice input' : 'Voice input',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
+                    icon: Icon(
+                      _isRecording ? Icons.stop_rounded : Icons.mic_rounded,
+                      color: _isRecording ? scheme.error : scheme.onSurfaceVariant,
+                      size: 22,
+                    ),
+                    onPressed: _isRecording ? _stopListening : _startListening,
+                  ),
+                  const SizedBox(width: 2),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    width: 46,
+                    height: 46,
+                    decoration: BoxDecoration(
+                      color: canSend && !_isLoading
+                          ? const Color(0xFFF57C00)
+                          : scheme.outlineVariant,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.send_rounded,
+                              color: Colors.white, size: 22),
+                      onPressed: _isLoading ? null : _sendMessage,
                     ),
                   ),
                 ],
               ),
             ),
-        ],
+            if (_isRecording)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: scheme.error.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: scheme.error.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 12,
+                      height: 12,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: scheme.error,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Recording... Tap the mic button again to stop',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: scheme.error,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMessageCard({
+    required bool isUser,
+    required Widget body,
+    Widget? footer,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final bg = isUser ? const Color(0xFFF57C00) : scheme.surfaceContainerHighest;
+    final fg = isUser ? Colors.white : scheme.onSurface;
+
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
+        decoration: BoxDecoration(
+          color: bg,
+          borderRadius: BorderRadius.only(
+            topLeft: const Radius.circular(14),
+            topRight: const Radius.circular(14),
+            bottomLeft: Radius.circular(isUser ? 14 : 0),
+            bottomRight: Radius.circular(isUser ? 0 : 14),
+          ),
+          border: isUser ? null : Border.all(color: scheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                if (isUser)
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.25),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Center(
+                      child: Text(
+                        _userName[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  )
+                else
+                  _aiIcon(36),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      isUser ? 'You' : 'Jaguza AI',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: fg,
+                      ),
+                    ),
+                    if (footer != null) footer,
+                  ],
+                ),
+              ],
+            ),
+            Padding(
+              padding: const EdgeInsets.only(left: 6, top: 10),
+              child: DefaultTextStyle.merge(
+                style: TextStyle(fontSize: 13, height: 1.55, color: fg),
+                child: body,
+              ),
+            ),
+
+          ],
+        ),
       ),
     );
   }
@@ -761,143 +817,74 @@ class _AIChatTabState extends State<AIChatTab> {
   Widget _buildMessageBubble(ChatMessage message) {
     final scheme = Theme.of(context).colorScheme;
     final isUser = message.isUser;
+    final fg = isUser ? Colors.white : scheme.onSurface;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(
-        mainAxisAlignment:
-            isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          if (!isUser) ...[
-            Container(
-              width: 34,
-              height: 34,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF57C00),
-                shape: BoxShape.circle,
+    return GestureDetector(
+      onLongPress: () {
+        Clipboard.setData(ClipboardData(text: message.text));
+        _showSnackBar('Message copied');
+      },
+      child: _buildMessageCard(
+        isUser: isUser,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(message.text),
+            if (message.attachments != null &&
+                message.attachments!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: message.attachments!.map((attachment) {
+                  return Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isUser
+                          ? Colors.white.withValues(alpha: 0.2)
+                          : scheme.surfaceContainerHigh,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(_getFileIcon(attachment.extension),
+                            color: fg, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          attachment.name,
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: fg,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
               ),
-              child: const Icon(
-                Icons.auto_awesome_rounded,
-                color: Colors.white,
-                size: 16,
-              ),
-            ),
-            const SizedBox(width: 10),
+            ],
           ],
-          Flexible(
-            child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isUser ? const Color(0xFFF57C00) : scheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(18).copyWith(
-                  bottomLeft: isUser ? const Radius.circular(18) : const Radius.circular(4),
-                  bottomRight: isUser ? const Radius.circular(4) : const Radius.circular(18),
-                ),
-                border: isUser ? null : Border.all(color: scheme.outlineVariant),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    message.text,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: isUser ? Colors.white : scheme.onSurface,
-                      height: 1.6,
-                    ),
-                  ),
-                  if (message.attachments != null && message.attachments!.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: message.attachments!.map((attachment) {
-                        return Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: isUser ? Colors.white.withValues(alpha: 0.2) : scheme.surfaceContainerHigh,
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _getFileIcon(attachment.extension),
-                                color: isUser ? Colors.white : scheme.onSurfaceVariant,
-                                size: 14,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                attachment.name,
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: isUser ? Colors.white : scheme.onSurfaceVariant,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                  const SizedBox(height: 6),
-                  Text(
-                    _formatTime(message.timestamp),
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: isUser ? Colors.white70 : scheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+        ),
+        footer: Text(
+          _formatTime(message.timestamp),
+          style: TextStyle(
+            fontSize: 10,
+            color: isUser ? Colors.white70 : scheme.onSurfaceVariant,
           ),
-          if (isUser) ...[
-            const SizedBox(width: 10),
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3E0),
-                shape: BoxShape.circle,
-                border: Border.all(
-                    color: const Color(0xFFF57C00).withValues(alpha: 0.3)),
-              ),
-              child: Center(
-                child: Text(
-                  _userName[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: Color(0xFFF57C00),
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ],
+        ),
       ),
     );
   }
 
   Widget _buildTypingIndicator() {
-    final scheme = Theme.of(context).colorScheme;
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(left: 44, bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: scheme.surfaceContainerHighest,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Text('Jaguza AI is thinking…', style: TextStyle(
-          color: scheme.onSurfaceVariant, fontSize: 13,
-        )),
+    return _buildMessageCard(
+      isUser: false,
+      body: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 4),
+        child: _TypingDots(),
       ),
     );
   }
@@ -933,11 +920,11 @@ class _AIChatTabState extends State<AIChatTab> {
         language: _selectedLanguage,
         sessionId: _sessionId,
       );
-      final rawReply = result['ai_response'] ?? result['response'] ?? result['message'];
+      final rawReply = result['bot_response'] ?? result['ai_response'] ?? result['response'] ?? result['message'];
       final reply = rawReply is Map
-          ? (rawReply['message'] ?? rawReply['bot_response'] ?? rawReply['text'])
+          ? (rawReply['bot_response'] ?? rawReply['message'] ?? rawReply['text'])
           : rawReply;
-      final response = '${reply ?? result['message'] ?? ''}'.trim();
+      final response = _stripHtml('${reply ?? result['message'] ?? ''}'.trim());
       if (response.isEmpty) throw Exception('The AI returned an empty response.');
       if (!mounted) return;
       setState(() {
@@ -1036,6 +1023,52 @@ class _AIChatTabState extends State<AIChatTab> {
     if (difference.inMinutes < 60) return '${difference.inMinutes}m ago';
     if (difference.inHours < 24) return '${difference.inHours}h ago';
     return '${difference.inDays}d ago';
+  }
+}
+
+class _TypingDots extends StatefulWidget {
+  const _TypingDots();
+
+  @override
+  State<_TypingDots> createState() => _TypingDotsState();
+}
+
+class _TypingDotsState extends State<_TypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1200),
+  )..repeat();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (i) {
+          final phase = (_controller.value - i * 0.2) % 1.0;
+          final lift = phase < 0.5 ? phase * 2 : (1 - phase) * 2;
+          return Container(
+            margin: EdgeInsets.only(right: i == 2 ? 0 : 5),
+            width: 8,
+            height: 8,
+            transform: Matrix4.translationValues(0, -4 * lift, 0),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF57C00)
+                  .withValues(alpha: 0.4 + 0.6 * lift),
+              shape: BoxShape.circle,
+            ),
+          );
+        }),
+      ),
+    );
   }
 }
 

@@ -1464,15 +1464,26 @@ class ApiService {
   }
 
   // ========== AI CHAT API ==========
+  //
+  // Ask Jaguza talks to the dedicated AI engine directly, not the PHP/REST
+  // backend - mirrors the native app's AskJaguzaActivity/AskMessageAdapter,
+  // which hit ASK_JAGUZA_API ("https://jaguzafarmchat.com/api/") with a plain
+  // user_id (no auth token) rather than going through the authenticated API.
+  static const String _askJaguzaApi = 'https://jaguzafarmchat.com/api/';
 
   Future<List<dynamic>> getChatHistory() async {
-    final response = await get('ai-chat/history');
-    if (response is List) return response;
-    if (response is Map<String, dynamic>) {
-      final data = response['data'];
+    await _php.load();
+    final userId = _php.userId ?? 0;
+    final uri = Uri.parse('${_askJaguzaApi}history')
+        .replace(queryParameters: {'user_id': '$userId'});
+    final response = await http.get(uri, headers: {'accept': 'application/json'});
+    if (response.statusCode != 200) return [];
+    final decoded = json.decode(response.body);
+    if (decoded is Map<String, dynamic>) {
+      final data = decoded['data'];
       return data is List ? data : [];
     }
-    return [];
+    return decoded is List ? decoded : [];
   }
 
   Future<Map<String, dynamic>> sendChatMessage(
@@ -1480,15 +1491,24 @@ class ApiService {
     String? language,
     String? sessionId,
   }) async {
-    return await post('ai-chat/send', {
-      'message': message,
-      if (language != null) 'language': language,
-      if (sessionId != null) 'session_id': sessionId,
-    });
+    final response = await http.post(
+      Uri.parse('${_askJaguzaApi}askjaguza'),
+      headers: {'accept': 'application/json'},
+      body: {
+        'lang': language ?? 'English',
+        'user_input': message,
+      },
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Ask Jaguza AI request failed (${response.statusCode})');
+    }
+    final decoded = json.decode(response.body);
+    return decoded is Map<String, dynamic> ? decoded : <String, dynamic>{};
   }
 
   Future<void> clearChatHistory() async {
-    await delete('ai-chat/clear');
+    // The AI engine keeps its own history server-side; it has no delete
+    // endpoint, so clearing is local-only (handled by the caller's UI state).
   }
 
   Future<void> sendChatFeedback(int messageId, String feedback) async {

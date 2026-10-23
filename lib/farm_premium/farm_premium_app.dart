@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:jaguza_app/farm_premium/Access/ProfilePage.dart';
 import 'package:jaguza_app/farm_premium/Access/SignInPage.dart';
 import 'package:jaguza_app/farm_premium/Animals/AnimalsListPage.dart';
+import 'package:jaguza_app/farm_premium/Farm/FarmsPage.dart';
 import 'package:jaguza_app/farm_premium/Contacts/ContactsPage.dart';
 import 'package:jaguza_app/farm_premium/FarmRequests/FarmRequestsPage.dart';
 import 'package:jaguza_app/farm_premium/Feeds/FeedsPage.dart';
@@ -9,7 +11,6 @@ import 'package:jaguza_app/farm_premium/Financial/FinancialPage.dart';
 import 'package:jaguza_app/farm_premium/Groups/GroupsListPage.dart';
 import 'package:jaguza_app/farm_premium/Milk/MilkingHomePage.dart';
 import 'package:jaguza_app/farm_premium/Paddocks/PaddocksListPage.dart';
-import 'package:jaguza_app/farm_premium/Splash/SplashPage.dart';
 import 'package:jaguza_app/farm_premium/Tasks/TasksPage.dart';
 import 'package:jaguza_app/farm_premium/Treatment/TreatmentPage.dart';
 import 'package:jaguza_app/farm_premium/utils/Helper.dart';
@@ -30,6 +31,20 @@ class FarmPremiumApp extends StatefulWidget {
 class _FarmPremiumAppState extends State<FarmPremiumApp> {
   final _navigatorKey = GlobalKey<NavigatorState>();
 
+  /// Null until the saved login state has been read. The module's splash
+  /// screen is skipped: logged-in users land on the farm list, others on
+  /// sign-in.
+  bool? _loggedIn;
+
+  @override
+  void initState() {
+    super.initState();
+    SharedPreferences.getInstance().then((prefs) {
+      if (!mounted) return;
+      setState(() => _loggedIn = prefs.getBool('is_user_logged_in') == true);
+    });
+  }
+
   static final _routes = <String, WidgetBuilder>{
     '/treatment': (_) => TreatmentPage(),
     '/financial': (_) => FinancialPage(),
@@ -44,7 +59,7 @@ class _FarmPremiumAppState extends State<FarmPremiumApp> {
     '/tasks': (_) => TasksPage(),
     '/contacts': (_) => ContactsPage(),
     // logoutPerson() navigates to '/home' and clears the stack.
-    '/home': (_) => SplashPage(),
+    '/home': (_) => SignInPage(),
   };
 
   @override
@@ -58,26 +73,33 @@ class _FarmPremiumAppState extends State<FarmPremiumApp> {
         ),
         useMaterial3: true,
       ),
-      child: PopScope(
-        canPop: false,
-        onPopInvokedWithResult: (didPop, _) async {
-          if (didPop) return;
-          final nav = _navigatorKey.currentState!;
-          if (await nav.maybePop()) return;
-          if (context.mounted) Navigator.of(context).pop();
-        },
-        child: Navigator(
-          key: _navigatorKey,
-          onGenerateInitialRoutes: (_, __) => [
-            MaterialPageRoute(builder: (_) => SplashPage()),
-          ],
-          onGenerateRoute: (settings) {
-            final builder = _routes[settings.name];
-            if (builder == null) return null;
-            return MaterialPageRoute(builder: builder, settings: settings);
-          },
-        ),
-      ),
+      child: _loggedIn == null
+          ? const Scaffold(body: Center(child: CircularProgressIndicator()))
+          : PopScope(
+              canPop: false,
+              onPopInvokedWithResult: (didPop, _) async {
+                if (didPop) return;
+                final nav = _navigatorKey.currentState!;
+                if (await nav.maybePop()) return;
+                if (context.mounted) Navigator.of(context).pop();
+              },
+              child: Navigator(
+                key: _navigatorKey,
+                onGenerateInitialRoutes: (_, __) => [
+                  MaterialPageRoute(
+                    builder: (_) => _loggedIn! ? FarmsPage() : SignInPage(),
+                  ),
+                ],
+                onGenerateRoute: (settings) {
+                  final builder = _routes[settings.name];
+                  if (builder == null) return null;
+                  return MaterialPageRoute(
+                    builder: builder,
+                    settings: settings,
+                  );
+                },
+              ),
+            ),
     );
   }
 }
