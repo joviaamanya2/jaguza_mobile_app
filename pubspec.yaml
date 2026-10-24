@@ -99,15 +99,16 @@ dev_dependencies:
 
 # App launcher icon (run: dart run flutter_launcher_icons)
 flutter_launcher_icons:
-  image_path: "assets/icon/app_icon.png"
+  image_path: "assets/icon/jaguza-app-launcher.png"
   android: true
   ios: true
   remove_alpha_ios: true
-  adaptive_icon_background: "assets/icon/app_icon_background.png"
-  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/jaguza-app-launcher.png"
+  adaptive_icon_foreground_inset: 12
   web:
     generate: true
-    image_path: "assets/icon/app_icon.png"
+    image_path: "assets/icon/jaguza-app-launcher.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
